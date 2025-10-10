@@ -15,11 +15,17 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 
 interface Barber {
   id: string;
-  user_id: string;
-  is_available: boolean;
-  profiles: {
-    full_name: string;
-  };
+  user_id: string | null;
+  barbershop_id: string;
+  name: string | null;
+  specialty: string | null;
+  bio: string | null;
+  phone: string | null;
+  photo_url: string | null;
+  is_available: boolean | null;
+  rating: number | null;
+  created_at: string;
+  updated_at: string;
 }
 
 const timeSlots = [
@@ -41,6 +47,7 @@ const ScheduleManagement = () => {
   });
   const [barbershopId, setBarbershopId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [loadingBarbers, setLoadingBarbers] = useState(false);
 
   useEffect(() => {
     fetchBarbershopId();
@@ -75,19 +82,23 @@ const ScheduleManagement = () => {
   const fetchBarbers = async () => {
     if (!barbershopId) return;
     
+    setLoadingBarbers(true);
     try {
       const { data, error } = await supabase
         .from('barbers')
-        .select(`
-          *,
-          profiles:user_id (full_name)
-        `)
-        .eq('barbershop_id', barbershopId);
+        .select('*')
+        .eq('barbershop_id', barbershopId)
+        .order('name', { ascending: true, nullsFirst: false });
 
       if (error) throw error;
-      setBarbers(data as any || []);
+      
+      console.log('Barbeiros carregados:', data);
+      setBarbers(data || []);
     } catch (error: any) {
+      console.error('Erro ao carregar barbeiros:', error);
       toast.error('Erro ao carregar barbeiros');
+    } finally {
+      setLoadingBarbers(false);
     }
   };
 
@@ -145,6 +156,41 @@ const ScheduleManagement = () => {
   const saveSchedule = async () => {
     if (!barbershopId) {
       toast.error('Erro: Barbearia não encontrada');
+      return;
+    }
+    
+    // Validação 1: Data não pode ser no passado
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const selectedDay = new Date(selectedDate);
+    selectedDay.setHours(0, 0, 0, 0);
+    
+    if (selectedDay < today) {
+      toast.error('Não é possível salvar configurações para datas passadas');
+      return;
+    }
+    
+    // Validação 2: Horário de início deve ser menor que fim
+    if (workingHours.start >= workingHours.end) {
+      toast.error('Horário de abertura deve ser antes do fechamento');
+      return;
+    }
+    
+    // Validação 3: Pelo menos 1 barbeiro deve estar trabalhando
+    if (workingBarbers.length === 0) {
+      toast.error('Selecione pelo menos um barbeiro para este dia');
+      return;
+    }
+    
+    // Validação 4: Verificar se barbeiros existem
+    const validBarbers = workingBarbers.filter(id => 
+      barbers.some(b => b.id === id)
+    );
+    
+    if (validBarbers.length < workingBarbers.length) {
+      console.warn('Alguns IDs de barbeiros não são válidos, removendo...');
+      setWorkingBarbers(validBarbers);
+      toast.error('Alguns barbeiros selecionados não são mais válidos');
       return;
     }
     
@@ -246,7 +292,11 @@ const ScheduleManagement = () => {
                 Barbeiros do Dia
               </CardTitle>
               <CardDescription>
-                Selecione quem está trabalhando em {selectedDate.toLocaleDateString('pt-BR')}
+                {loadingBarbers 
+                  ? 'Carregando barbeiros...' 
+                  : barbers.length > 0 
+                    ? `${barbers.length} barbeiro(s) disponível(is) - ${selectedDate.toLocaleDateString('pt-BR')}` 
+                    : 'Nenhum barbeiro cadastrado'}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -260,7 +310,16 @@ const ScheduleManagement = () => {
                       <div className="h-10 w-10 rounded-full bg-accent/10 flex items-center justify-center">
                         <Users className="h-5 w-5 text-accent" />
                       </div>
-                      <span className="font-medium">{barber.profiles?.full_name || 'Sem nome'}</span>
+                      <div className="flex flex-col">
+                        <span className="font-medium">
+                          {barber.name || 'Barbeiro sem nome'}
+                        </span>
+                        {barber.specialty && (
+                          <span className="text-xs text-muted-foreground">
+                            {barber.specialty}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     
                     <Switch
@@ -322,11 +381,23 @@ const ScheduleManagement = () => {
           </Card>
         </div>
 
-        <div className="mt-6 flex justify-end">
+        <div className="mt-6 flex justify-end gap-3">
+          <Button 
+            variant="outline"
+            onClick={() => {
+              setWorkingHours({ start: '09:00', end: '20:00' });
+              setWorkingBarbers(barbers.filter(b => b.is_available).map(b => b.id));
+              setBlockedSlots([]);
+              toast.info('Configurações resetadas');
+            }}
+            disabled={saving}
+          >
+            Resetar
+          </Button>
           <Button 
             onClick={saveSchedule} 
             className="bg-accent hover:bg-accent/90"
-            disabled={saving}
+            disabled={saving || loadingBarbers || workingBarbers.length === 0}
           >
             {saving ? 'Salvando...' : 'Salvar Configurações'}
           </Button>

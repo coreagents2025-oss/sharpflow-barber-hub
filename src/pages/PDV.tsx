@@ -108,16 +108,13 @@ const PDV = () => {
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
-      const { data, error } = await supabase
+      // Buscar appointments com serviços e barbeiros
+      const { data: appointmentsData, error } = await supabase
         .from('appointments')
         .select(`
           *,
-          profiles:client_id (full_name, phone),
           services (name, duration_minutes),
-          barbers (
-            id,
-            profiles:user_id (full_name)
-          )
+          barbers (id, name, specialty)
         `)
         .eq('barbershop_id', barbershopId)
         .gte('scheduled_at', today.toISOString())
@@ -126,13 +123,34 @@ const PDV = () => {
 
       if (error) throw error;
 
-      const now = new Date();
-      const upcoming = (data || []).filter(apt => new Date(apt.scheduled_at) > now);
+      // Buscar dados dos clientes separadamente
+      const clientIds = [...new Set(appointmentsData?.map(a => a.client_id) || [])];
       
-      setTodayAppointments(data as any || []);
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, full_name, phone')
+        .in('id', clientIds);
+
+      // Combinar dados
+      const appointmentsWithClients = appointmentsData?.map(appointment => ({
+        ...appointment,
+        profiles: profilesData?.find(p => p.id === appointment.client_id) || null,
+        barbers: {
+          ...appointment.barbers,
+          profiles: {
+            full_name: (appointment.barbers as any)?.name || 'Sem nome'
+          }
+        }
+      }));
+
+      const now = new Date();
+      const upcoming = (appointmentsWithClients || []).filter(apt => new Date(apt.scheduled_at) > now);
+      
+      setTodayAppointments(appointmentsWithClients as any || []);
       setUpcomingAppointments(upcoming.slice(0, 5) as any);
     } catch (error: any) {
       console.error('Error fetching appointments:', error);
+      toast.error('Erro ao carregar agendamentos');
     }
   };
 
@@ -191,25 +209,14 @@ const PDV = () => {
       const now = new Date();
       const { data: barbers } = await supabase
         .from('barbers')
-        .select(`
-          id,
-          is_available,
-          user_id
-        `)
+        .select('id, name, is_available')
         .eq('barbershop_id', barbershopId);
       
       if (!barbers) return;
       
-      // Para cada barbeiro, buscar profile e agendamentos
+      // Para cada barbeiro, buscar agendamentos
       const statuses = await Promise.all(
         barbers.map(async (barber: any) => {
-          // Buscar profile do barbeiro
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('full_name')
-            .eq('id', barber.user_id)
-            .single();
-          
           // Buscar appointment em andamento
           const { data: current } = await supabase
             .from('appointments')
@@ -224,8 +231,8 @@ const PDV = () => {
               .from('profiles')
               .select('full_name')
               .eq('id', current.client_id)
-              .single();
-            currentClientName = clientProfile?.full_name;
+              .maybeSingle();
+            currentClientName = clientProfile?.full_name || 'Cliente';
           }
           
           // Buscar próximo agendamento
@@ -241,7 +248,7 @@ const PDV = () => {
           
           return {
             id: barber.id,
-            name: profile?.full_name || 'Sem nome',
+            name: barber.name || 'Barbeiro sem nome',
             status: current ? 'occupied' : (barber.is_available ? 'free' : 'break'),
             currentClient: currentClientName,
             nextAppointment: next ? new Date(next.scheduled_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : undefined,
