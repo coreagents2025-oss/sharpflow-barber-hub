@@ -164,6 +164,50 @@ export type Database = {
         }
         Relationships: []
       }
+      catalog_settings: {
+        Row: {
+          barbershop_id: string
+          created_at: string
+          hero_image_url: string | null
+          id: string
+          logo_url: string | null
+          services_order: Json | null
+          show_popular_badge: boolean | null
+          theme_color: string | null
+          updated_at: string
+        }
+        Insert: {
+          barbershop_id: string
+          created_at?: string
+          hero_image_url?: string | null
+          id?: string
+          logo_url?: string | null
+          services_order?: Json | null
+          show_popular_badge?: boolean | null
+          theme_color?: string | null
+          updated_at?: string
+        }
+        Update: {
+          barbershop_id?: string
+          created_at?: string
+          hero_image_url?: string | null
+          id?: string
+          logo_url?: string | null
+          services_order?: Json | null
+          show_popular_badge?: boolean | null
+          theme_color?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "catalog_settings_barbershop_id_fkey"
+            columns: ["barbershop_id"]
+            isOneToOne: true
+            referencedRelation: "barbershops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_notes: {
         Row: {
           barbershop_id: string

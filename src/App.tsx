@@ -12,6 +12,7 @@ import Auth from "./pages/Auth";
 import PDV from "./pages/PDV";
 import ServicesManagement from "./pages/ServicesManagement";
 import Catalog from "./pages/Catalog";
+import PublicCatalog from "./pages/PublicCatalog";
 import ScheduleManagement from "./pages/ScheduleManagement";
 import Settings from "./pages/Settings";
 import BarbersManagement from "./pages/BarbersManagement";
@@ -31,6 +32,8 @@ const App = () => (
             <Route path="/services" element={<Services />} />
             <Route path="/booking" element={<Booking />} />
             <Route path="/auth" element={<Auth />} />
+            {/* Catálogo Público Mobile-First */}
+            <Route path="/catalogo" element={<PublicCatalog />} />
             {/* Painel do Dono da Barbearia - Rotas Protegidas */}
             <Route path="/pdv" element={<ProtectedRoute><PDV /></ProtectedRoute>} />
             <Route path="/services-management" element={<ProtectedRoute><ServicesManagement /></ProtectedRoute>} />

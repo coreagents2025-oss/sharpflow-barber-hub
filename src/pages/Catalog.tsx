@@ -1,83 +1,107 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { Navbar } from '@/components/Navbar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Eye, Layout, Save, Plus, Scissors as ScissorsIcon } from 'lucide-react';
+import { Eye, Save, Palette } from 'lucide-react';
 import { toast } from 'sonner';
 
-interface Service {
-  id: string;
-  name: string;
-  description: string | null;
-  price: number;
-  duration_minutes: number;
-  is_popular: boolean;
-  is_active: boolean;
-  image_url: string | null;
+interface CatalogSettings {
+  id?: string;
+  barbershop_id: string;
+  theme_color: string;
+  logo_url: string | null;
+  hero_image_url: string | null;
+  show_popular_badge: boolean;
 }
 
 const Catalog = () => {
   const { user } = useAuth();
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
   const [barbershopId, setBarbershopId] = useState<string | null>(null);
+  const [settings, setSettings] = useState<CatalogSettings>({
+    barbershop_id: '',
+    theme_color: '#8B4513',
+    logo_url: null,
+    hero_image_url: null,
+    show_popular_badge: true,
+  });
 
   useEffect(() => {
-    fetchBarbershopId();
+    if (user) {
+      fetchBarbershopAndSettings();
+    }
   }, [user]);
 
-  useEffect(() => {
-    if (barbershopId) {
-      fetchServices();
-    }
-  }, [barbershopId]);
-
-  const fetchBarbershopId = async () => {
+  const fetchBarbershopAndSettings = async () => {
+    setLoading(true);
     try {
-      const { data } = await supabase
+      const { data: barberData } = await supabase
         .from('barbers')
         .select('barbershop_id')
         .eq('user_id', user?.id)
-        .single();
-      
-      setBarbershopId(data?.barbershop_id || null);
-    } catch (error) {
-      console.error('Error fetching barbershop_id:', error);
-    }
-  };
+        .maybeSingle();
 
-  const fetchServices = async () => {
-    if (!barbershopId) return;
-    
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('services')
-        .select('*')
-        .eq('is_active', true)
-        .eq('barbershop_id', barbershopId)
-        .order('name');
-      
-      if (error) throw error;
-      setServices(data || []);
-    } catch (error: any) {
-      console.error('Error fetching services:', error);
-      toast.error('Erro ao carregar serviços');
+      if (barberData?.barbershop_id) {
+        setBarbershopId(barberData.barbershop_id);
+
+        const { data: settingsData } = await supabase
+          .from('catalog_settings')
+          .select('*')
+          .eq('barbershop_id', barberData.barbershop_id)
+          .maybeSingle();
+
+        if (settingsData) {
+          setSettings(settingsData);
+        } else {
+          setSettings(prev => ({ ...prev, barbershop_id: barberData.barbershop_id }));
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+      toast.error('Erro ao carregar configurações');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleSave = () => {
-    toast.success('Layout do catálogo salvo com sucesso!');
-    setIsEditMode(false);
+  const handleSave = async () => {
+    if (!barbershopId) return;
+
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('catalog_settings')
+        .upsert({
+          ...settings,
+          barbershop_id: barbershopId,
+        });
+
+      if (error) throw error;
+      toast.success('Configurações salvas com sucesso!');
+    } catch (error: any) {
+      console.error('Error saving settings:', error);
+      toast.error('Erro ao salvar configurações');
+    } finally {
+      setSaving(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
+        <Navbar />
+        <main className="container mx-auto px-4 py-12">
+          <div className="text-center">Carregando configurações...</div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
@@ -86,110 +110,116 @@ const Catalog = () => {
       <main className="container mx-auto px-4 py-12">
         <div className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-4xl font-bold mb-2">Catálogo Público</h1>
-            <p className="text-muted-foreground">Visualize e edite o layout do seu catálogo</p>
+            <h1 className="text-4xl font-bold mb-2">Editor do Catálogo</h1>
+            <p className="text-muted-foreground">Configure a aparência do seu catálogo público</p>
           </div>
           
           <div className="flex gap-2">
             <Button
               variant="outline"
-              onClick={() => window.open('/services', '_blank')}
+              onClick={() => window.open('/catalogo', '_blank')}
             >
               <Eye className="h-4 w-4 mr-2" />
-              Pré-visualizar
+              Visualizar Catálogo Público
             </Button>
             
-            {isEditMode ? (
-              <Button onClick={handleSave} className="bg-accent hover:bg-accent/90">
-                <Save className="h-4 w-4 mr-2" />
-                Salvar Layout
-              </Button>
-            ) : (
-              <Button onClick={() => setIsEditMode(true)} className="bg-accent hover:bg-accent/90">
-                <Layout className="h-4 w-4 mr-2" />
-                Editar Layout
-              </Button>
-            )}
+            <Button 
+              onClick={handleSave} 
+              disabled={saving}
+              className="bg-accent hover:bg-accent/90"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {saving ? 'Salvando...' : 'Salvar Configurações'}
+            </Button>
           </div>
         </div>
 
-        {isEditMode && (
-          <Card className="mb-6 border-accent">
+        <div className="grid gap-6">
+          <Card>
             <CardHeader>
-              <CardTitle className="text-accent">Modo de Edição Ativo</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Palette className="h-5 w-5" />
+                Personalização Visual
+              </CardTitle>
               <CardDescription>
-                Funcionalidade de arrastar e soltar em desenvolvimento
+                Configure cores, imagens e elementos visuais do catálogo
               </CardDescription>
             </CardHeader>
-          </Card>
-        )}
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="theme-color">Cor do Tema</Label>
+                <div className="flex gap-2 items-center">
+                  <Input
+                    id="theme-color"
+                    type="color"
+                    value={settings.theme_color}
+                    onChange={(e) => setSettings({ ...settings, theme_color: e.target.value })}
+                    className="w-20 h-10"
+                  />
+                  <Input
+                    type="text"
+                    value={settings.theme_color}
+                    onChange={(e) => setSettings({ ...settings, theme_color: e.target.value })}
+                    placeholder="#8B4513"
+                    className="flex-1"
+                  />
+                </div>
+              </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Layout do Catálogo</CardTitle>
-            <CardDescription>
-              Editor visual com arrastar e soltar será implementado
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {loading ? (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {Array(6).fill(0).map((_, i) => (
-                  <Skeleton key={i} className="h-48" />
-                ))}
+              <div className="space-y-2">
+                <Label htmlFor="logo-url">URL do Logo</Label>
+                <Input
+                  id="logo-url"
+                  type="url"
+                  value={settings.logo_url || ''}
+                  onChange={(e) => setSettings({ ...settings, logo_url: e.target.value })}
+                  placeholder="https://exemplo.com/logo.png"
+                />
               </div>
-            ) : services.length === 0 ? (
-              <div className="text-center py-16">
-                <ScissorsIcon className="h-16 w-16 mx-auto mb-4 text-muted-foreground opacity-50" />
-                <p className="text-lg font-medium mb-2">Nenhum serviço cadastrado</p>
-                <p className="text-muted-foreground mb-6">
-                  Comece adicionando serviços para exibir no catálogo público
+
+              <div className="space-y-2">
+                <Label htmlFor="hero-image">URL da Imagem Hero</Label>
+                <Input
+                  id="hero-image"
+                  type="url"
+                  value={settings.hero_image_url || ''}
+                  onChange={(e) => setSettings({ ...settings, hero_image_url: e.target.value })}
+                  placeholder="https://exemplo.com/hero.jpg"
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <Label htmlFor="show-popular">Mostrar Badge "Popular"</Label>
+                  <p className="text-sm text-muted-foreground">
+                    Exibir badge nos serviços marcados como populares
+                  </p>
+                </div>
+                <Switch
+                  id="show-popular"
+                  checked={settings.show_popular_badge}
+                  onCheckedChange={(checked) => setSettings({ ...settings, show_popular_badge: checked })}
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Preview do Catálogo</CardTitle>
+              <CardDescription>
+                Visualização em tempo real das suas configurações
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="border-2 border-dashed rounded-lg p-8 text-center">
+                <p className="text-muted-foreground">
+                  Clique em "Visualizar Catálogo Público" para ver como ficará para seus clientes
                 </p>
-                <Button asChild className="bg-accent hover:bg-accent/90">
-                  <Link to="/services-management">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Adicionar Serviços
-                  </Link>
-                </Button>
               </div>
-            ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {services.map((service) => (
-                  <div
-                    key={service.id}
-                    className="p-6 rounded-lg border bg-card hover:shadow-lg transition-all"
-                  >
-                    {service.image_url && (
-                      <img
-                        src={service.image_url}
-                        alt={service.name}
-                        className="w-full h-32 object-cover rounded mb-3"
-                      />
-                    )}
-                    <div className="flex gap-2 mb-3">
-                      {service.is_popular && (
-                        <Badge variant="secondary">Popular</Badge>
-                      )}
-                      <Badge variant="outline">{service.name}</Badge>
-                    </div>
-                    <h3 className="font-semibold mb-2">{service.name}</h3>
-                    <p className="text-sm text-muted-foreground mb-3 line-clamp-2">
-                      {service.description || 'Sem descrição'}
-                    </p>
-                    <div className="flex justify-between items-center">
-                      <span className="text-lg font-bold text-accent">
-                        R$ {Number(service.price).toFixed(2)}
-                      </span>
-                      <span className="text-sm text-muted-foreground">
-                        {service.duration_minutes} min
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </main>
     </div>
   );
