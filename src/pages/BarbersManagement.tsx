@@ -64,7 +64,7 @@ const BarbersManagement = () => {
         .from('barbers')
         .select(`
           *,
-          profiles:user_id (full_name, phone)
+          profiles!inner(full_name, phone)
         `)
         .eq('barbershop_id', barberData.barbershop_id);
 
@@ -85,6 +85,17 @@ const BarbersManagement = () => {
       specialty: barber.specialty || '',
       photo_url: barber.photo_url || '',
       is_available: barber.is_available,
+    });
+    setDialogOpen(true);
+  };
+
+  const handleAdd = () => {
+    setEditingBarber(null);
+    setFormData({
+      bio: '',
+      specialty: '',
+      photo_url: '',
+      is_available: true,
     });
     setDialogOpen(true);
   };
@@ -146,6 +157,10 @@ const BarbersManagement = () => {
             <h1 className="text-4xl font-bold mb-2">Gestão de Barbeiros</h1>
             <p className="text-muted-foreground">Gerencie a equipe da sua barbearia</p>
           </div>
+          <Button onClick={() => setDialogOpen(true)} className="gap-2">
+            <Plus className="h-4 w-4" />
+            Adicionar Barbeiro
+          </Button>
         </div>
 
         {loading ? (
@@ -234,13 +249,15 @@ const BarbersManagement = () => {
           </div>
         )}
 
-        {/* Edit Dialog */}
+        {/* Add/Edit Dialog */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
-              <DialogTitle>Editar Barbeiro</DialogTitle>
+              <DialogTitle>{editingBarber ? 'Editar Barbeiro' : 'Adicionar Barbeiro'}</DialogTitle>
               <DialogDescription>
-                Atualize as informações do barbeiro
+                {editingBarber 
+                  ? 'Atualize as informações do barbeiro' 
+                  : 'Para adicionar um novo barbeiro, primeiro crie um usuário com a role "barber" no sistema. Depois você poderá editar suas informações aqui.'}
               </DialogDescription>
             </DialogHeader>
             
