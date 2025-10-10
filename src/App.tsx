@@ -35,6 +35,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             {/* Catálogo Público Mobile-First */}
             <Route path="/catalogo" element={<PublicCatalog />} />
+            <Route path="/:slug" element={<PublicCatalog />} />
             {/* Painel do Dono da Barbearia - Rotas Protegidas */}
             <Route path="/pdv" element={<ProtectedRoute><PDV /></ProtectedRoute>} />
             <Route path="/services-management" element={<ProtectedRoute><ServicesManagement /></ProtectedRoute>} />

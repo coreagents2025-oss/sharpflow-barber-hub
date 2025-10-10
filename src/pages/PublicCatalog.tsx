@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { ServiceCard } from '@/components/ServiceCard';
 import { BookingModal } from '@/components/BookingModal';
@@ -30,6 +31,7 @@ interface CatalogSettings {
 }
 
 const PublicCatalog = () => {
+  const { slug } = useParams();
   const [services, setServices] = useState<Service[]>([]);
   const [barbershop, setBarbershop] = useState<Barbershop | null>(null);
   const [catalogSettings, setCatalogSettings] = useState<CatalogSettings | null>(null);
@@ -40,49 +42,79 @@ const PublicCatalog = () => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [slug]);
 
   const fetchData = async () => {
     try {
-      // First get barbershop info
+      let query = supabase.from('barbershops').select('*');
+      
+      // Se tiver slug na URL, buscar por slug
+      // Caso contrário, buscar por domínio customizado (hostname) ou primeiro barbershop
+      if (slug) {
+        query = query.eq('slug', slug);
+      } else {
+        const hostname = window.location.hostname;
+        // Tentar por domínio customizado primeiro
+        const { data: byDomain } = await supabase
+          .from('barbershops')
+          .select('*')
+          .eq('custom_domain', hostname)
+          .maybeSingle();
+        
+        if (byDomain) {
+          setBarbershop(byDomain);
+          setBarbershopId(byDomain.id);
+          await fetchServicesAndSettings(byDomain.id);
+          setLoading(false);
+          return;
+        }
+        
+        // Fallback: usar primeiro barbershop
+        query = query.limit(1);
+      }
+
       const { data: barbershopData } = await supabase
         .from('barbershops')
         .select('*')
         .limit(1)
-        .single();
+        .maybeSingle();
 
       if (barbershopData) {
         setBarbershop(barbershopData);
         setBarbershopId(barbershopData.id);
+        await fetchServicesAndSettings(barbershopData.id);
 
-        // Fetch services for this barbershop
-        const { data: servicesData } = await supabase
-          .from('services')
-          .select('*')
-          .eq('barbershop_id', barbershopData.id)
-          .eq('is_active', true)
-          .order('is_popular', { ascending: false })
-          .order('name');
-
-        if (servicesData) {
-          setServices(servicesData);
-        }
-
-        // Fetch catalog settings
-        const { data: settingsData } = await supabase
-          .from('catalog_settings')
-          .select('*')
-          .eq('barbershop_id', barbershopData.id)
-          .maybeSingle();
-
-        if (settingsData) {
-          setCatalogSettings(settingsData);
-        }
       }
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchServicesAndSettings = async (barbershopId: string) => {
+    // Fetch services for this barbershop
+    const { data: servicesData } = await supabase
+      .from('services')
+      .select('*')
+      .eq('barbershop_id', barbershopId)
+      .eq('is_active', true)
+      .order('is_popular', { ascending: false })
+      .order('name');
+
+    if (servicesData) {
+      setServices(servicesData);
+    }
+
+    // Fetch catalog settings
+    const { data: settingsData } = await supabase
+      .from('catalog_settings')
+      .select('*')
+      .eq('barbershop_id', barbershopId)
+      .maybeSingle();
+
+    if (settingsData) {
+      setCatalogSettings(settingsData);
     }
   };
 

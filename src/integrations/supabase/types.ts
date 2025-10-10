@@ -132,34 +132,43 @@ export type Database = {
         Row: {
           address: string | null
           created_at: string
+          custom_domain: string | null
           email: string | null
+          email_settings: Json | null
           id: string
           logo_url: string | null
           name: string
           operating_hours: Json | null
           phone: string | null
+          slug: string
           updated_at: string
         }
         Insert: {
           address?: string | null
           created_at?: string
+          custom_domain?: string | null
           email?: string | null
+          email_settings?: Json | null
           id?: string
           logo_url?: string | null
           name: string
           operating_hours?: Json | null
           phone?: string | null
+          slug?: string
           updated_at?: string
         }
         Update: {
           address?: string | null
           created_at?: string
+          custom_domain?: string | null
           email?: string | null
+          email_settings?: Json | null
           id?: string
           logo_url?: string | null
           name?: string
           operating_hours?: Json | null
           phone?: string | null
+          slug?: string
           updated_at?: string
         }
         Relationships: []

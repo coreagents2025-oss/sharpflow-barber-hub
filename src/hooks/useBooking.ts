@@ -58,6 +58,36 @@ export const useBooking = (barbershopId: string | null) => {
 
       if (appointmentError) throw appointmentError;
 
+      // Buscar informações do serviço e barbeiro para o email
+      const { data: service } = await supabase
+        .from('services')
+        .select('name')
+        .eq('id', data.serviceId)
+        .single();
+
+      const { data: barber } = await supabase
+        .from('barbers')
+        .select('name')
+        .eq('id', data.barberId)
+        .single();
+
+      // Enviar email de confirmação (se configurado)
+      try {
+        await supabase.functions.invoke('send-booking-confirmation', {
+          body: {
+            barbershop_id: barbershopId,
+            client_email: data.clientPhone, // TODO: usar email real do cliente
+            client_name: data.clientName,
+            service_name: service?.name || 'Serviço',
+            barber_name: barber?.name || 'Barbeiro',
+            scheduled_at: scheduledAt.toISOString(),
+          },
+        });
+      } catch (emailError) {
+        console.log('Email notification failed (não configurado):', emailError);
+        // Não falhar o agendamento se o email não funcionar
+      }
+
       toast.success('Agendamento realizado com sucesso!');
       return true;
     } catch (error: any) {
