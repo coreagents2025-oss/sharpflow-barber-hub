@@ -23,6 +23,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<string | null>(null);
   const [barbershopId, setBarbershopId] = useState<string | null>(null);
+  const [roleLoading, setRoleLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -33,6 +34,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
+          setRoleLoading(true);
           // Fetch user role and barbershop
           setTimeout(async () => {
             const { data: roleData } = await supabase
@@ -53,10 +55,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               
               setBarbershopId(barberData?.barbershop_id ?? null);
             }
+            setRoleLoading(false);
           }, 0);
         } else {
           setUserRole(null);
           setBarbershopId(null);
+          setRoleLoading(false);
         }
       }
     );
@@ -65,9 +69,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      setLoading(false);
       
       if (session?.user) {
+        setRoleLoading(true);
         setTimeout(async () => {
           const { data: roleData } = await supabase
             .from('user_roles')
@@ -87,7 +91,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             
             setBarbershopId(barberData?.barbershop_id ?? null);
           }
+          setRoleLoading(false);
+          setLoading(false);
         }, 0);
+      } else {
+        setLoading(false);
       }
     });
 

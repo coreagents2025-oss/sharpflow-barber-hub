@@ -20,7 +20,8 @@ export const ProtectedRoute = ({ children, requiredRoles = ['admin', 'barber'] }
         return;
       }
 
-      if (requiredRoles.length > 0 && userRole && !requiredRoles.includes(userRole)) {
+      // Só verifica permissões se requiredRoles não estiver vazio E userRole já foi carregado
+      if (requiredRoles.length > 0 && userRole !== null && !requiredRoles.includes(userRole)) {
         toast.error('Você não tem permissão para acessar esta página');
         navigate('/', { replace: true });
         return;
@@ -39,7 +40,25 @@ export const ProtectedRoute = ({ children, requiredRoles = ['admin', 'barber'] }
     );
   }
 
-  if (!user || (requiredRoles.length > 0 && userRole && !requiredRoles.includes(userRole))) {
+  // Se não tem usuário, não renderiza nada (vai redirecionar)
+  if (!user) {
+    return null;
+  }
+
+  // Se há roles requeridos mas o role ainda não foi carregado (null), mostra loading
+  if (requiredRoles.length > 0 && userRole === null) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-pulse text-center">
+          <div className="h-8 w-8 border-4 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Verificando permissões...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Se há roles requeridos e o role foi carregado mas não está permitido
+  if (requiredRoles.length > 0 && userRole !== null && !requiredRoles.includes(userRole)) {
     return null;
   }
 
