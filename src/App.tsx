@@ -7,11 +7,12 @@ import { AuthProvider } from "./hooks/useAuth";
 import Index from "./pages/Index";
 import Services from "./pages/Services";
 import Booking from "./pages/Booking";
-import Dashboard from "./pages/Dashboard";
 import Auth from "./pages/Auth";
-import ServicesManagement from "./pages/ServicesManagement";
-import ScheduleManagement from "./pages/ScheduleManagement";
 import PDV from "./pages/PDV";
+import ServicesManagement from "./pages/ServicesManagement";
+import Catalog from "./pages/Catalog";
+import ScheduleManagement from "./pages/ScheduleManagement";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,10 +29,12 @@ const App = () => (
             <Route path="/services" element={<Services />} />
             <Route path="/booking" element={<Booking />} />
             <Route path="/auth" element={<Auth />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/services-management" element={<ServicesManagement />} />
-            <Route path="/schedule-management" element={<ScheduleManagement />} />
+            {/* Painel do Dono da Barbearia */}
             <Route path="/pdv" element={<PDV />} />
+            <Route path="/services-management" element={<ServicesManagement />} />
+            <Route path="/catalog" element={<Catalog />} />
+            <Route path="/schedule-management" element={<ScheduleManagement />} />
+            <Route path="/settings" element={<Settings />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

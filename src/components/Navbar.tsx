@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Calendar, LayoutDashboard, Scissors, Users, LogOut, Settings } from "lucide-react";
+import { Calendar, Monitor, Scissors, Users, LogOut, Settings, Layout, ClipboardList } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import {
   DropdownMenu,
@@ -61,23 +61,44 @@ export const Navbar = () => {
             </Link>
             {isAdmin && (
               <>
-                <Link to="/dashboard">
-                  <Button 
-                    variant={isActive("/dashboard") ? "default" : "ghost"} 
-                    size="sm"
-                    className="transition-all"
-                  >
-                    <LayoutDashboard className="h-4 w-4 mr-2" />
-                    Dashboard
-                  </Button>
-                </Link>
                 <Link to="/pdv">
                   <Button 
                     variant={isActive("/pdv") ? "default" : "ghost"} 
                     size="sm"
                     className="transition-all"
                   >
+                    <Monitor className="h-4 w-4 mr-2" />
                     PDV
+                  </Button>
+                </Link>
+                <Link to="/services-management">
+                  <Button 
+                    variant={isActive("/services-management") ? "default" : "ghost"} 
+                    size="sm"
+                    className="transition-all"
+                  >
+                    <ClipboardList className="h-4 w-4 mr-2" />
+                    Serviços
+                  </Button>
+                </Link>
+                <Link to="/catalog">
+                  <Button 
+                    variant={isActive("/catalog") ? "default" : "ghost"} 
+                    size="sm"
+                    className="transition-all"
+                  >
+                    <Layout className="h-4 w-4 mr-2" />
+                    Catálogo
+                  </Button>
+                </Link>
+                <Link to="/schedule-management">
+                  <Button 
+                    variant={isActive("/schedule-management") ? "default" : "ghost"} 
+                    size="sm"
+                    className="transition-all"
+                  >
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Agenda
                   </Button>
                 </Link>
               </>
@@ -94,23 +115,13 @@ export const Navbar = () => {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  {isAdmin && (
-                    <>
-                      <DropdownMenuItem asChild>
-                        <Link to="/services-management" className="cursor-pointer">
-                          <Settings className="h-4 w-4 mr-2" />
-                          Gerenciar Serviços
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <Link to="/schedule-management" className="cursor-pointer">
-                          <Calendar className="h-4 w-4 mr-2" />
-                          Gerenciar Agenda
-                        </Link>
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                    </>
-                  )}
+                  <DropdownMenuItem asChild>
+                    <Link to="/settings" className="cursor-pointer">
+                      <Settings className="h-4 w-4 mr-2" />
+                      Configurações
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => signOut()} className="text-destructive cursor-pointer">
                     <LogOut className="h-4 w-4 mr-2" />
                     Sair
