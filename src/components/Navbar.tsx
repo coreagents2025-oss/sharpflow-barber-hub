@@ -17,12 +17,17 @@ export const Navbar = () => {
   const isActive = (path: string) => location.pathname === path;
   
   const isAdmin = userRole === 'admin' || userRole === 'barber';
+  
+  // Detectar contexto: landing pages vs painel admin
+  const landingRoutes = ['/', '/services', '/booking', '/auth'];
+  const isLandingPage = landingRoutes.includes(location.pathname);
+  const isInAdminPanel = isAdmin && !isLandingPage;
 
   return (
     <nav className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-50">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16">
-          <Link to="/" className="flex items-center gap-2">
+          <Link to={isAdmin ? "/pdv" : "/"} className="flex items-center gap-2">
             <Scissors className="h-6 w-6 text-accent" />
             <span className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               BarberPro
@@ -30,36 +35,8 @@ export const Navbar = () => {
           </Link>
 
           <div className="hidden md:flex items-center gap-6">
-            <Link to="/">
-              <Button 
-                variant={isActive("/") ? "default" : "ghost"} 
-                size="sm"
-                className="transition-all"
-              >
-                Início
-              </Button>
-            </Link>
-            <Link to="/services">
-              <Button 
-                variant={isActive("/services") ? "default" : "ghost"} 
-                size="sm"
-                className="transition-all"
-              >
-                <Scissors className="h-4 w-4 mr-2" />
-                Serviços
-              </Button>
-            </Link>
-            <Link to="/booking">
-              <Button 
-                variant={isActive("/booking") ? "default" : "ghost"} 
-                size="sm"
-                className="transition-all"
-              >
-                <Calendar className="h-4 w-4 mr-2" />
-                Agendar
-              </Button>
-            </Link>
-            {isAdmin && (
+            {isInAdminPanel ? (
+              // NAVBAR DE PAINEL ADMIN
               <>
                 <Link to="/pdv">
                   <Button 
@@ -102,6 +79,39 @@ export const Navbar = () => {
                   </Button>
                 </Link>
               </>
+            ) : (
+              // NAVBAR DE LANDING (Marketing)
+              <>
+                <Link to="/">
+                  <Button 
+                    variant={isActive("/") ? "default" : "ghost"} 
+                    size="sm"
+                    className="transition-all"
+                  >
+                    Início
+                  </Button>
+                </Link>
+                <Link to="/services">
+                  <Button 
+                    variant={isActive("/services") ? "default" : "ghost"} 
+                    size="sm"
+                    className="transition-all"
+                  >
+                    <Scissors className="h-4 w-4 mr-2" />
+                    Serviços
+                  </Button>
+                </Link>
+                <Link to="/booking">
+                  <Button 
+                    variant={isActive("/booking") ? "default" : "ghost"} 
+                    size="sm"
+                    className="transition-all"
+                  >
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Agendar
+                  </Button>
+                </Link>
+              </>
             )}
           </div>
 
@@ -136,13 +146,16 @@ export const Navbar = () => {
               </Link>
             )}
             
-            <Link to="/booking">
-              <Button 
-                className="bg-gradient-to-r from-accent to-accent/80 hover:from-accent/90 hover:to-accent/70 transition-all"
-              >
-                Agendar Horário
-              </Button>
-            </Link>
+            {/* CTA "Agendar" - APENAS em landing pages */}
+            {!isInAdminPanel && (
+              <Link to="/booking">
+                <Button 
+                  className="bg-gradient-to-r from-accent to-accent/80 hover:from-accent/90 hover:to-accent/70 transition-all"
+                >
+                  Agendar Horário
+                </Button>
+              </Link>
+            )}
           </div>
         </div>
       </div>
