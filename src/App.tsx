@@ -14,6 +14,7 @@ import ServicesManagement from "./pages/ServicesManagement";
 import Catalog from "./pages/Catalog";
 import ScheduleManagement from "./pages/ScheduleManagement";
 import Settings from "./pages/Settings";
+import BarbersManagement from "./pages/BarbersManagement";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +34,7 @@ const App = () => (
             {/* Painel do Dono da Barbearia - Rotas Protegidas */}
             <Route path="/pdv" element={<ProtectedRoute><PDV /></ProtectedRoute>} />
             <Route path="/services-management" element={<ProtectedRoute><ServicesManagement /></ProtectedRoute>} />
+            <Route path="/barbers-management" element={<ProtectedRoute><BarbersManagement /></ProtectedRoute>} />
             <Route path="/catalog" element={<ProtectedRoute><Catalog /></ProtectedRoute>} />
             <Route path="/schedule-management" element={<ProtectedRoute><ScheduleManagement /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute requiredRoles={[]}><Settings /></ProtectedRoute>} />

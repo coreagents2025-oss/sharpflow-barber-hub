@@ -247,6 +247,50 @@ export type Database = {
           },
         ]
       }
+      daily_schedules: {
+        Row: {
+          barbers_working: string[]
+          barbershop_id: string
+          blocked_slots: string[]
+          created_at: string | null
+          date: string
+          id: string
+          updated_at: string | null
+          working_hours_end: string
+          working_hours_start: string
+        }
+        Insert: {
+          barbers_working?: string[]
+          barbershop_id: string
+          blocked_slots?: string[]
+          created_at?: string | null
+          date: string
+          id?: string
+          updated_at?: string | null
+          working_hours_end: string
+          working_hours_start: string
+        }
+        Update: {
+          barbers_working?: string[]
+          barbershop_id?: string
+          blocked_slots?: string[]
+          created_at?: string | null
+          date?: string
+          id?: string
+          updated_at?: string | null
+          working_hours_end?: string
+          working_hours_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_schedules_barbershop_id_fkey"
+            columns: ["barbershop_id"]
+            isOneToOne: false
+            referencedRelation: "barbershops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integrations: {
         Row: {
           barbershop_id: string

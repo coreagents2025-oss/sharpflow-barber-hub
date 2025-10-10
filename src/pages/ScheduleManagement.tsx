@@ -8,6 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { Calendar as CalendarIcon, Clock, Users, Plus, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -29,6 +30,7 @@ const timeSlots = [
 ];
 
 const ScheduleManagement = () => {
+  const { user } = useAuth();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [workingBarbers, setWorkingBarbers] = useState<string[]>([]);
@@ -37,22 +39,88 @@ const ScheduleManagement = () => {
     start: '09:00',
     end: '20:00',
   });
+  const [barbershopId, setBarbershopId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetchBarbers();
-  }, []);
+    fetchBarbershopId();
+  }, [user]);
+
+  useEffect(() => {
+    if (barbershopId) {
+      fetchBarbers();
+    }
+  }, [barbershopId]);
+
+  useEffect(() => {
+    if (barbershopId) {
+      loadScheduleForDate(selectedDate);
+    }
+  }, [selectedDate, barbershopId]);
+
+  const fetchBarbershopId = async () => {
+    try {
+      const { data } = await supabase
+        .from('barbers')
+        .select('barbershop_id')
+        .eq('user_id', user?.id)
+        .single();
+      
+      setBarbershopId(data?.barbershop_id || null);
+    } catch (error) {
+      console.error('Error fetching barbershop_id:', error);
+    }
+  };
 
   const fetchBarbers = async () => {
+    if (!barbershopId) return;
+    
     try {
       const { data, error } = await supabase
         .from('barbers')
-        .select('*');
+        .select(`
+          *,
+          profiles:user_id (full_name)
+        `)
+        .eq('barbershop_id', barbershopId);
 
       if (error) throw error;
       setBarbers(data as any || []);
-      setWorkingBarbers(data?.filter(b => b.is_available).map(b => b.id) || []);
     } catch (error: any) {
       toast.error('Erro ao carregar barbeiros');
+    }
+  };
+
+  const loadScheduleForDate = async (date: Date) => {
+    if (!barbershopId) return;
+    
+    const dateStr = date.toISOString().split('T')[0];
+    
+    try {
+      const { data, error } = await supabase
+        .from('daily_schedules')
+        .select('*')
+        .eq('barbershop_id', barbershopId)
+        .eq('date', dateStr)
+        .maybeSingle();
+      
+      if (error && error.code !== 'PGRST116') throw error;
+      
+      if (data) {
+        setWorkingHours({
+          start: data.working_hours_start,
+          end: data.working_hours_end,
+        });
+        setWorkingBarbers(data.barbers_working || []);
+        setBlockedSlots(data.blocked_slots || []);
+      } else {
+        // Reset para padrões
+        setWorkingHours({ start: '09:00', end: '20:00' });
+        setWorkingBarbers(barbers.filter(b => b.is_available).map(b => b.id));
+        setBlockedSlots([]);
+      }
+    } catch (error: any) {
+      console.error('Error loading schedule:', error);
     }
   };
 
@@ -74,8 +142,38 @@ const ScheduleManagement = () => {
     }
   };
 
-  const saveSchedule = () => {
-    toast.success('Configurações de agenda salvas!');
+  const saveSchedule = async () => {
+    if (!barbershopId) {
+      toast.error('Erro: Barbearia não encontrada');
+      return;
+    }
+    
+    setSaving(true);
+    const dateStr = selectedDate.toISOString().split('T')[0];
+    
+    try {
+      const { error } = await supabase
+        .from('daily_schedules')
+        .upsert({
+          barbershop_id: barbershopId,
+          date: dateStr,
+          working_hours_start: workingHours.start,
+          working_hours_end: workingHours.end,
+          barbers_working: workingBarbers,
+          blocked_slots: blockedSlots,
+        }, {
+          onConflict: 'barbershop_id,date'
+        });
+      
+      if (error) throw error;
+      
+      toast.success('Configurações salvas com sucesso!');
+    } catch (error: any) {
+      console.error('Error saving schedule:', error);
+      toast.error('Erro ao salvar configurações');
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -225,8 +323,12 @@ const ScheduleManagement = () => {
         </div>
 
         <div className="mt-6 flex justify-end">
-          <Button onClick={saveSchedule} className="bg-accent hover:bg-accent/90">
-            Salvar Configurações
+          <Button 
+            onClick={saveSchedule} 
+            className="bg-accent hover:bg-accent/90"
+            disabled={saving}
+          >
+            {saving ? 'Salvando...' : 'Salvar Configurações'}
           </Button>
         </div>
       </main>

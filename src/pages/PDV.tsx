@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Clock, User, Scissors, CheckCircle2, AlertCircle, QrCode, Bell } from 'lucide-react';
+import { Clock, User, Scissors, CheckCircle2, AlertCircle, QrCode, Bell, TrendingUp, Users as UsersIcon, Calendar as CalendarIcon, Percent } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Appointment {
   id: string;
@@ -36,39 +37,71 @@ interface BarberStatus {
 }
 
 const PDV = () => {
+  const { user } = useAuth();
   const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([]);
   const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([]);
-  const [barberStatuses, setBarberStatuses] = useState<BarberStatus[]>([
-    { id: '1', name: 'João Silva', status: 'occupied', currentClient: 'Pedro Souza', nextAppointment: '14:30' },
-    { id: '2', name: 'Carlos Oliveira', status: 'free' },
-    { id: '3', name: 'Rafael Costa', status: 'break' },
-  ]);
+  const [barberStatuses, setBarberStatuses] = useState<BarberStatus[]>([]);
+  const [stats, setStats] = useState({
+    todayAppointments: 0,
+    monthlyRevenue: 0,
+    activeClients: 0,
+    occupancyRate: 0,
+  });
+  const [popularServices, setPopularServices] = useState<Array<{ name: string; count: number }>>([]);
+  const [barbershopId, setBarbershopId] = useState<string | null>(null);
 
   useEffect(() => {
-    fetchTodayAppointments();
-    
-    // Real-time updates
-    const channel = supabase
-      .channel('pdv-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'appointments'
-        },
-        () => {
-          fetchTodayAppointments();
-        }
-      )
-      .subscribe();
+    fetchBarbershopId();
+  }, [user]);
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
+  useEffect(() => {
+    if (barbershopId) {
+      fetchTodayAppointments();
+      fetchStats();
+      fetchBarberStatuses();
+      fetchPopularServices();
+      
+      // Real-time updates
+      const channel = supabase
+        .channel('pdv-updates')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'appointments'
+          },
+          () => {
+            fetchTodayAppointments();
+            fetchStats();
+            fetchBarberStatuses();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [barbershopId]);
+
+  const fetchBarbershopId = async () => {
+    try {
+      const { data } = await supabase
+        .from('barbers')
+        .select('barbershop_id')
+        .eq('user_id', user?.id)
+        .single();
+      
+      setBarbershopId(data?.barbershop_id || null);
+    } catch (error) {
+      console.error('Error fetching barbershop_id:', error);
+    }
+  };
 
   const fetchTodayAppointments = async () => {
+    if (!barbershopId) return;
+    
     try {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
@@ -77,7 +110,16 @@ const PDV = () => {
 
       const { data, error } = await supabase
         .from('appointments')
-        .select('*')
+        .select(`
+          *,
+          profiles:client_id (full_name, phone),
+          services (name, duration_minutes),
+          barbers (
+            id,
+            profiles:user_id (full_name)
+          )
+        `)
+        .eq('barbershop_id', barbershopId)
         .gte('scheduled_at', today.toISOString())
         .lt('scheduled_at', tomorrow.toISOString())
         .order('scheduled_at', { ascending: true });
@@ -91,6 +133,160 @@ const PDV = () => {
       setUpcomingAppointments(upcoming.slice(0, 5) as any);
     } catch (error: any) {
       console.error('Error fetching appointments:', error);
+    }
+  };
+
+  const fetchStats = async () => {
+    if (!barbershopId) return;
+    
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      
+      // Agendamentos de hoje
+      const { count: todayCount } = await supabase
+        .from('appointments')
+        .select('*', { count: 'exact', head: true })
+        .eq('barbershop_id', barbershopId)
+        .gte('scheduled_at', today.toISOString())
+        .lt('scheduled_at', tomorrow.toISOString());
+      
+      // Faturamento do mês
+      const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+      const { data: payments } = await supabase
+        .from('payments')
+        .select('amount')
+        .eq('barbershop_id', barbershopId)
+        .gte('created_at', firstDay.toISOString())
+        .eq('status', 'completed');
+      
+      const revenue = payments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
+      
+      // Clientes ativos (distintos no mês)
+      const { data: appointments } = await supabase
+        .from('appointments')
+        .select('client_id')
+        .eq('barbershop_id', barbershopId)
+        .gte('scheduled_at', firstDay.toISOString());
+      
+      const uniqueClients = new Set(appointments?.map(a => a.client_id)).size;
+      
+      setStats({
+        todayAppointments: todayCount || 0,
+        monthlyRevenue: revenue,
+        activeClients: uniqueClients,
+        occupancyRate: 0, // Pode ser calculado posteriormente
+      });
+    } catch (error: any) {
+      console.error('Error fetching stats:', error);
+    }
+  };
+
+  const fetchBarberStatuses = async () => {
+    if (!barbershopId) return;
+    
+    try {
+      const now = new Date();
+      const { data: barbers } = await supabase
+        .from('barbers')
+        .select(`
+          id,
+          is_available,
+          user_id
+        `)
+        .eq('barbershop_id', barbershopId);
+      
+      if (!barbers) return;
+      
+      // Para cada barbeiro, buscar profile e agendamentos
+      const statuses = await Promise.all(
+        barbers.map(async (barber: any) => {
+          // Buscar profile do barbeiro
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('full_name')
+            .eq('id', barber.user_id)
+            .single();
+          
+          // Buscar appointment em andamento
+          const { data: current } = await supabase
+            .from('appointments')
+            .select('id, client_id')
+            .eq('barber_id', barber.id)
+            .eq('status', 'in_progress')
+            .maybeSingle();
+          
+          let currentClientName: string | undefined;
+          if (current) {
+            const { data: clientProfile } = await supabase
+              .from('profiles')
+              .select('full_name')
+              .eq('id', current.client_id)
+              .single();
+            currentClientName = clientProfile?.full_name;
+          }
+          
+          // Buscar próximo agendamento
+          const { data: next } = await supabase
+            .from('appointments')
+            .select('scheduled_at')
+            .eq('barber_id', barber.id)
+            .eq('status', 'scheduled')
+            .gte('scheduled_at', now.toISOString())
+            .order('scheduled_at', { ascending: true })
+            .limit(1)
+            .maybeSingle();
+          
+          return {
+            id: barber.id,
+            name: profile?.full_name || 'Sem nome',
+            status: current ? 'occupied' : (barber.is_available ? 'free' : 'break'),
+            currentClient: currentClientName,
+            nextAppointment: next ? new Date(next.scheduled_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : undefined,
+          } as BarberStatus;
+        })
+      );
+      
+      setBarberStatuses(statuses);
+    } catch (error: any) {
+      console.error('Error fetching barber statuses:', error);
+    }
+  };
+
+  const fetchPopularServices = async () => {
+    if (!barbershopId) return;
+    
+    try {
+      const firstDay = new Date();
+      firstDay.setDate(1);
+      
+      const { data } = await supabase
+        .from('appointments')
+        .select(`
+          service_id,
+          services (name)
+        `)
+        .eq('barbershop_id', barbershopId)
+        .gte('scheduled_at', firstDay.toISOString());
+      
+      // Contar por serviço
+      const counts = data?.reduce((acc: Record<string, number>, apt: any) => {
+        const name = apt.services?.name || 'Desconhecido';
+        acc[name] = (acc[name] || 0) + 1;
+        return acc;
+      }, {});
+      
+      // Top 5
+      const sorted = Object.entries(counts || {})
+        .sort(([, a], [, b]) => (b as number) - (a as number))
+        .slice(0, 5)
+        .map(([name, count]) => ({ name, count: count as number }));
+      
+      setPopularServices(sorted);
+    } catch (error: any) {
+      console.error('Error fetching popular services:', error);
     }
   };
 
@@ -141,6 +337,51 @@ const PDV = () => {
           </Button>
         </div>
 
+        {/* Statistics Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription className="flex items-center gap-2">
+                <CalendarIcon className="h-4 w-4" />
+                Agendamentos Hoje
+              </CardDescription>
+              <CardTitle className="text-3xl">{stats.todayAppointments}</CardTitle>
+            </CardHeader>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4" />
+                Faturamento Mensal
+              </CardDescription>
+              <CardTitle className="text-3xl">
+                R$ {stats.monthlyRevenue.toFixed(2)}
+              </CardTitle>
+            </CardHeader>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription className="flex items-center gap-2">
+                <UsersIcon className="h-4 w-4" />
+                Clientes Ativos
+              </CardDescription>
+              <CardTitle className="text-3xl">{stats.activeClients}</CardTitle>
+            </CardHeader>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardDescription className="flex items-center gap-2">
+                <Percent className="h-4 w-4" />
+                Taxa de Ocupação
+              </CardDescription>
+              <CardTitle className="text-3xl">{stats.occupancyRate}%</CardTitle>
+            </CardHeader>
+          </Card>
+        </div>
+
         <div className="grid lg:grid-cols-3 gap-6">
           {/* Barber Status */}
           <Card className="lg:col-span-1">
@@ -151,7 +392,13 @@ const PDV = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {barberStatuses.map((barber) => (
+              {barberStatuses.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <AlertCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>Nenhum barbeiro cadastrado</p>
+                </div>
+              ) : (
+                barberStatuses.map((barber) => (
                 <div
                   key={barber.id}
                   className="p-4 rounded-lg border bg-card"
@@ -182,7 +429,8 @@ const PDV = () => {
                     </div>
                   )}
                 </div>
-              ))}
+              ))
+              )}
             </CardContent>
           </Card>
 
@@ -240,6 +488,44 @@ const PDV = () => {
                   ))
                 )}
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Popular Services */}
+          <Card className="lg:col-span-1">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Scissors className="h-5 w-5 text-accent" />
+                Serviços Populares
+              </CardTitle>
+              <CardDescription>
+                Mais solicitados neste mês
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {popularServices.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <AlertCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>Nenhum serviço registrado</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {popularServices.map((service, index) => (
+                    <div
+                      key={service.name}
+                      className="flex items-center justify-between p-3 rounded-lg border bg-card"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-full bg-accent/10 flex items-center justify-center text-sm font-bold text-accent">
+                          {index + 1}
+                        </div>
+                        <span className="font-medium">{service.name}</span>
+                      </div>
+                      <Badge variant="secondary">{service.count}</Badge>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

@@ -58,6 +58,16 @@ export const Navbar = () => {
                     Serviços
                   </Button>
                 </Link>
+                <Link to="/barbers-management">
+                  <Button 
+                    variant={isActive("/barbers-management") ? "default" : "ghost"} 
+                    size="sm"
+                    className="transition-all"
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    Barbeiros
+                  </Button>
+                </Link>
                 <Link to="/catalog">
                   <Button 
                     variant={isActive("/catalog") ? "default" : "ghost"} 
