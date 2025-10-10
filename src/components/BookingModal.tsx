@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { useBooking } from '@/hooks/useBooking';
-import { format, addDays, setHours, setMinutes } from 'date-fns';
+import { format, addDays, setHours, setMinutes, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { User } from 'lucide-react';
 
@@ -223,7 +223,7 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId }: Booking
                 mode="single"
                 selected={selectedDate}
                 onSelect={setSelectedDate}
-                disabled={(date) => date < new Date()}
+                disabled={(date) => startOfDay(date) < startOfDay(new Date())}
                 locale={ptBR}
                 className="rounded-md border w-full pointer-events-auto"
               />
