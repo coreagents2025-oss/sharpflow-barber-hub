@@ -10,6 +10,7 @@ interface BookingData {
   time: string;
   clientName: string;
   clientPhone: string;
+  clientEmail: string;
 }
 
 export const useBooking = (barbershopId: string | null) => {
@@ -32,15 +33,54 @@ export const useBooking = (barbershopId: string | null) => {
       const { data: existingClient } = await supabase
         .from('profiles')
         .select('id')
-        .eq('phone', data.clientPhone)
+        .or(`phone.eq.${data.clientPhone},id.eq.${data.clientEmail}`)
         .maybeSingle();
 
       let clientId = existingClient?.id;
 
       if (!clientId) {
-        // For now, we'll use a placeholder client_id
-        // In a real app, you'd create a proper anonymous user or require login
-        toast.error('Sistema de clientes em desenvolvimento. Por favor, faça login.');
+        // Criar usuário anônimo temporário para agendamento público
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: data.clientEmail,
+          password: Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12),
+          options: {
+            data: {
+              full_name: data.clientName,
+            },
+            emailRedirectTo: `${window.location.origin}/`
+          }
+        });
+
+        if (authError) {
+          console.error('Error creating anonymous user:', authError);
+          toast.error('Erro ao criar perfil. Tente novamente.');
+          return false;
+        }
+
+        clientId = authData.user?.id;
+        
+        if (!clientId) {
+          toast.error('Erro ao criar perfil. Tente novamente.');
+          return false;
+        }
+
+        // Atualizar telefone no perfil
+        await supabase
+          .from('profiles')
+          .update({ phone: data.clientPhone })
+          .eq('id', clientId);
+      }
+
+      // Verificar se horário está disponível
+      const { data: existingAppointments } = await supabase
+        .from('appointments')
+        .select('id')
+        .eq('barber_id', data.barberId)
+        .eq('scheduled_at', scheduledAt.toISOString())
+        .neq('status', 'cancelled');
+
+      if (existingAppointments && existingAppointments.length > 0) {
+        toast.error('Este horário já está ocupado. Escolha outro horário.');
         return false;
       }
 
@@ -76,7 +116,7 @@ export const useBooking = (barbershopId: string | null) => {
         await supabase.functions.invoke('send-booking-confirmation', {
           body: {
             barbershop_id: barbershopId,
-            client_email: data.clientPhone, // TODO: usar email real do cliente
+            client_email: data.clientEmail,
             client_name: data.clientName,
             service_name: service?.name || 'Serviço',
             barber_name: barber?.name || 'Barbeiro',

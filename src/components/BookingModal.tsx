@@ -34,11 +34,13 @@ interface BookingModalProps {
 
 export const BookingModal = ({ isOpen, onClose, service, barbershopId }: BookingModalProps) => {
   const [barbers, setBarbers] = useState<Barber[]>([]);
+  const [loadingBarbers, setLoadingBarbers] = useState(false);
   const [selectedBarber, setSelectedBarber] = useState<string>('');
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedTime, setSelectedTime] = useState<string>('');
   const [clientName, setClientName] = useState('');
   const [clientPhone, setClientPhone] = useState('');
+  const [clientEmail, setClientEmail] = useState('');
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
   
   const { createBooking, isSubmitting } = useBooking(barbershopId);
@@ -58,15 +60,20 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId }: Booking
   const fetchBarbers = async () => {
     if (!barbershopId) return;
 
-    const { data, error } = await supabase
-      .from('barbers')
-      .select('*')
-      .eq('barbershop_id', barbershopId)
-      .eq('is_available', true)
-      .order('name');
+    setLoadingBarbers(true);
+    try {
+      const { data, error } = await supabase
+        .from('barbers')
+        .select('*')
+        .eq('barbershop_id', barbershopId)
+        .eq('is_available', true)
+        .order('name');
 
-    if (!error && data) {
-      setBarbers(data);
+      if (!error && data) {
+        setBarbers(data);
+      }
+    } finally {
+      setLoadingBarbers(false);
     }
   };
 
@@ -84,7 +91,7 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId }: Booking
   };
 
   const handleSubmit = async () => {
-    if (!service || !selectedBarber || !selectedDate || !selectedTime || !clientName || !clientPhone) {
+    if (!service || !selectedBarber || !selectedDate || !selectedTime || !clientName || !clientPhone || !clientEmail) {
       return;
     }
 
@@ -95,6 +102,7 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId }: Booking
       time: selectedTime,
       clientName,
       clientPhone,
+      clientEmail,
     });
 
     if (success) {
@@ -109,9 +117,10 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId }: Booking
     setSelectedTime('');
     setClientName('');
     setClientPhone('');
+    setClientEmail('');
   };
 
-  const isFormValid = selectedBarber && selectedDate && selectedTime && clientName && clientPhone;
+  const isFormValid = selectedBarber && selectedDate && selectedTime && clientName && clientPhone && clientEmail;
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
@@ -152,37 +161,59 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId }: Booking
                   className="mt-1"
                 />
               </div>
+              
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={clientEmail}
+                  onChange={(e) => setClientEmail(e.target.value)}
+                  placeholder="seu@email.com"
+                  className="mt-1"
+                />
+              </div>
             </div>
 
             {/* Barber Selection */}
             <div className="space-y-3">
               <Label>Escolha o Barbeiro</Label>
-              <div className="grid grid-cols-1 gap-3">
-                {barbers.map((barber) => (
-                  <button
-                    key={barber.id}
-                    onClick={() => setSelectedBarber(barber.id)}
-                    className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${
-                      selectedBarber === barber.id
-                        ? 'border-accent bg-accent/10'
-                        : 'border-border hover:border-accent/50'
-                    }`}
-                  >
-                    <Avatar>
-                      <AvatarImage src={barber.photo_url || undefined} />
-                      <AvatarFallback>
-                        <User className="h-5 w-5" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="text-left flex-1">
-                      <p className="font-medium">{barber.name}</p>
-                      {barber.specialty && (
-                        <p className="text-sm text-muted-foreground">{barber.specialty}</p>
-                      )}
-                    </div>
-                  </button>
-                ))}
-              </div>
+              {loadingBarbers ? (
+                <div className="text-center py-6 text-muted-foreground">
+                  Carregando barbeiros...
+                </div>
+              ) : barbers.length === 0 ? (
+                <div className="text-center py-6 text-muted-foreground">
+                  Nenhum barbeiro disponível
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-3">
+                  {barbers.map((barber) => (
+                    <button
+                      key={barber.id}
+                      onClick={() => setSelectedBarber(barber.id)}
+                      className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${
+                        selectedBarber === barber.id
+                          ? 'border-accent bg-accent/10'
+                          : 'border-border hover:border-accent/50'
+                      }`}
+                    >
+                      <Avatar>
+                        <AvatarImage src={barber.photo_url || undefined} />
+                        <AvatarFallback>
+                          <User className="h-5 w-5" />
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="text-left flex-1">
+                        <p className="font-medium">{barber.name}</p>
+                        {barber.specialty && (
+                          <p className="text-sm text-muted-foreground">{barber.specialty}</p>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Date Selection */}

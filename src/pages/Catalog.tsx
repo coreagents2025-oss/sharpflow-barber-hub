@@ -117,10 +117,10 @@ const Catalog = () => {
           <div className="flex gap-2">
             <Button
               variant="outline"
-              onClick={() => window.open('/catalogo', '_blank')}
+              onClick={() => window.open('/minha-barbearia', '_blank')}
             >
               <Eye className="h-4 w-4 mr-2" />
-              Visualizar Catálogo Público
+              Visualizar Catálogo
             </Button>
             
             <Button 
@@ -135,6 +135,42 @@ const Catalog = () => {
         </div>
 
         <div className="grid gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Como Acessar Seu Catálogo</CardTitle>
+              <CardDescription>
+                Compartilhe seu catálogo público com os clientes
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="font-medium mb-2">✅ Link Direto (Pronto para usar):</p>
+                <code className="block bg-muted px-3 py-2 rounded text-sm">
+                  {window.location.origin}/minha-barbearia
+                </code>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-2"
+                  onClick={() => {
+                    navigator.clipboard.writeText(`${window.location.origin}/minha-barbearia`);
+                    toast.success('Link copiado para área de transferência!');
+                  }}
+                >
+                  Copiar Link
+                </Button>
+              </div>
+              
+              <div>
+                <p className="font-medium mb-2">🌐 Domínio Personalizado:</p>
+                <p className="text-sm text-muted-foreground">
+                  Configure seu próprio domínio em Configurações → Domínio & Emails. 
+                  Após configurar o DNS, seu catálogo estará acessível em seu domínio personalizado.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -214,7 +250,7 @@ const Catalog = () => {
             <CardContent>
               <div className="border-2 border-dashed rounded-lg p-8 text-center">
                 <p className="text-muted-foreground">
-                  Clique em "Visualizar Catálogo Público" para ver como ficará para seus clientes
+                  Clique em "Visualizar Catálogo" para ver como ficará para seus clientes
                 </p>
               </div>
             </CardContent>
