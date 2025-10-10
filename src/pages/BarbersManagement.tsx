@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
@@ -30,10 +31,12 @@ interface Barber {
 
 const BarbersManagement = () => {
   const [barbers, setBarbers] = useState<Barber[]>([]);
+  const [availableUsers, setAvailableUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingBarber, setEditingBarber] = useState<Barber | null>(null);
   const [formData, setFormData] = useState({
+    user_id: '',
     bio: '',
     specialty: '',
     photo_url: '',
@@ -43,6 +46,7 @@ const BarbersManagement = () => {
 
   useEffect(() => {
     fetchBarbers();
+    fetchAvailableUsers();
   }, []);
 
   const fetchBarbers = async () => {
@@ -60,16 +64,28 @@ const BarbersManagement = () => {
         return;
       }
 
-      const { data, error } = await supabase
+      // Buscar barbeiros
+      const { data: barbersData, error } = await supabase
         .from('barbers')
-        .select(`
-          *,
-          profiles!inner(full_name, phone)
-        `)
+        .select('*')
         .eq('barbershop_id', barberData.barbershop_id);
 
       if (error) throw error;
-      setBarbers(data as any || []);
+
+      // Buscar profiles dos barbeiros
+      const userIds = barbersData?.map(b => b.user_id) || [];
+      const { data: profilesData } = await supabase
+        .from('profiles')
+        .select('id, full_name, phone')
+        .in('id', userIds);
+
+      // Combinar dados
+      const data = barbersData?.map(barber => ({
+        ...barber,
+        profiles: profilesData?.find(p => p.id === barber.user_id) || { full_name: 'Sem nome', phone: null }
+      }));
+
+      setBarbers(data || []);
     } catch (error: any) {
       console.error('Error fetching barbers:', error);
       toast.error('Erro ao carregar barbeiros');
@@ -78,9 +94,31 @@ const BarbersManagement = () => {
     }
   };
 
+  const fetchAvailableUsers = async () => {
+    try {
+      // Buscar todos os perfis
+      const { data: allProfiles } = await supabase
+        .from('profiles')
+        .select('id, full_name');
+
+      // Buscar barbeiros existentes
+      const { data: existingBarbers } = await supabase
+        .from('barbers')
+        .select('user_id');
+
+      const existingUserIds = existingBarbers?.map(b => b.user_id) || [];
+      const available = allProfiles?.filter(p => !existingUserIds.includes(p.id)) || [];
+      
+      setAvailableUsers(available);
+    } catch (error: any) {
+      console.error('Error fetching users:', error);
+    }
+  };
+
   const handleEdit = (barber: Barber) => {
     setEditingBarber(barber);
     setFormData({
+      user_id: barber.user_id,
       bio: barber.bio || '',
       specialty: barber.specialty || '',
       photo_url: barber.photo_url || '',
@@ -92,6 +130,7 @@ const BarbersManagement = () => {
   const handleAdd = () => {
     setEditingBarber(null);
     setFormData({
+      user_id: '',
       bio: '',
       specialty: '',
       photo_url: '',
@@ -101,28 +140,62 @@ const BarbersManagement = () => {
   };
 
   const handleSave = async () => {
-    if (!editingBarber) return;
-
     try {
-      const { error } = await supabase
+      // Buscar barbershop_id do usuário logado
+      const { data: barberData } = await supabase
         .from('barbers')
-        .update({
-          bio: formData.bio || null,
-          specialty: formData.specialty || null,
-          photo_url: formData.photo_url || null,
-          is_available: formData.is_available,
-        })
-        .eq('id', editingBarber.id);
+        .select('barbershop_id')
+        .eq('user_id', user?.id)
+        .single();
 
-      if (error) throw error;
+      if (!barberData?.barbershop_id) {
+        toast.error('Erro: Barbearia não encontrada');
+        return;
+      }
 
-      toast.success('Barbeiro atualizado com sucesso!');
+      if (editingBarber) {
+        // Atualizar barbeiro existente
+        const { error } = await supabase
+          .from('barbers')
+          .update({
+            bio: formData.bio || null,
+            specialty: formData.specialty || null,
+            photo_url: formData.photo_url || null,
+            is_available: formData.is_available,
+          })
+          .eq('id', editingBarber.id);
+
+        if (error) throw error;
+        toast.success('Barbeiro atualizado com sucesso!');
+      } else {
+        // Criar novo barbeiro
+        if (!formData.user_id) {
+          toast.error('Selecione um usuário');
+          return;
+        }
+
+        const { error } = await supabase
+          .from('barbers')
+          .insert({
+            user_id: formData.user_id,
+            barbershop_id: barberData.barbershop_id,
+            bio: formData.bio || null,
+            specialty: formData.specialty || null,
+            photo_url: formData.photo_url || null,
+            is_available: formData.is_available,
+          });
+
+        if (error) throw error;
+        toast.success('Barbeiro adicionado com sucesso!');
+      }
+
       setDialogOpen(false);
       setEditingBarber(null);
       fetchBarbers();
+      fetchAvailableUsers();
     } catch (error: any) {
-      console.error('Error updating barber:', error);
-      toast.error('Erro ao atualizar barbeiro');
+      console.error('Error saving barber:', error);
+      toast.error(editingBarber ? 'Erro ao atualizar barbeiro' : 'Erro ao adicionar barbeiro');
     }
   };
 
@@ -257,11 +330,37 @@ const BarbersManagement = () => {
               <DialogDescription>
                 {editingBarber 
                   ? 'Atualize as informações do barbeiro' 
-                  : 'Para adicionar um novo barbeiro, primeiro crie um usuário com a role "barber" no sistema. Depois você poderá editar suas informações aqui.'}
+                  : 'Selecione um usuário cadastrado para adicionar como barbeiro'}
               </DialogDescription>
             </DialogHeader>
             
             <div className="space-y-4 py-4">
+              {!editingBarber && (
+                <div className="space-y-2">
+                  <Label htmlFor="user_id">Usuário *</Label>
+                  <Select
+                    value={formData.user_id}
+                    onValueChange={(value) => setFormData({ ...formData, user_id: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione um usuário" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableUsers.map((user) => (
+                        <SelectItem key={user.id} value={user.id}>
+                          {user.full_name || 'Sem nome'}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {availableUsers.length === 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      Todos os usuários já são barbeiros
+                    </p>
+                  )}
+                </div>
+              )}
+              
               <div className="space-y-2">
                 <Label htmlFor="specialty">Especialidade</Label>
                 <Input
