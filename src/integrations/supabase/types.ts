@@ -82,11 +82,13 @@ export type Database = {
           created_at: string
           id: string
           is_available: boolean | null
+          name: string | null
+          phone: string | null
           photo_url: string | null
           rating: number | null
           specialty: string | null
           updated_at: string
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           barbershop_id: string
@@ -94,11 +96,13 @@ export type Database = {
           created_at?: string
           id?: string
           is_available?: boolean | null
+          name?: string | null
+          phone?: string | null
           photo_url?: string | null
           rating?: number | null
           specialty?: string | null
           updated_at?: string
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           barbershop_id?: string
@@ -106,11 +110,13 @@ export type Database = {
           created_at?: string
           id?: string
           is_available?: boolean | null
+          name?: string | null
+          phone?: string | null
           photo_url?: string | null
           rating?: number | null
           specialty?: string | null
           updated_at?: string
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {

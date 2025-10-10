@@ -7,7 +7,6 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,26 +16,24 @@ import { useAuth } from '@/hooks/useAuth';
 
 interface Barber {
   id: string;
-  user_id: string;
+  user_id: string | null;
   barbershop_id: string;
+  name: string | null;
+  phone: string | null;
   bio: string | null;
   specialty: string | null;
   photo_url: string | null;
   is_available: boolean;
-  profiles: {
-    full_name: string;
-    phone: string | null;
-  };
 }
 
 const BarbersManagement = () => {
   const [barbers, setBarbers] = useState<Barber[]>([]);
-  const [availableUsers, setAvailableUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingBarber, setEditingBarber] = useState<Barber | null>(null);
   const [formData, setFormData] = useState({
-    user_id: '',
+    name: '',
+    phone: '',
     bio: '',
     specialty: '',
     photo_url: '',
@@ -46,7 +43,6 @@ const BarbersManagement = () => {
 
   useEffect(() => {
     fetchBarbers();
-    fetchAvailableUsers();
   }, []);
 
   const fetchBarbers = async () => {
@@ -64,27 +60,12 @@ const BarbersManagement = () => {
         return;
       }
 
-      // Buscar barbeiros
-      const { data: barbersData, error } = await supabase
+      const { data, error } = await supabase
         .from('barbers')
         .select('*')
         .eq('barbershop_id', barberData.barbershop_id);
 
       if (error) throw error;
-
-      // Buscar profiles dos barbeiros
-      const userIds = barbersData?.map(b => b.user_id) || [];
-      const { data: profilesData } = await supabase
-        .from('profiles')
-        .select('id, full_name, phone')
-        .in('id', userIds);
-
-      // Combinar dados
-      const data = barbersData?.map(barber => ({
-        ...barber,
-        profiles: profilesData?.find(p => p.id === barber.user_id) || { full_name: 'Sem nome', phone: null }
-      }));
-
       setBarbers(data || []);
     } catch (error: any) {
       console.error('Error fetching barbers:', error);
@@ -94,31 +75,11 @@ const BarbersManagement = () => {
     }
   };
 
-  const fetchAvailableUsers = async () => {
-    try {
-      // Buscar todos os perfis
-      const { data: allProfiles } = await supabase
-        .from('profiles')
-        .select('id, full_name');
-
-      // Buscar barbeiros existentes
-      const { data: existingBarbers } = await supabase
-        .from('barbers')
-        .select('user_id');
-
-      const existingUserIds = existingBarbers?.map(b => b.user_id) || [];
-      const available = allProfiles?.filter(p => !existingUserIds.includes(p.id)) || [];
-      
-      setAvailableUsers(available);
-    } catch (error: any) {
-      console.error('Error fetching users:', error);
-    }
-  };
-
   const handleEdit = (barber: Barber) => {
     setEditingBarber(barber);
     setFormData({
-      user_id: barber.user_id,
+      name: barber.name || '',
+      phone: barber.phone || '',
       bio: barber.bio || '',
       specialty: barber.specialty || '',
       photo_url: barber.photo_url || '',
@@ -130,7 +91,8 @@ const BarbersManagement = () => {
   const handleAdd = () => {
     setEditingBarber(null);
     setFormData({
-      user_id: '',
+      name: '',
+      phone: '',
       bio: '',
       specialty: '',
       photo_url: '',
@@ -141,12 +103,17 @@ const BarbersManagement = () => {
 
   const handleSave = async () => {
     try {
+      if (!formData.name) {
+        toast.error('Nome é obrigatório');
+        return;
+      }
+
       // Buscar barbershop_id do usuário logado
       const { data: barberData } = await supabase
         .from('barbers')
         .select('barbershop_id')
         .eq('user_id', user?.id)
-        .single();
+        .maybeSingle();
 
       if (!barberData?.barbershop_id) {
         toast.error('Erro: Barbearia não encontrada');
@@ -158,6 +125,8 @@ const BarbersManagement = () => {
         const { error } = await supabase
           .from('barbers')
           .update({
+            name: formData.name,
+            phone: formData.phone || null,
             bio: formData.bio || null,
             specialty: formData.specialty || null,
             photo_url: formData.photo_url || null,
@@ -169,15 +138,11 @@ const BarbersManagement = () => {
         toast.success('Barbeiro atualizado com sucesso!');
       } else {
         // Criar novo barbeiro
-        if (!formData.user_id) {
-          toast.error('Selecione um usuário');
-          return;
-        }
-
         const { error } = await supabase
           .from('barbers')
           .insert({
-            user_id: formData.user_id,
+            name: formData.name,
+            phone: formData.phone || null,
             barbershop_id: barberData.barbershop_id,
             bio: formData.bio || null,
             specialty: formData.specialty || null,
@@ -192,7 +157,6 @@ const BarbersManagement = () => {
       setDialogOpen(false);
       setEditingBarber(null);
       fetchBarbers();
-      fetchAvailableUsers();
     } catch (error: any) {
       console.error('Error saving barber:', error);
       toast.error(editingBarber ? 'Erro ao atualizar barbeiro' : 'Erro ao adicionar barbeiro');
@@ -263,7 +227,7 @@ const BarbersManagement = () => {
                         {barber.photo_url ? (
                           <img
                             src={barber.photo_url}
-                            alt={barber.profiles?.full_name}
+                            alt={barber.name || 'Barbeiro'}
                             className="h-full w-full object-cover"
                           />
                         ) : (
@@ -271,8 +235,11 @@ const BarbersManagement = () => {
                         )}
                       </div>
                       <div>
-                        <CardTitle className="text-xl">{barber.profiles?.full_name || 'Sem nome'}</CardTitle>
+                        <CardTitle className="text-xl">{barber.name || 'Sem nome'}</CardTitle>
                         <CardDescription>{barber.specialty || 'Sem especialidade'}</CardDescription>
+                        {barber.phone && (
+                          <p className="text-sm text-muted-foreground mt-1">{barber.phone}</p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -330,36 +297,30 @@ const BarbersManagement = () => {
               <DialogDescription>
                 {editingBarber 
                   ? 'Atualize as informações do barbeiro' 
-                  : 'Selecione um usuário cadastrado para adicionar como barbeiro'}
+                  : 'Cadastre um novo profissional barbeiro'}
               </DialogDescription>
             </DialogHeader>
             
             <div className="space-y-4 py-4">
-              {!editingBarber && (
-                <div className="space-y-2">
-                  <Label htmlFor="user_id">Usuário *</Label>
-                  <Select
-                    value={formData.user_id}
-                    onValueChange={(value) => setFormData({ ...formData, user_id: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione um usuário" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {availableUsers.map((user) => (
-                        <SelectItem key={user.id} value={user.id}>
-                          {user.full_name || 'Sem nome'}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {availableUsers.length === 0 && (
-                    <p className="text-sm text-muted-foreground">
-                      Todos os usuários já são barbeiros
-                    </p>
-                  )}
-                </div>
-              )}
+              <div className="space-y-2">
+                <Label htmlFor="name">Nome *</Label>
+                <Input
+                  id="name"
+                  placeholder="Ex: João Silva"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="phone">Telefone</Label>
+                <Input
+                  id="phone"
+                  placeholder="Ex: (11) 98765-4321"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                />
+              </div>
               
               <div className="space-y-2">
                 <Label htmlFor="specialty">Especialidade</Label>
