@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,16 +6,28 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
 import { Scissors, Lock, Mail, User } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Auth = () => {
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, user, userRole } = useAuth();
+  const navigate = useNavigate();
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [signupName, setSignupName] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Redirecionar se já estiver logado
+  useEffect(() => {
+    if (user && userRole) {
+      if (userRole === 'admin' || userRole === 'barber') {
+        navigate('/pdv', { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
+    }
+  }, [user, userRole, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

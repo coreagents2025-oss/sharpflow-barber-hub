@@ -12,6 +12,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, fullName: string) => Promise<void>;
   signOut: () => Promise<void>;
   userRole: string | null;
+  barbershopId: string | null;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -21,6 +22,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [barbershopId, setBarbershopId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -31,18 +33,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          // Fetch user role
+          // Fetch user role and barbershop
           setTimeout(async () => {
-            const { data } = await supabase
+            const { data: roleData } = await supabase
               .from('user_roles')
               .select('role')
               .eq('user_id', session.user.id)
               .single();
             
-            setUserRole(data?.role ?? null);
+            setUserRole(roleData?.role ?? null);
+
+            // Fetch barbershop_id for admin/barber users
+            if (roleData?.role === 'admin' || roleData?.role === 'barber') {
+              const { data: barberData } = await supabase
+                .from('barbers')
+                .select('barbershop_id')
+                .eq('user_id', session.user.id)
+                .single();
+              
+              setBarbershopId(barberData?.barbershop_id ?? null);
+            }
           }, 0);
         } else {
           setUserRole(null);
+          setBarbershopId(null);
         }
       }
     );
@@ -55,13 +69,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       
       if (session?.user) {
         setTimeout(async () => {
-          const { data } = await supabase
+          const { data: roleData } = await supabase
             .from('user_roles')
             .select('role')
             .eq('user_id', session.user.id)
             .single();
           
-          setUserRole(data?.role ?? null);
+          setUserRole(roleData?.role ?? null);
+
+          // Fetch barbershop_id for admin/barber users
+          if (roleData?.role === 'admin' || roleData?.role === 'barber') {
+            const { data: barberData } = await supabase
+              .from('barbers')
+              .select('barbershop_id')
+              .eq('user_id', session.user.id)
+              .single();
+            
+            setBarbershopId(barberData?.barbershop_id ?? null);
+          }
         }, 0);
       }
     });
@@ -79,7 +104,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) throw error;
       
       toast.success('Login realizado com sucesso!');
-      navigate('/dashboard');
+      navigate('/pdv');
     } catch (error: any) {
       toast.error(error.message || 'Erro ao fazer login');
       throw error;
@@ -128,7 +153,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut, userRole }}>
+    <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut, userRole, barbershopId }}>
       {children}
     </AuthContext.Provider>
   );

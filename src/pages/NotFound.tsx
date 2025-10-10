@@ -1,21 +1,41 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import { useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { Button } from "@/components/ui/button";
+import { Home, AlertCircle } from "lucide-react";
 
 const NotFound = () => {
   const location = useLocation();
+  const { user, userRole } = useAuth();
 
   useEffect(() => {
     console.error("404 Error: User attempted to access non-existent route:", location.pathname);
   }, [location.pathname]);
 
+  const getRedirectPath = () => {
+    if (user && (userRole === 'admin' || userRole === 'barber')) {
+      return '/pdv';
+    }
+    return '/';
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">404</h1>
-        <p className="mb-4 text-xl text-gray-600">Oops! Page not found</p>
-        <a href="/" className="text-blue-500 underline hover:text-blue-700">
-          Return to Home
-        </a>
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-background to-secondary/20">
+      <div className="text-center space-y-6 px-4">
+        <AlertCircle className="h-24 w-24 text-accent mx-auto" />
+        <div className="space-y-2">
+          <h1 className="text-6xl font-bold text-foreground">404</h1>
+          <p className="text-2xl text-muted-foreground">Página não encontrada</p>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto">
+            A página que você está procurando não existe ou foi movida.
+          </p>
+        </div>
+        <Link to={getRedirectPath()}>
+          <Button className="bg-accent hover:bg-accent/90">
+            <Home className="h-4 w-4 mr-2" />
+            {user && (userRole === 'admin' || userRole === 'barber') ? 'Voltar ao Painel' : 'Voltar ao Início'}
+          </Button>
+        </Link>
       </div>
     </div>
   );

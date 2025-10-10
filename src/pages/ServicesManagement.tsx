@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Navbar } from '@/components/Navbar';
+import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +25,7 @@ interface Service {
 }
 
 const ServicesManagement = () => {
+  const { barbershopId } = useAuth();
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -62,6 +64,11 @@ const ServicesManagement = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    if (!barbershopId) {
+      toast.error('Erro: Barbearia não identificada');
+      return;
+    }
+
     try {
       const serviceData = {
         name: formData.name,
@@ -71,7 +78,7 @@ const ServicesManagement = () => {
         image_url: formData.image_url || null,
         is_active: formData.is_active,
         is_popular: formData.is_popular,
-        barbershop_id: '00000000-0000-0000-0000-000000000000', // Temporary - should be dynamic
+        barbershop_id: barbershopId,
       };
 
       if (editingService) {
