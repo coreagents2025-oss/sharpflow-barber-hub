@@ -22,7 +22,7 @@ export const Navbar = () => {
         <div className="flex items-center justify-between h-16">
           <Link to={isAdmin ? "/pdv" : "/"} className="flex items-center gap-2">
             <Scissors className="h-6 w-6 text-accent" />
-            <span className="text-xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+            <span className="text-xl bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent font-extrabold">
               BarberPro
             </span>
           </Link>
