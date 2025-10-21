@@ -94,7 +94,7 @@ const Index = () => {
         <div className="container mx-auto px-4">
           <div className="grid md:grid-cols-3 gap-12 text-center">
             <div>
-              <div className="text-5xl font-bold text-accent mb-2">95%</div>
+              <div className="text-5xl font-bold text-accent mb-2">70%</div>
               <p className="text-lg">Taxa de Satisfação</p>
             </div>
             <div>
