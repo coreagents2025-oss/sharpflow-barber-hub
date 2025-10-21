@@ -52,12 +52,10 @@ const Index = () => {
             Tudo em um único aplicativo.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button size="lg" className="bg-accent hover:bg-accent/90 text-lg h-14 px-8" onClick={() => navigate("/booking")}>
+            <Button size="lg" onClick={() => navigate("/booking")} className="bg-accent hover:bg-accent/90 h-14 px-8 font-thin text-3xl">
               Agendar Demo Grátis
             </Button>
-            <Button size="lg" variant="outline" onClick={() => navigate("/services")} className="border-white hover:bg-white text-lg h-14 px-8 text-amber-600">
-              Ver Funcionalidades
-            </Button>
+            
           </div>
         </div>
       </section>
