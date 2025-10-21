@@ -58,7 +58,7 @@ export const Navbar = () => {
             
             {/* CTA "Agendar" - APENAS em landing pages */}
             {!isInAdminPanel && <Link to="/booking">
-                <Button className="bg-gradient-to-r from-accent to-accent/80 hover:from-accent/90 hover:to-accent/70 transition-all">Nosso Whatsapp </Button>
+                
               </Link>}
           </div>
         </div>
