@@ -2,67 +2,45 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Navbar } from "@/components/Navbar";
 import { useNavigate } from "react-router-dom";
-import { 
-  Calendar, 
-  TrendingUp, 
-  Users, 
-  Clock,
-  Star,
-  Shield,
-  Smartphone
-} from "lucide-react";
+import { Calendar, TrendingUp, Users, Clock, Star, Shield, Smartphone } from "lucide-react";
 import heroImage from "@/assets/hero-barbershop.jpg";
-
 const Index = () => {
   const navigate = useNavigate();
-
-  const features = [
-    {
-      icon: Calendar,
-      title: "Agendamento 24/7",
-      description: "Sistema online disponível sempre que seus clientes precisarem",
-    },
-    {
-      icon: Users,
-      title: "Gestão de Clientes",
-      description: "CRM completo com histórico e preferências de cada cliente",
-    },
-    {
-      icon: TrendingUp,
-      title: "Relatórios Inteligentes",
-      description: "Análises detalhadas para otimizar seu negócio",
-    },
-    {
-      icon: Clock,
-      title: "Lembretes Automáticos",
-      description: "Confirmações via WhatsApp, SMS e notificações push",
-    },
-    {
-      icon: Star,
-      title: "Programa de Fidelidade",
-      description: "Recompense clientes fiéis e aumente o retorno",
-    },
-    {
-      icon: Shield,
-      title: "Pagamentos Seguros",
-      description: "Aceite cartões, Pix e gerencie seu financeiro",
-    },
-  ];
-
-  return (
-    <div className="min-h-screen">
+  const features = [{
+    icon: Calendar,
+    title: "Agendamento 24/7",
+    description: "Sistema online disponível sempre que seus clientes precisarem"
+  }, {
+    icon: Users,
+    title: "Gestão de Clientes",
+    description: "CRM completo com histórico e preferências de cada cliente"
+  }, {
+    icon: TrendingUp,
+    title: "Relatórios Inteligentes",
+    description: "Análises detalhadas para otimizar seu negócio"
+  }, {
+    icon: Clock,
+    title: "Lembretes Automáticos",
+    description: "Confirmações via WhatsApp, SMS e notificações push"
+  }, {
+    icon: Star,
+    title: "Programa de Fidelidade",
+    description: "Recompense clientes fiéis e aumente o retorno"
+  }, {
+    icon: Shield,
+    title: "Pagamentos Seguros",
+    description: "Aceite cartões, Pix e gerencie seu financeiro"
+  }];
+  return <div className="min-h-screen">
       <Navbar />
       
       {/* Hero Section */}
       <section className="relative h-[600px] flex items-center justify-center overflow-hidden">
-        <div 
-          className="absolute inset-0 z-0"
-          style={{
-            backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url(${heroImage})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
-        />
+        <div className="absolute inset-0 z-0" style={{
+        backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url(${heroImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center'
+      }} />
         
         <div className="container mx-auto px-4 relative z-10 text-center text-white">
           <h1 className="text-5xl md:text-6xl font-bold mb-6 animate-fade-in">
@@ -74,19 +52,10 @@ const Index = () => {
             Tudo em um único aplicativo.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Button 
-              size="lg" 
-              className="bg-accent hover:bg-accent/90 text-lg h-14 px-8"
-              onClick={() => navigate("/booking")}
-            >
+            <Button size="lg" className="bg-accent hover:bg-accent/90 text-lg h-14 px-8" onClick={() => navigate("/booking")}>
               Agendar Demo Grátis
             </Button>
-            <Button 
-              size="lg" 
-              variant="outline"
-              className="border-white text-white hover:bg-white hover:text-primary text-lg h-14 px-8"
-              onClick={() => navigate("/services")}
-            >
+            <Button size="lg" variant="outline" onClick={() => navigate("/services")} className="border-white hover:bg-white text-lg h-14 px-8 text-amber-600">
               Ver Funcionalidades
             </Button>
           </div>
@@ -106,13 +75,9 @@ const Index = () => {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature) => {
-              const Icon = feature.icon;
-              return (
-                <Card 
-                  key={feature.title}
-                  className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1"
-                >
+            {features.map(feature => {
+            const Icon = feature.icon;
+            return <Card key={feature.title} className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
                   <CardContent className="pt-6">
                     <div className="h-12 w-12 rounded-lg bg-accent/10 flex items-center justify-center mb-4">
                       <Icon className="h-6 w-6 text-accent" />
@@ -120,9 +85,8 @@ const Index = () => {
                     <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
                     <p className="text-muted-foreground">{feature.description}</p>
                   </CardContent>
-                </Card>
-              );
-            })}
+                </Card>;
+          })}
           </div>
         </div>
       </section>
@@ -160,19 +124,13 @@ const Index = () => {
                 Junte-se a centenas de barbearias que já aumentaram seu faturamento 
                 e melhoraram a experiência dos clientes
               </p>
-              <Button 
-                size="lg"
-                className="bg-accent hover:bg-accent/90 text-accent-foreground text-lg h-14 px-8"
-                onClick={() => navigate("/booking")}
-              >
+              <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground text-lg h-14 px-8" onClick={() => navigate("/booking")}>
                 Começar Agora Gratuitamente
               </Button>
             </CardContent>
           </Card>
         </div>
       </section>
-    </div>
-  );
+    </div>;
 };
-
 export default Index;
