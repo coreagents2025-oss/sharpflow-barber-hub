@@ -11,7 +11,8 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Plus, Edit, Trash2, Image as ImageIcon } from 'lucide-react';
+import { Plus, Edit, Trash2, Image as ImageIcon, Upload } from 'lucide-react';
+import { useImageUpload } from '@/hooks/useImageUpload';
 
 interface Service {
   id: string;
@@ -26,10 +27,12 @@ interface Service {
 
 const ServicesManagement = () => {
   const { barbershopId } = useAuth();
+  const { uploadImage, uploading } = useImageUpload();
   const [services, setServices] = useState<Service[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingService, setEditingService] = useState<Service | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -70,12 +73,22 @@ const ServicesManagement = () => {
     }
 
     try {
+      let imageUrl = formData.image_url;
+
+      // Upload new image if selected
+      if (imageFile) {
+        const uploadedUrl = await uploadImage(imageFile, 'service-images');
+        if (uploadedUrl) {
+          imageUrl = uploadedUrl;
+        }
+      }
+
       const serviceData = {
         name: formData.name,
         description: formData.description || null,
         price: parseFloat(formData.price),
         duration_minutes: parseInt(formData.duration_minutes),
-        image_url: formData.image_url || null,
+        image_url: imageUrl || null,
         is_active: formData.is_active,
         is_popular: formData.is_popular,
         barbershop_id: barbershopId,
@@ -148,6 +161,7 @@ const ServicesManagement = () => {
       is_popular: false,
     });
     setEditingService(null);
+    setImageFile(null);
   };
 
   const toggleActive = async (service: Service) => {
@@ -231,28 +245,49 @@ const ServicesManagement = () => {
                   />
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="duration">Duração (minutos)</Label>
-                    <Input
-                      id="duration"
-                      type="number"
-                      value={formData.duration_minutes}
-                      onChange={(e) => setFormData({ ...formData, duration_minutes: e.target.value })}
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="image">URL da Imagem</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="duration">Duração (minutos)</Label>
+                  <Input
+                    id="duration"
+                    type="number"
+                    value={formData.duration_minutes}
+                    onChange={(e) => setFormData({ ...formData, duration_minutes: e.target.value })}
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="image">Imagem do Serviço</Label>
+                  <div className="flex gap-2">
                     <Input
                       id="image"
-                      type="url"
-                      placeholder="https://..."
-                      value={formData.image_url}
-                      onChange={(e) => setFormData({ ...formData, image_url: e.target.value })}
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/jpg"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) setImageFile(file);
+                      }}
+                      className="flex-1"
                     />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      disabled={uploading}
+                    >
+                      <Upload className="h-4 w-4" />
+                    </Button>
                   </div>
+                  {formData.image_url && !imageFile && (
+                    <p className="text-xs text-muted-foreground">
+                      Imagem atual: {formData.image_url.split('/').pop()}
+                    </p>
+                  )}
+                  {imageFile && (
+                    <p className="text-xs text-primary">
+                      Nova imagem selecionada: {imageFile.name}
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex gap-6">
@@ -275,8 +310,12 @@ const ServicesManagement = () => {
                   </div>
                 </div>
 
-                <Button type="submit" className="w-full bg-accent hover:bg-accent/90">
-                  {editingService ? 'Atualizar' : 'Criar'} Serviço
+                <Button 
+                  type="submit" 
+                  className="w-full bg-accent hover:bg-accent/90"
+                  disabled={uploading}
+                >
+                  {uploading ? 'Enviando...' : editingService ? 'Atualizar' : 'Criar'} Serviço
                 </Button>
               </form>
             </DialogContent>

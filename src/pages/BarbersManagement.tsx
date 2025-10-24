@@ -11,8 +11,9 @@ import { Switch } from '@/components/ui/switch';
 import { Skeleton } from '@/components/ui/skeleton';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Users, Plus, Pencil, UserCheck, UserX } from 'lucide-react';
+import { Users, Plus, Pencil, UserCheck, UserX, Upload } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { useImageUpload } from '@/hooks/useImageUpload';
 
 interface Barber {
   id: string;
@@ -31,6 +32,7 @@ const BarbersManagement = () => {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingBarber, setEditingBarber] = useState<Barber | null>(null);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -40,6 +42,7 @@ const BarbersManagement = () => {
     is_available: true,
   });
   const { user } = useAuth();
+  const { uploadImage, uploading } = useImageUpload();
 
   useEffect(() => {
     fetchBarbers();
@@ -98,6 +101,7 @@ const BarbersManagement = () => {
       photo_url: '',
       is_available: true,
     });
+    setPhotoFile(null);
     setDialogOpen(true);
   };
 
@@ -120,6 +124,14 @@ const BarbersManagement = () => {
         return;
       }
 
+      let photoUrl = formData.photo_url;
+
+      // Upload photo if selected
+      if (photoFile) {
+        const uploadedUrl = await uploadImage(photoFile, 'barber-photos');
+        if (uploadedUrl) photoUrl = uploadedUrl;
+      }
+
       if (editingBarber) {
         // Atualizar barbeiro existente
         const { error } = await supabase
@@ -129,7 +141,7 @@ const BarbersManagement = () => {
             phone: formData.phone || null,
             bio: formData.bio || null,
             specialty: formData.specialty || null,
-            photo_url: formData.photo_url || null,
+            photo_url: photoUrl || null,
             is_available: formData.is_available,
           })
           .eq('id', editingBarber.id);
@@ -146,7 +158,7 @@ const BarbersManagement = () => {
             barbershop_id: barberData.barbershop_id,
             bio: formData.bio || null,
             specialty: formData.specialty || null,
-            photo_url: formData.photo_url || null,
+            photo_url: photoUrl || null,
             is_available: formData.is_available,
           });
 
@@ -156,6 +168,7 @@ const BarbersManagement = () => {
 
       setDialogOpen(false);
       setEditingBarber(null);
+      setPhotoFile(null);
       fetchBarbers();
     } catch (error: any) {
       console.error('Error saving barber:', error);
@@ -344,13 +357,37 @@ const BarbersManagement = () => {
               </div>
               
               <div className="space-y-2">
-                <Label htmlFor="photo_url">URL da Foto</Label>
-                <Input
-                  id="photo_url"
-                  placeholder="https://exemplo.com/foto.jpg"
-                  value={formData.photo_url}
-                  onChange={(e) => setFormData({ ...formData, photo_url: e.target.value })}
-                />
+                <Label htmlFor="photo">Foto do Barbeiro</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="photo"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/jpg"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) setPhotoFile(file);
+                    }}
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    disabled={uploading}
+                  >
+                    <Upload className="h-4 w-4" />
+                  </Button>
+                </div>
+                {formData.photo_url && !photoFile && (
+                  <p className="text-xs text-muted-foreground">
+                    Foto atual: {formData.photo_url.split('/').pop()}
+                  </p>
+                )}
+                {photoFile && (
+                  <p className="text-xs text-primary">
+                    Nova foto selecionada: {photoFile.name}
+                  </p>
+                )}
               </div>
               
               <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
@@ -369,8 +406,12 @@ const BarbersManagement = () => {
               <Button variant="outline" onClick={() => setDialogOpen(false)}>
                 Cancelar
               </Button>
-              <Button onClick={handleSave} className="bg-accent hover:bg-accent/90">
-                Salvar Alterações
+              <Button 
+                onClick={handleSave} 
+                className="bg-accent hover:bg-accent/90"
+                disabled={uploading}
+              >
+                {uploading ? 'Enviando...' : 'Salvar Alterações'}
               </Button>
             </div>
           </DialogContent>

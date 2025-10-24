@@ -7,8 +7,9 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Eye, Save, Palette } from 'lucide-react';
+import { Eye, Save, Palette, Upload } from 'lucide-react';
 import { toast } from 'sonner';
+import { useImageUpload } from '@/hooks/useImageUpload';
 
 interface CatalogSettings {
   id?: string;
@@ -21,9 +22,12 @@ interface CatalogSettings {
 
 const Catalog = () => {
   const { user } = useAuth();
+  const { uploadImage, uploading } = useImageUpload();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [barbershopId, setBarbershopId] = useState<string | null>(null);
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [heroFile, setHeroFile] = useState<File | null>(null);
   const [settings, setSettings] = useState<CatalogSettings>({
     barbershop_id: '',
     theme_color: '#8B4513',
@@ -75,15 +79,34 @@ const Catalog = () => {
 
     setSaving(true);
     try {
+      let logoUrl = settings.logo_url;
+      let heroUrl = settings.hero_image_url;
+
+      // Upload logo if selected
+      if (logoFile) {
+        const uploadedUrl = await uploadImage(logoFile, 'barbershop-logos');
+        if (uploadedUrl) logoUrl = uploadedUrl;
+      }
+
+      // Upload hero image if selected
+      if (heroFile) {
+        const uploadedUrl = await uploadImage(heroFile, 'barbershop-heroes');
+        if (uploadedUrl) heroUrl = uploadedUrl;
+      }
+
       const { error } = await supabase
         .from('catalog_settings')
         .upsert({
           ...settings,
           barbershop_id: barbershopId,
+          logo_url: logoUrl,
+          hero_image_url: heroUrl,
         });
 
       if (error) throw error;
       toast.success('Configurações salvas com sucesso!');
+      setLogoFile(null);
+      setHeroFile(null);
     } catch (error: any) {
       console.error('Error saving settings:', error);
       toast.error('Erro ao salvar configurações');
@@ -125,11 +148,11 @@ const Catalog = () => {
             
             <Button 
               onClick={handleSave} 
-              disabled={saving}
+              disabled={saving || uploading}
               className="bg-accent hover:bg-accent/90"
             >
               <Save className="h-4 w-4 mr-2" />
-              {saving ? 'Salvando...' : 'Salvar Configurações'}
+              {uploading ? 'Enviando...' : saving ? 'Salvando...' : 'Salvar Configurações'}
             </Button>
           </div>
         </div>
@@ -203,25 +226,71 @@ const Catalog = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="logo-url">URL do Logo</Label>
-                <Input
-                  id="logo-url"
-                  type="url"
-                  value={settings.logo_url || ''}
-                  onChange={(e) => setSettings({ ...settings, logo_url: e.target.value })}
-                  placeholder="https://exemplo.com/logo.png"
-                />
+                <Label htmlFor="logo">Logo da Barbearia</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="logo"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/jpg"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) setLogoFile(file);
+                    }}
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    disabled={uploading}
+                  >
+                    <Upload className="h-4 w-4" />
+                  </Button>
+                </div>
+                {settings.logo_url && !logoFile && (
+                  <p className="text-xs text-muted-foreground">
+                    Logo atual: {settings.logo_url.split('/').pop()}
+                  </p>
+                )}
+                {logoFile && (
+                  <p className="text-xs text-primary">
+                    Nova logo selecionada: {logoFile.name}
+                  </p>
+                )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="hero-image">URL da Imagem Hero</Label>
-                <Input
-                  id="hero-image"
-                  type="url"
-                  value={settings.hero_image_url || ''}
-                  onChange={(e) => setSettings({ ...settings, hero_image_url: e.target.value })}
-                  placeholder="https://exemplo.com/hero.jpg"
-                />
+                <Label htmlFor="hero-image">Imagem Hero (Principal)</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="hero-image"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/jpg"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) setHeroFile(file);
+                    }}
+                    className="flex-1"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    disabled={uploading}
+                  >
+                    <Upload className="h-4 w-4" />
+                  </Button>
+                </div>
+                {settings.hero_image_url && !heroFile && (
+                  <p className="text-xs text-muted-foreground">
+                    Imagem atual: {settings.hero_image_url.split('/').pop()}
+                  </p>
+                )}
+                {heroFile && (
+                  <p className="text-xs text-primary">
+                    Nova imagem selecionada: {heroFile.name}
+                  </p>
+                )}
               </div>
 
               <div className="flex items-center justify-between">
