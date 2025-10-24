@@ -10,7 +10,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useBooking } from '@/hooks/useBooking';
 import { format, addDays, setHours, setMinutes, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { User } from 'lucide-react';
+import { User, X } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface Barber {
   id: string;
@@ -42,18 +43,20 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId }: Booking
   const [clientPhone, setClientPhone] = useState('');
   const [clientEmail, setClientEmail] = useState('');
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
+  const [occupiedTimes, setOccupiedTimes] = useState<string[]>([]);
   
   const { createBooking, isSubmitting } = useBooking(barbershopId);
 
   useEffect(() => {
-    if (isOpen && barbershopId) {
+    if (isOpen && barbershopId && selectedDate) {
       fetchBarbers();
     }
-  }, [isOpen, barbershopId]);
+  }, [isOpen, barbershopId, selectedDate]);
 
   useEffect(() => {
     if (selectedDate && selectedBarber) {
       generateAvailableTimes();
+      fetchOccupiedTimes();
     }
   }, [selectedDate, selectedBarber]);
 
@@ -62,32 +65,112 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId }: Booking
 
     setLoadingBarbers(true);
     try {
-      const { data, error } = await supabase
+      // Buscar todos os barbeiros disponíveis
+      const { data: allBarbers, error } = await supabase
         .from('barbers')
         .select('*')
         .eq('barbershop_id', barbershopId)
         .eq('is_available', true)
         .order('name');
 
-      if (!error && data) {
-        setBarbers(data);
+      if (error || !allBarbers) {
+        setBarbers([]);
+        return;
+      }
+
+      // Se uma data foi selecionada, filtrar por daily_schedules
+      if (selectedDate) {
+        const dateStr = selectedDate.toISOString().split('T')[0];
+        const { data: schedule } = await supabase
+          .from('daily_schedules')
+          .select('barbers_working')
+          .eq('barbershop_id', barbershopId)
+          .eq('date', dateStr)
+          .maybeSingle();
+
+        // Se existe schedule configurado, filtrar apenas barbeiros que trabalham neste dia
+        if (schedule?.barbers_working && schedule.barbers_working.length > 0) {
+          const workingBarbers = allBarbers.filter(b => 
+            schedule.barbers_working.includes(b.id)
+          );
+          setBarbers(workingBarbers);
+        } else {
+          // Se não tem schedule, mostrar todos disponíveis
+          setBarbers(allBarbers);
+        }
+      } else {
+        setBarbers(allBarbers);
       }
     } finally {
       setLoadingBarbers(false);
     }
   };
 
-  const generateAvailableTimes = () => {
-    const times: string[] = [];
-    const startHour = 9;
-    const endHour = 19;
+  const generateAvailableTimes = async () => {
+    if (!selectedDate || !barbershopId) return;
 
+    const dateStr = selectedDate.toISOString().split('T')[0];
+    
+    // Buscar configuração do dia para pegar horários de funcionamento
+    const { data: schedule } = await supabase
+      .from('daily_schedules')
+      .select('working_hours_start, working_hours_end, blocked_slots')
+      .eq('barbershop_id', barbershopId)
+      .eq('date', dateStr)
+      .maybeSingle();
+
+    const times: string[] = [];
+    let startHour = 9;
+    let endHour = 19;
+
+    // Se tem schedule configurado, usar horários do banco
+    if (schedule) {
+      if (schedule.working_hours_start) {
+        startHour = parseInt(schedule.working_hours_start.split(':')[0]);
+      }
+      if (schedule.working_hours_end) {
+        endHour = parseInt(schedule.working_hours_end.split(':')[0]);
+      }
+    }
+
+    // Gerar horários (a cada 30 minutos)
     for (let hour = startHour; hour < endHour; hour++) {
-      times.push(`${hour.toString().padStart(2, '0')}:00`);
-      times.push(`${hour.toString().padStart(2, '0')}:30`);
+      const time1 = `${hour.toString().padStart(2, '0')}:00`;
+      const time2 = `${hour.toString().padStart(2, '0')}:30`;
+      
+      // Verificar se não está nos bloqueados
+      if (!schedule?.blocked_slots?.includes(time1)) {
+        times.push(time1);
+      }
+      if (!schedule?.blocked_slots?.includes(time2)) {
+        times.push(time2);
+      }
     }
 
     setAvailableTimes(times);
+  };
+
+  const fetchOccupiedTimes = async () => {
+    if (!selectedBarber || !selectedDate || !barbershopId) return;
+
+    const dateStr = selectedDate.toISOString().split('T')[0];
+    
+    // Buscar appointments do barbeiro neste dia
+    const { data: appointments } = await supabase
+      .from('appointments')
+      .select('scheduled_at')
+      .eq('barber_id', selectedBarber)
+      .gte('scheduled_at', `${dateStr}T00:00:00`)
+      .lt('scheduled_at', `${dateStr}T23:59:59`)
+      .neq('status', 'cancelled');
+
+    // Converter para formato HH:mm
+    const times = appointments?.map(apt => {
+      const date = new Date(apt.scheduled_at);
+      return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+    }) || [];
+    
+    setOccupiedTimes(times);
   };
 
   const handleSubmit = async () => {
@@ -156,8 +239,22 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId }: Booking
                   id="phone"
                   type="tel"
                   value={clientPhone}
-                  onChange={(e) => setClientPhone(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '');
+                    let formatted = value;
+                    
+                    if (value.length <= 2) {
+                      formatted = value;
+                    } else if (value.length <= 7) {
+                      formatted = `(${value.slice(0, 2)}) ${value.slice(2)}`;
+                    } else {
+                      formatted = `(${value.slice(0, 2)}) ${value.slice(2, 7)}-${value.slice(7, 11)}`;
+                    }
+                    
+                    setClientPhone(formatted);
+                  }}
                   placeholder="(00) 00000-0000"
+                  maxLength={15}
                   className="mt-1"
                 />
               </div>
@@ -234,16 +331,26 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId }: Booking
               <div className="space-y-3">
                 <Label>Escolha o Horário</Label>
                 <div className="grid grid-cols-3 gap-2">
-                  {availableTimes.map((time) => (
-                    <Button
-                      key={time}
-                      variant={selectedTime === time ? 'default' : 'outline'}
-                      onClick={() => setSelectedTime(time)}
-                      className={selectedTime === time ? 'bg-accent hover:bg-accent/90' : ''}
-                    >
-                      {time}
-                    </Button>
-                  ))}
+                  {availableTimes.map((time) => {
+                    const isOccupied = occupiedTimes.includes(time);
+                    
+                    return (
+                      <Button
+                        key={time}
+                        variant={selectedTime === time ? 'default' : 'outline'}
+                        onClick={() => !isOccupied && setSelectedTime(time)}
+                        disabled={isOccupied}
+                        className={cn(
+                          selectedTime === time && 'bg-accent hover:bg-accent/90',
+                          isOccupied && 'opacity-50 cursor-not-allowed line-through'
+                        )}
+                        title={isOccupied ? 'Horário ocupado' : undefined}
+                      >
+                        {time}
+                        {isOccupied && <X className="h-3 w-3 ml-1" />}
+                      </Button>
+                    );
+                  })}
                 </div>
               </div>
             )}

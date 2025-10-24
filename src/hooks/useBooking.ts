@@ -28,6 +28,35 @@ export const useBooking = (barbershopId: string | null) => {
       const [hours, minutes] = data.time.split(':');
       const scheduledAt = new Date(data.date);
       scheduledAt.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+      const dateStr = scheduledAt.toISOString().split('T')[0];
+
+      // Verificar daily_schedule
+      const { data: schedule } = await supabase
+        .from('daily_schedules')
+        .select('barbers_working, blocked_slots, working_hours_start, working_hours_end')
+        .eq('barbershop_id', barbershopId)
+        .eq('date', dateStr)
+        .maybeSingle();
+
+      // Verificar se barbeiro está trabalhando neste dia
+      if (schedule && schedule.barbers_working && !schedule.barbers_working.includes(data.barberId)) {
+        toast.error('Este barbeiro não está trabalhando neste dia.');
+        return false;
+      }
+
+      // Verificar se horário está bloqueado
+      if (schedule?.blocked_slots?.includes(data.time)) {
+        toast.error('Este horário está bloqueado para agendamentos.');
+        return false;
+      }
+
+      // Verificar se está dentro do horário de funcionamento
+      if (schedule?.working_hours_start && schedule?.working_hours_end) {
+        if (data.time < schedule.working_hours_start || data.time > schedule.working_hours_end) {
+          toast.error('Horário fora do expediente de trabalho.');
+          return false;
+        }
+      }
 
       // Create or get client profile
       const { data: existingClient } = await supabase
