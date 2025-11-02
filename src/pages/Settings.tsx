@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { User, Building2, Bell, Shield, Globe, Eye, ExternalLink, MessageCircle } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
 import { DomainSetupGuide } from '@/components/DomainSetupGuide';
@@ -55,6 +56,8 @@ const whatsappSettingsSchema = z.object({
   enabled: z.boolean(),
   phone_number: z.string().regex(/^\d{10,15}$/, 'Número de telefone inválido (apenas números)').or(z.literal('')),
   message_template: z.string().min(10, 'Template deve ter pelo menos 10 caracteres'),
+  api_provider: z.enum(['official', 'evolution_api', 'z_api']),
+  daily_offer_message: z.string().optional().or(z.literal('')),
 });
 
 const Settings = () => {
@@ -95,6 +98,8 @@ const Settings = () => {
     enabled: false,
     phone_number: '',
     message_template: 'Olá {{client_name}}! Seu agendamento foi confirmado para {{date}} às {{time}}. Serviço: {{service_name}} com {{barber_name}}. Aguardamos você!',
+    api_provider: 'official' as 'official' | 'evolution_api' | 'z_api',
+    daily_offer_message: '',
   });
 
   const [showDomainGuide, setShowDomainGuide] = useState(false);
@@ -155,6 +160,8 @@ const Settings = () => {
               enabled: whatsappConfig.enabled || false,
               phone_number: whatsappConfig.phone_number || '',
               message_template: whatsappConfig.message_template || 'Olá {{client_name}}! Seu agendamento foi confirmado para {{date}} às {{time}}. Serviço: {{service_name}} com {{barber_name}}. Aguardamos você!',
+              api_provider: whatsappConfig.api_provider || 'official',
+              daily_offer_message: whatsappConfig.daily_offer_message || '',
             });
           }
         }
@@ -703,6 +710,27 @@ const Settings = () => {
                     </div>
 
                     <div className="space-y-2">
+                      <Label htmlFor="api-provider">Provedor de API</Label>
+                      <Select 
+                        value={whatsappSettings.api_provider}
+                        onValueChange={(value) => setWhatsappSettings({ ...whatsappSettings, api_provider: value as any })}
+                        disabled={loading}
+                      >
+                        <SelectTrigger id="api-provider">
+                          <SelectValue placeholder="Selecione o provedor" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="official">WhatsApp Business API (Oficial)</SelectItem>
+                          <SelectItem value="evolution_api">Evolution API (Não oficial)</SelectItem>
+                          <SelectItem value="z_api">Z-API (Não oficial)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Escolha o provedor de API do WhatsApp que você utiliza
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
                       <Label htmlFor="whatsapp-phone">
                         Número do WhatsApp (com DDD, sem símbolos)
                       </Label>
@@ -715,12 +743,12 @@ const Settings = () => {
                         maxLength={15}
                       />
                       <p className="text-xs text-muted-foreground">
-                        Este número receberá as notificações de agendamento. Você pode configurar o envio via API do WhatsApp Business.
+                        Este número receberá as notificações de agendamento
                       </p>
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="message-template">Template da Mensagem</Label>
+                      <Label htmlFor="message-template">Template da Mensagem de Confirmação</Label>
                       <textarea
                         id="message-template"
                         className="w-full min-h-[120px] p-3 rounded-md border border-input bg-background text-sm"
@@ -734,18 +762,49 @@ const Settings = () => {
                       </p>
                     </div>
 
+                    <div className="space-y-2">
+                      <Label htmlFor="daily-offer">Mensagem de Oferta do Dia (Opcional)</Label>
+                      <textarea
+                        id="daily-offer"
+                        className="w-full min-h-[100px] p-3 rounded-md border border-input bg-background text-sm"
+                        value={whatsappSettings.daily_offer_message}
+                        onChange={(e) => setWhatsappSettings({ ...whatsappSettings, daily_offer_message: e.target.value })}
+                        disabled={loading}
+                        placeholder="🔥 Oferta do dia! Corte + Barba por apenas R$ 50,00. Válido até hoje!"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Esta mensagem será adicionada ao final de cada confirmação de agendamento
+                      </p>
+                    </div>
+
                     <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
                       <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
                         <MessageCircle className="h-4 w-4" />
-                        Como configurar a API do WhatsApp
+                        Documentação das APIs
                       </h4>
-                      <ol className="text-xs space-y-1 text-muted-foreground">
-                        <li>1. Acesse o <a href="https://developers.facebook.com/apps" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 underline">Facebook Developers</a></li>
-                        <li>2. Crie um app e ative a API do WhatsApp Business</li>
-                        <li>3. Configure o número de telefone para envio</li>
-                        <li>4. Obtenha o token de acesso (API Token)</li>
-                        <li>5. Entre em contato com o suporte para adicionar as credenciais</li>
-                      </ol>
+                      <div className="text-xs space-y-2 text-muted-foreground">
+                        <div>
+                          <strong className="text-foreground">WhatsApp Business API (Oficial):</strong>
+                          <ol className="space-y-1 mt-1 ml-4">
+                            <li>1. <a href="https://developers.facebook.com/apps" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 underline">Facebook Developers</a></li>
+                            <li>2. Configure o número e obtenha o token de acesso</li>
+                          </ol>
+                        </div>
+                        <div>
+                          <strong className="text-foreground">Evolution API:</strong>
+                          <ol className="space-y-1 mt-1 ml-4">
+                            <li>1. <a href="https://evolution-api.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 underline">Evolution API Docs</a></li>
+                            <li>2. Instale e configure a instância</li>
+                          </ol>
+                        </div>
+                        <div>
+                          <strong className="text-foreground">Z-API:</strong>
+                          <ol className="space-y-1 mt-1 ml-4">
+                            <li>1. <a href="https://z-api.io" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 underline">Z-API Docs</a></li>
+                            <li>2. Crie uma conta e obtenha suas credenciais</li>
+                          </ol>
+                        </div>
+                      </div>
                     </div>
 
                     <Button onClick={handleSaveWhatsappSettings} disabled={loading} className="bg-accent hover:bg-accent/90">

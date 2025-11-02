@@ -100,43 +100,109 @@ const handler = async (req: Request): Promise<Response> => {
       .replace(/\{\{service_name\}\}/g, service_name)
       .replace(/\{\{barber_name\}\}/g, barber_name);
 
+    // Adicionar mensagem de oferta do dia se existir
+    if (settings.daily_offer_message && settings.daily_offer_message.trim()) {
+      message += "\n\n" + settings.daily_offer_message;
+    }
+
+    const apiProvider = settings.api_provider || "official";
+
     // Log da mensagem que seria enviada
+    console.log("WhatsApp API Provider:", apiProvider);
     console.log("WhatsApp message to:", settings.phone_number);
     console.log("Message:", message);
     console.log("Client phone:", client_phone);
 
-    // TODO: Integrar com WhatsApp Business API quando configurado
-    // Requer WHATSAPP_API_TOKEN e WHATSAPP_PHONE_NUMBER_ID
-    // const whatsappToken = Deno.env.get("WHATSAPP_API_TOKEN");
-    // const phoneNumberId = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID");
+    // Integração com diferentes APIs do WhatsApp
+    // Para habilitar, adicione as variáveis de ambiente necessárias em cada caso
     
-    // if (whatsappToken && phoneNumberId) {
-    //   const response = await fetch(
-    //     `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`,
-    //     {
-    //       method: "POST",
-    //       headers: {
-    //         "Authorization": `Bearer ${whatsappToken}`,
-    //         "Content-Type": "application/json",
-    //       },
-    //       body: JSON.stringify({
-    //         messaging_product: "whatsapp",
-    //         to: client_phone,
-    //         type: "text",
-    //         text: { body: message },
-    //       }),
-    //     }
-    //   );
-    //   
-    //   if (!response.ok) {
-    //     throw new Error(`WhatsApp API error: ${await response.text()}`);
-    //   }
-    // }
+    if (apiProvider === "official") {
+      // WhatsApp Business API (Oficial)
+      // Requer: WHATSAPP_API_TOKEN e WHATSAPP_PHONE_NUMBER_ID
+      // const whatsappToken = Deno.env.get("WHATSAPP_API_TOKEN");
+      // const phoneNumberId = Deno.env.get("WHATSAPP_PHONE_NUMBER_ID");
+      
+      // if (whatsappToken && phoneNumberId) {
+      //   const response = await fetch(
+      //     `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`,
+      //     {
+      //       method: "POST",
+      //       headers: {
+      //         "Authorization": `Bearer ${whatsappToken}`,
+      //         "Content-Type": "application/json",
+      //       },
+      //       body: JSON.stringify({
+      //         messaging_product: "whatsapp",
+      //         to: client_phone,
+      //         type: "text",
+      //         text: { body: message },
+      //       }),
+      //     }
+      //   );
+      //   
+      //   if (!response.ok) {
+      //     throw new Error(`WhatsApp API error: ${await response.text()}`);
+      //   }
+      // }
+    } else if (apiProvider === "evolution_api") {
+      // Evolution API
+      // Requer: EVOLUTION_API_URL, EVOLUTION_API_KEY, EVOLUTION_INSTANCE_NAME
+      // const evolutionUrl = Deno.env.get("EVOLUTION_API_URL");
+      // const evolutionKey = Deno.env.get("EVOLUTION_API_KEY");
+      // const instanceName = Deno.env.get("EVOLUTION_INSTANCE_NAME");
+      
+      // if (evolutionUrl && evolutionKey && instanceName) {
+      //   const response = await fetch(
+      //     `${evolutionUrl}/message/sendText/${instanceName}`,
+      //     {
+      //       method: "POST",
+      //       headers: {
+      //         "apikey": evolutionKey,
+      //         "Content-Type": "application/json",
+      //       },
+      //       body: JSON.stringify({
+      //         number: client_phone,
+      //         text: message,
+      //       }),
+      //     }
+      //   );
+      //   
+      //   if (!response.ok) {
+      //     throw new Error(`Evolution API error: ${await response.text()}`);
+      //   }
+      // }
+    } else if (apiProvider === "z_api") {
+      // Z-API
+      // Requer: Z_API_INSTANCE_ID, Z_API_TOKEN
+      // const instanceId = Deno.env.get("Z_API_INSTANCE_ID");
+      // const zApiToken = Deno.env.get("Z_API_TOKEN");
+      
+      // if (instanceId && zApiToken) {
+      //   const response = await fetch(
+      //     `https://api.z-api.io/instances/${instanceId}/token/${zApiToken}/send-text`,
+      //     {
+      //       method: "POST",
+      //       headers: {
+      //         "Content-Type": "application/json",
+      //       },
+      //       body: JSON.stringify({
+      //         phone: client_phone,
+      //         message: message,
+      //       }),
+      //     }
+      //   );
+      //   
+      //   if (!response.ok) {
+      //     throw new Error(`Z-API error: ${await response.text()}`);
+      //   }
+      // }
+    }
 
     return new Response(
       JSON.stringify({
         success: true,
         message: "WhatsApp notification processed",
+        provider: apiProvider,
         preview: {
           to: settings.phone_number,
           message: message,
