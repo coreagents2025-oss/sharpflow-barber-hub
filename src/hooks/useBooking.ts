@@ -157,6 +157,23 @@ export const useBooking = (barbershopId: string | null) => {
         // Não falhar o agendamento se o email não funcionar
       }
 
+      // Enviar notificação WhatsApp (se configurado)
+      try {
+        await supabase.functions.invoke('send-whatsapp-notification', {
+          body: {
+            barbershop_id: barbershopId,
+            client_phone: data.clientPhone,
+            client_name: data.clientName,
+            service_name: service?.name || 'Serviço',
+            barber_name: barber?.name || 'Barbeiro',
+            scheduled_at: scheduledAt.toISOString(),
+          },
+        });
+      } catch (whatsappError) {
+        console.log('WhatsApp notification failed (não configurado):', whatsappError);
+        // Não falhar o agendamento se o WhatsApp não funcionar
+      }
+
       toast.success('Agendamento realizado com sucesso!');
       return true;
     } catch (error: any) {

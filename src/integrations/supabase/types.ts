@@ -142,6 +142,7 @@ export type Database = {
           phone: string | null
           slug: string
           updated_at: string
+          whatsapp_settings: Json | null
         }
         Insert: {
           address?: string | null
@@ -156,6 +157,7 @@ export type Database = {
           phone?: string | null
           slug?: string
           updated_at?: string
+          whatsapp_settings?: Json | null
         }
         Update: {
           address?: string | null
@@ -170,6 +172,7 @@ export type Database = {
           phone?: string | null
           slug?: string
           updated_at?: string
+          whatsapp_settings?: Json | null
         }
         Relationships: []
       }

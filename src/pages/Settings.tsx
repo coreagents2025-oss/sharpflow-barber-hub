@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { User, Building2, Bell, Shield, Globe, Eye, ExternalLink } from 'lucide-react';
+import { User, Building2, Bell, Shield, Globe, Eye, ExternalLink, MessageCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
 import { DomainSetupGuide } from '@/components/DomainSetupGuide';
@@ -51,6 +51,12 @@ const emailSettingsSchema = z.object({
   notifications_enabled: z.boolean(),
 });
 
+const whatsappSettingsSchema = z.object({
+  enabled: z.boolean(),
+  phone_number: z.string().regex(/^\d{10,15}$/, 'Número de telefone inválido (apenas números)').or(z.literal('')),
+  message_template: z.string().min(10, 'Template deve ter pelo menos 10 caracteres'),
+});
+
 const Settings = () => {
   const { user, barbershopId } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -83,6 +89,12 @@ const Settings = () => {
     from_email: '',
     from_name: '',
     notifications_enabled: true,
+  });
+
+  const [whatsappSettings, setWhatsappSettings] = useState({
+    enabled: false,
+    phone_number: '',
+    message_template: 'Olá {{client_name}}! Seu agendamento foi confirmado para {{date}} às {{time}}. Serviço: {{service_name}} com {{barber_name}}. Aguardamos você!',
   });
 
   const [showDomainGuide, setShowDomainGuide] = useState(false);
@@ -135,6 +147,14 @@ const Settings = () => {
               from_email: settings.from_email || '',
               from_name: settings.from_name || '',
               notifications_enabled: settings.notifications_enabled ?? true,
+            });
+
+            // Carregar WhatsApp settings
+            const whatsappConfig = (barbershop.whatsapp_settings || {}) as any;
+            setWhatsappSettings({
+              enabled: whatsappConfig.enabled || false,
+              phone_number: whatsappConfig.phone_number || '',
+              message_template: whatsappConfig.message_template || 'Olá {{client_name}}! Seu agendamento foi confirmado para {{date}} às {{time}}. Serviço: {{service_name}} com {{barber_name}}. Aguardamos você!',
             });
           }
         }
@@ -303,6 +323,34 @@ const Settings = () => {
       } else {
         console.error('Erro ao salvar email settings:', error);
         toast.error('Erro ao salvar configurações de email');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveWhatsappSettings = async () => {
+    if (!barbershopId) return;
+    
+    setLoading(true);
+    try {
+      const validated = whatsappSettingsSchema.parse(whatsappSettings);
+      
+      const { error } = await supabase
+        .from('barbershops')
+        .update({
+          whatsapp_settings: validated,
+        })
+        .eq('id', barbershopId);
+      
+      if (error) throw error;
+      toast.success('Configurações do WhatsApp atualizadas!');
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.errors[0].message);
+      } else {
+        console.error('Erro ao salvar WhatsApp settings:', error);
+        toast.error('Erro ao salvar configurações do WhatsApp');
       }
     } finally {
       setLoading(false);
@@ -620,15 +668,91 @@ const Settings = () => {
           <TabsContent value="notifications">
             <Card>
               <CardHeader>
-                <CardTitle>Preferências de Notificação</CardTitle>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageCircle className="h-5 w-5" />
+                  Notificações via WhatsApp
+                </CardTitle>
                 <CardDescription>
-                  Configure como deseja receber notificações
+                  Configure o envio automático de confirmações de agendamento via WhatsApp
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <p className="text-muted-foreground">
-                  Configurações de notificação serão implementadas
-                </p>
+              <CardContent className="space-y-4">
+                {!barbershopId ? (
+                  <p className="text-muted-foreground">
+                    Você não está vinculado a nenhuma barbearia.
+                  </p>
+                ) : dataLoading ? (
+                  <div className="space-y-4">
+                    <div className="h-10 bg-muted animate-pulse rounded" />
+                    <div className="h-10 bg-muted animate-pulse rounded" />
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between py-2 border-b">
+                      <div>
+                        <Label>Ativar Notificações WhatsApp</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Enviar confirmações automáticas de agendamento
+                        </p>
+                      </div>
+                      <Switch 
+                        checked={whatsappSettings.enabled}
+                        onCheckedChange={(checked) => setWhatsappSettings({ ...whatsappSettings, enabled: checked })}
+                        disabled={loading}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="whatsapp-phone">
+                        Número do WhatsApp (com DDD, sem símbolos)
+                      </Label>
+                      <Input 
+                        id="whatsapp-phone"
+                        placeholder="5511999999999"
+                        value={whatsappSettings.phone_number}
+                        onChange={(e) => setWhatsappSettings({ ...whatsappSettings, phone_number: e.target.value.replace(/\D/g, '') })}
+                        disabled={loading}
+                        maxLength={15}
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Este número receberá as notificações de agendamento. Você pode configurar o envio via API do WhatsApp Business.
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="message-template">Template da Mensagem</Label>
+                      <textarea
+                        id="message-template"
+                        className="w-full min-h-[120px] p-3 rounded-md border border-input bg-background text-sm"
+                        value={whatsappSettings.message_template}
+                        onChange={(e) => setWhatsappSettings({ ...whatsappSettings, message_template: e.target.value })}
+                        disabled={loading}
+                        placeholder="Olá {{client_name}}! Seu agendamento foi confirmado..."
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Use as variáveis: {'{'}{'{'} client_name {'}'}{'}'},  {'{'}{'{'} date {'}'}{'}'},  {'{'}{'{'} time {'}'}{'}'},  {'{'}{'{'} service_name {'}'}{'}'},  {'{'}{'{'} barber_name {'}'}{'}'} 
+                      </p>
+                    </div>
+
+                    <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
+                        <MessageCircle className="h-4 w-4" />
+                        Como configurar a API do WhatsApp
+                      </h4>
+                      <ol className="text-xs space-y-1 text-muted-foreground">
+                        <li>1. Acesse o <a href="https://developers.facebook.com/apps" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 underline">Facebook Developers</a></li>
+                        <li>2. Crie um app e ative a API do WhatsApp Business</li>
+                        <li>3. Configure o número de telefone para envio</li>
+                        <li>4. Obtenha o token de acesso (API Token)</li>
+                        <li>5. Entre em contato com o suporte para adicionar as credenciais</li>
+                      </ol>
+                    </div>
+
+                    <Button onClick={handleSaveWhatsappSettings} disabled={loading} className="bg-accent hover:bg-accent/90">
+                      {loading ? 'Salvando...' : 'Salvar Configurações'}
+                    </Button>
+                  </>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
