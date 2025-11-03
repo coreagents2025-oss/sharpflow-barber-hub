@@ -48,6 +48,7 @@
 | logo_url | text | Sim | null | URL do logo |
 | operating_hours | jsonb | Sim | null | Horários de funcionamento |
 | email_settings | jsonb | Sim | {} | Configurações de email |
+| whatsapp_settings | jsonb | Sim | {} | Configurações de notificações WhatsApp |
 | created_at | timestamptz | Não | now() | Data de criação |
 | updated_at | timestamptz | Não | now() | Data de atualização |
 
@@ -68,6 +69,45 @@
   "sunday": { "open": "09:00", "close": "13:00", "closed": true }
 }
 ```
+
+**Exemplo de email_settings:**
+```json
+{
+  "from_email": "contato@barbearia.com",
+  "from_name": "Barbearia Premium",
+  "notifications_enabled": true
+}
+```
+
+**Exemplo de whatsapp_settings:**
+```json
+{
+  "enabled": true,
+  "phone_number": "5511999999999",
+  "api_provider": "official",
+  "message_template": "Olá {{client_name}}! Seu agendamento foi confirmado para {{date}} às {{time}}. Serviço: {{service_name}} com {{barber_name}}. Aguardamos você!",
+  "daily_offer_message": "🔥 Oferta do dia! Corte + Barba por apenas R$ 50,00. Válido até hoje!",
+  "whatsapp_api_token": "EAAxxxxxxxxxxxxx",
+  "whatsapp_phone_number_id": "123456789012345",
+  "evolution_api_url": "https://sua-api.com",
+  "evolution_api_key": "sua-api-key",
+  "evolution_instance_name": "minha-instancia",
+  "z_api_instance_id": "SUA_INSTANCIA",
+  "z_api_token": "SEU_TOKEN"
+}
+```
+
+**Provedores de API WhatsApp suportados:**
+- `official`: WhatsApp Business API (Oficial) - Requer `whatsapp_api_token` e `whatsapp_phone_number_id`
+- `evolution_api`: Evolution API (Não oficial) - Requer `evolution_api_url`, `evolution_api_key` e `evolution_instance_name`
+- `z_api`: Z-API (Não oficial) - Requer `z_api_instance_id` e `z_api_token`
+
+**Variáveis disponíveis no template de mensagem:**
+- `{{client_name}}`: Nome do cliente
+- `{{date}}`: Data formatada do agendamento
+- `{{time}}`: Hora formatada do agendamento
+- `{{service_name}}`: Nome do serviço
+- `{{barber_name}}`: Nome do barbeiro
 
 ### barbers
 

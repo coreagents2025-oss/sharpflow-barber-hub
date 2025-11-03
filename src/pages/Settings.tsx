@@ -58,6 +58,16 @@ const whatsappSettingsSchema = z.object({
   message_template: z.string().min(10, 'Template deve ter pelo menos 10 caracteres'),
   api_provider: z.enum(['official', 'evolution_api', 'z_api']),
   daily_offer_message: z.string().optional().or(z.literal('')),
+  // WhatsApp Business API (Oficial)
+  whatsapp_api_token: z.string().optional().or(z.literal('')),
+  whatsapp_phone_number_id: z.string().optional().or(z.literal('')),
+  // Evolution API
+  evolution_api_url: z.string().url('URL inválida').optional().or(z.literal('')),
+  evolution_api_key: z.string().optional().or(z.literal('')),
+  evolution_instance_name: z.string().optional().or(z.literal('')),
+  // Z-API
+  z_api_instance_id: z.string().optional().or(z.literal('')),
+  z_api_token: z.string().optional().or(z.literal('')),
 });
 
 const Settings = () => {
@@ -100,6 +110,16 @@ const Settings = () => {
     message_template: 'Olá {{client_name}}! Seu agendamento foi confirmado para {{date}} às {{time}}. Serviço: {{service_name}} com {{barber_name}}. Aguardamos você!',
     api_provider: 'official' as 'official' | 'evolution_api' | 'z_api',
     daily_offer_message: '',
+    // WhatsApp Business API (Oficial)
+    whatsapp_api_token: '',
+    whatsapp_phone_number_id: '',
+    // Evolution API
+    evolution_api_url: '',
+    evolution_api_key: '',
+    evolution_instance_name: '',
+    // Z-API
+    z_api_instance_id: '',
+    z_api_token: '',
   });
 
   const [showDomainGuide, setShowDomainGuide] = useState(false);
@@ -162,6 +182,13 @@ const Settings = () => {
               message_template: whatsappConfig.message_template || 'Olá {{client_name}}! Seu agendamento foi confirmado para {{date}} às {{time}}. Serviço: {{service_name}} com {{barber_name}}. Aguardamos você!',
               api_provider: whatsappConfig.api_provider || 'official',
               daily_offer_message: whatsappConfig.daily_offer_message || '',
+              whatsapp_api_token: whatsappConfig.whatsapp_api_token || '',
+              whatsapp_phone_number_id: whatsappConfig.whatsapp_phone_number_id || '',
+              evolution_api_url: whatsappConfig.evolution_api_url || '',
+              evolution_api_key: whatsappConfig.evolution_api_key || '',
+              evolution_instance_name: whatsappConfig.evolution_instance_name || '',
+              z_api_instance_id: whatsappConfig.z_api_instance_id || '',
+              z_api_token: whatsappConfig.z_api_token || '',
             });
           }
         }
@@ -776,6 +803,114 @@ const Settings = () => {
                         Esta mensagem será adicionada ao final de cada confirmação de agendamento
                       </p>
                     </div>
+
+                    {/* Campos de configuração da API WhatsApp Business (Oficial) */}
+                    {whatsappSettings.api_provider === 'official' && (
+                      <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                        <h4 className="font-semibold text-sm">Configuração WhatsApp Business API</h4>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="whatsapp-token">Token de Acesso</Label>
+                          <Input 
+                            id="whatsapp-token"
+                            type="password"
+                            placeholder="EAAxxxxxxxxxxxxx"
+                            value={whatsappSettings.whatsapp_api_token}
+                            onChange={(e) => setWhatsappSettings({ ...whatsappSettings, whatsapp_api_token: e.target.value })}
+                            disabled={loading}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Token obtido no Facebook Developers
+                          </p>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="phone-number-id">Phone Number ID</Label>
+                          <Input 
+                            id="phone-number-id"
+                            placeholder="123456789012345"
+                            value={whatsappSettings.whatsapp_phone_number_id}
+                            onChange={(e) => setWhatsappSettings({ ...whatsappSettings, whatsapp_phone_number_id: e.target.value })}
+                            disabled={loading}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            ID do número de telefone no WhatsApp Business
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Campos de configuração da Evolution API */}
+                    {whatsappSettings.api_provider === 'evolution_api' && (
+                      <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                        <h4 className="font-semibold text-sm">Configuração Evolution API</h4>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="evolution-url">URL da API</Label>
+                          <Input 
+                            id="evolution-url"
+                            type="url"
+                            placeholder="https://sua-api.com"
+                            value={whatsappSettings.evolution_api_url}
+                            onChange={(e) => setWhatsappSettings({ ...whatsappSettings, evolution_api_url: e.target.value })}
+                            disabled={loading}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="evolution-key">API Key</Label>
+                          <Input 
+                            id="evolution-key"
+                            type="password"
+                            placeholder="sua-api-key"
+                            value={whatsappSettings.evolution_api_key}
+                            onChange={(e) => setWhatsappSettings({ ...whatsappSettings, evolution_api_key: e.target.value })}
+                            disabled={loading}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="evolution-instance">Nome da Instância</Label>
+                          <Input 
+                            id="evolution-instance"
+                            placeholder="minha-instancia"
+                            value={whatsappSettings.evolution_instance_name}
+                            onChange={(e) => setWhatsappSettings({ ...whatsappSettings, evolution_instance_name: e.target.value })}
+                            disabled={loading}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Campos de configuração da Z-API */}
+                    {whatsappSettings.api_provider === 'z_api' && (
+                      <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                        <h4 className="font-semibold text-sm">Configuração Z-API</h4>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="z-instance-id">Instance ID</Label>
+                          <Input 
+                            id="z-instance-id"
+                            placeholder="SUA_INSTANCIA"
+                            value={whatsappSettings.z_api_instance_id}
+                            onChange={(e) => setWhatsappSettings({ ...whatsappSettings, z_api_instance_id: e.target.value })}
+                            disabled={loading}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="z-token">Token</Label>
+                          <Input 
+                            id="z-token"
+                            type="password"
+                            placeholder="SEU_TOKEN"
+                            value={whatsappSettings.z_api_token}
+                            onChange={(e) => setWhatsappSettings({ ...whatsappSettings, z_api_token: e.target.value })}
+                            disabled={loading}
+                          />
+                        </div>
+                      </div>
+                    )}
 
                     <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
                       <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
