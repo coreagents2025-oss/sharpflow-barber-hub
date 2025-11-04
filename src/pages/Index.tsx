@@ -55,7 +55,7 @@ const Index = () => {
             <Button size="lg" className="bg-accent hover:bg-accent/90 text-lg h-14 px-8" onClick={() => navigate("/booking")}>
               Agendar Demo Grátis
             </Button>
-            <Button size="lg" variant="outline" onClick={() => navigate("/services")} className="border-white hover:bg-white text-lg h-14 px-8 text-amber-600">Seu Novo Catálogo!  </Button>
+            
           </div>
         </div>
       </section>
