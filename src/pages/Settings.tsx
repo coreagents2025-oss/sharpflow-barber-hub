@@ -970,13 +970,28 @@ const Settings = () => {
                           <Label htmlFor="uazapi-subdomain">Subdomínio UAZapi</Label>
                           <Input 
                             id="uazapi-subdomain"
-                            placeholder="seusubdominio"
+                            placeholder="ex: core-agents (apenas o subdomínio)"
                             value={whatsappSettings.uazapi_account_id}
-                            onChange={(e) => setWhatsappSettings({ ...whatsappSettings, uazapi_account_id: e.target.value })}
+                            onChange={(e) => {
+                              let value = e.target.value.trim();
+                              
+                              // Se o usuário colar uma URL completa, extrair automaticamente o subdomínio
+                              if (value.includes('://')) {
+                                try {
+                                  const url = new URL(value);
+                                  value = url.hostname.split('.')[0];
+                                  toast.info(`Subdomínio extraído: ${value}`);
+                                } catch (error) {
+                                  console.error('Error parsing URL:', error);
+                                }
+                              }
+                              
+                              setWhatsappSettings({ ...whatsappSettings, uazapi_account_id: value });
+                            }}
                             disabled={loading}
                           />
                           <p className="text-xs text-muted-foreground">
-                            Exemplo: se sua URL é https://meunegocio.uazapi.com, use "meunegocio"
+                            Digite apenas o subdomínio (ex: core-agents). Se colar uma URL completa, será extraído automaticamente.
                           </p>
                         </div>
 

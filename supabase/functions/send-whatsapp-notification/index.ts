@@ -290,13 +290,27 @@ const handler = async (req: Request): Promise<Response> => {
         }
       } else if (apiProvider === "uazapi") {
         // UAZapi
-        const subdomain = settings.uazapi_account_id;
+        let subdomain = settings.uazapi_account_id;
         const instanceId = settings.uazapi_instance_id;
         const token = settings.uazapi_token;
+
+        // Extrair subdomínio se vier URL completa
+        if (subdomain && subdomain.includes('://')) {
+          try {
+            const url = new URL(subdomain);
+            subdomain = url.hostname.split('.')[0]; // Pega apenas "core-agents" de "core-agents.uazapi.com"
+            console.log('Extracted subdomain from URL:', subdomain);
+          } catch (error) {
+            console.error('Error parsing UAZapi URL:', error);
+          }
+        }
         
         if (subdomain && instanceId && token) {
+          const apiUrl = `https://${subdomain}.uazapi.com/message/text`;
+          console.log('UAZapi URL constructed:', apiUrl);
+          
           const response = await fetch(
-            `https://${subdomain}.uazapi.com/message/text`,
+            apiUrl,
             {
               method: "POST",
               headers: {
