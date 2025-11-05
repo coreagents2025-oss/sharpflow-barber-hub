@@ -60,17 +60,27 @@ export const useBooking = (barbershopId: string | null) => {
 
       // Normalizar telefone (remover formatação)
       const normalizedPhone = data.clientPhone.replace(/\D/g, '');
+      
+      console.log('[BOOKING] Buscando cliente por telefone:', normalizedPhone);
 
       // Create or get client profile (buscar apenas por telefone normalizado)
-      const { data: existingClient } = await supabase
+      const { data: existingClient, error: searchError } = await supabase
         .from('profiles')
         .select('id, full_name')
         .eq('phone', normalizedPhone)
         .maybeSingle();
 
+      if (searchError) {
+        console.error('[BOOKING] Erro ao buscar cliente:', searchError);
+      } else {
+        console.log('[BOOKING] Cliente encontrado:', existingClient);
+      }
+
       let clientId = existingClient?.id;
 
       if (!clientId) {
+        console.log('[BOOKING] Cliente não encontrado, criando novo usuário...');
+        
         // Criar usuário anônimo temporário para agendamento público
         const { data: authData, error: authError } = await supabase.auth.signUp({
           email: data.clientEmail,
@@ -83,13 +93,34 @@ export const useBooking = (barbershopId: string | null) => {
           }
         });
 
-        if (authError) {
-          console.error('Error creating anonymous user:', authError);
-          toast.error('Erro ao criar perfil. Tente novamente.');
-          return false;
-        }
+        console.log('[BOOKING] Resultado signUp:', { authData, authError });
 
-        clientId = authData.user?.id;
+        if (authError) {
+          console.error('[BOOKING] Error creating anonymous user:', authError);
+          
+          // Se erro for de email já existente, tentar buscar por email
+          if (authError.message?.includes('already registered')) {
+            console.log('[BOOKING] Email já existe, buscando perfil por email...');
+            const { data: profileByEmail } = await supabase
+              .from('profiles')
+              .select('id')
+              .eq('id', data.clientEmail)
+              .maybeSingle();
+            
+            if (profileByEmail) {
+              clientId = profileByEmail.id;
+              console.log('[BOOKING] Perfil encontrado por email:', clientId);
+            }
+          }
+          
+          if (!clientId) {
+            toast.error(`Erro ao criar perfil: ${authError.message}`);
+            return false;
+          }
+        } else {
+          clientId = authData.user?.id;
+          console.log('[BOOKING] Novo cliente criado:', clientId);
+        }
         
         if (!clientId) {
           toast.error('Erro ao criar perfil. Tente novamente.');
@@ -97,10 +128,18 @@ export const useBooking = (barbershopId: string | null) => {
         }
 
         // Atualizar telefone no perfil (salvar normalizado)
-        await supabase
+        console.log('[BOOKING] Atualizando telefone no perfil...');
+        const { error: updateError } = await supabase
           .from('profiles')
           .update({ phone: normalizedPhone })
           .eq('id', clientId);
+        
+        if (updateError) {
+          console.error('[BOOKING] Erro ao atualizar telefone:', updateError);
+          toast.error(`Erro ao atualizar telefone: ${updateError.message}`);
+          return false;
+        }
+        console.log('[BOOKING] Telefone atualizado com sucesso');
       }
 
       // Validar se não é data/hora passada
@@ -161,6 +200,15 @@ export const useBooking = (barbershopId: string | null) => {
       }
 
       // Create appointment
+      console.log('[BOOKING] Criando appointment com dados:', {
+        barbershop_id: barbershopId,
+        service_id: data.serviceId,
+        barber_id: data.barberId,
+        client_id: clientId,
+        scheduled_at: scheduledAt.toISOString(),
+        status: 'scheduled',
+      });
+      
       const { error: appointmentError } = await supabase
         .from('appointments')
         .insert({
@@ -172,7 +220,12 @@ export const useBooking = (barbershopId: string | null) => {
           status: 'scheduled',
         });
 
-      if (appointmentError) throw appointmentError;
+      if (appointmentError) {
+        console.error('[BOOKING] Erro ao criar appointment:', appointmentError);
+        throw appointmentError;
+      }
+      
+      console.log('[BOOKING] Appointment criado com sucesso!');
 
       // Buscar informações do serviço e barbeiro para o email
       const { data: service } = await supabase
