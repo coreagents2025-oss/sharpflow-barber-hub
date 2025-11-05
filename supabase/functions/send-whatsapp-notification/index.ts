@@ -343,44 +343,145 @@ const handler = async (req: Request): Promise<Response> => {
             throw new Error(`UAZapi instance not ready: ${statusError.message}`);
           }
           
-          // Enviar mensagem
-          const apiUrl = `https://${subdomain}.uazapi.com/chat/send/text`;
-          const requestBody = {
-            Phone: client_phone,
-            Body: message,
-          };
+          // Sistema de fallback com 3 tentativas automáticas
+          let response: Response | null = null;
+          let responseText = '';
+          let lastError = '';
           
-          console.log('UAZapi Send Request:', {
-            url: apiUrl,
-            phone: client_phone,
-            messageLength: message.length,
-            bodyKeys: Object.keys(requestBody),
-          });
-          
-          const response = await fetch(
-            apiUrl,
-            {
+          // Tentativa 1: Com instanceId no body
+          try {
+            console.log('🔄 Tentativa 1: Adicionando instanceId no body...');
+            const apiUrl = `https://${subdomain}.uazapi.com/chat/send/text`;
+            const requestBody = {
+              instanceId: instanceId,
+              Phone: client_phone,
+              Body: message,
+            };
+            
+            console.log('UAZapi Send Request (Tentativa 1):', {
+              url: apiUrl,
+              phone: client_phone,
+              messageLength: message.length,
+              bodyKeys: Object.keys(requestBody),
+            });
+            
+            response = await fetch(apiUrl, {
               method: "POST",
               headers: {
                 "Token": token,
                 "Content-Type": "application/json",
               },
               body: JSON.stringify(requestBody),
-            }
-          );
-          
-          const responseText = await response.text();
-          console.log('UAZapi Response Status:', response.status);
-          console.log('UAZapi Response Body:', responseText);
-          
-          if (!response.ok) {
-            let errorMessage = `UAZapi error (${response.status}): ${responseText}`;
+            });
             
-            if (response.status === 405) {
-              errorMessage = 'Method not allowed. Instance may be disconnected or endpoint incorrect.';
-            } else if (response.status === 401 || response.status === 403) {
+            responseText = await response.text();
+            console.log('UAZapi Response Status (Tentativa 1):', response.status);
+            console.log('UAZapi Response Body (Tentativa 1):', responseText);
+            
+            if (response.ok) {
+              console.log('✅ Tentativa 1 bem-sucedida!');
+            } else {
+              throw new Error(`Status ${response.status}: ${responseText}`);
+            }
+          } catch (error: any) {
+            console.log('❌ Tentativa 1 falhou:', error.message);
+            lastError = error.message;
+            response = null;
+          }
+          
+          // Tentativa 2: Com instanceId na URL
+          if (!response || !response.ok) {
+            try {
+              console.log('🔄 Tentativa 2: Usando instanceId na URL...');
+              const apiUrl = `https://${subdomain}.uazapi.com/instance/${instanceId}/chat/send/text`;
+              const requestBody = {
+                Phone: client_phone,
+                Body: message,
+              };
+              
+              console.log('UAZapi Send Request (Tentativa 2):', {
+                url: apiUrl,
+                phone: client_phone,
+                messageLength: message.length,
+                bodyKeys: Object.keys(requestBody),
+              });
+              
+              response = await fetch(apiUrl, {
+                method: "POST",
+                headers: {
+                  "Token": token,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(requestBody),
+              });
+              
+              responseText = await response.text();
+              console.log('UAZapi Response Status (Tentativa 2):', response.status);
+              console.log('UAZapi Response Body (Tentativa 2):', responseText);
+              
+              if (response.ok) {
+                console.log('✅ Tentativa 2 bem-sucedida!');
+              } else {
+                throw new Error(`Status ${response.status}: ${responseText}`);
+              }
+            } catch (error: any) {
+              console.log('❌ Tentativa 2 falhou:', error.message);
+              lastError = error.message;
+              response = null;
+            }
+          }
+          
+          // Tentativa 3: Com sufixo @s.whatsapp.net
+          if (!response || !response.ok) {
+            try {
+              console.log('🔄 Tentativa 3: Adicionando sufixo @s.whatsapp.net...');
+              const apiUrl = `https://${subdomain}.uazapi.com/chat/send/text`;
+              const requestBody = {
+                instanceId: instanceId,
+                Phone: `${client_phone}@s.whatsapp.net`,
+                Body: message,
+              };
+              
+              console.log('UAZapi Send Request (Tentativa 3):', {
+                url: apiUrl,
+                phone: `${client_phone}@s.whatsapp.net`,
+                messageLength: message.length,
+                bodyKeys: Object.keys(requestBody),
+              });
+              
+              response = await fetch(apiUrl, {
+                method: "POST",
+                headers: {
+                  "Token": token,
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(requestBody),
+              });
+              
+              responseText = await response.text();
+              console.log('UAZapi Response Status (Tentativa 3):', response.status);
+              console.log('UAZapi Response Body (Tentativa 3):', responseText);
+              
+              if (response.ok) {
+                console.log('✅ Tentativa 3 bem-sucedida!');
+              } else {
+                throw new Error(`Status ${response.status}: ${responseText}`);
+              }
+            } catch (error: any) {
+              console.log('❌ Tentativa 3 falhou:', error.message);
+              lastError = error.message;
+            }
+          }
+          
+          // Verificar resultado final
+          if (!response || !response.ok) {
+            let errorMessage = `Todas as 3 tentativas falharam. Último erro: ${lastError}`;
+            
+            if (response?.status === 405) {
+              errorMessage = 'Method not allowed após todas as tentativas. Considere migrar para Evolution API ou Z-API.';
+            } else if (response?.status === 401 || response?.status === 403) {
               errorMessage = 'Authentication failed. Check your UAZapi token.';
-            } else if (response.status === 404) {
+            } else if (response?.status === 404) {
               errorMessage = 'Endpoint not found. Verify instance ID and subdomain.';
             }
             
