@@ -56,9 +56,16 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId }: Booking
     }
   }, [isOpen, barbershopId, selectedDate]);
 
+  // Gerar horários disponíveis assim que a data for selecionada
+  useEffect(() => {
+    if (selectedDate) {
+      generateAvailableTimes();
+    }
+  }, [selectedDate, barbershopId]);
+
+  // Buscar horários ocupados quando barbeiro for selecionado
   useEffect(() => {
     if (selectedDate && selectedBarber) {
-      generateAvailableTimes();
       fetchOccupiedTimes();
     }
   }, [selectedDate, selectedBarber]);
