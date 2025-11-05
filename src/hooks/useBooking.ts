@@ -63,7 +63,7 @@ export const useBooking = (barbershopId: string | null) => {
       
       console.log('[BOOKING] Buscando cliente por telefone:', normalizedPhone);
 
-      // Create or get client profile (buscar apenas por telefone normalizado)
+      // Buscar cliente existente por telefone
       const { data: existingClient, error: searchError } = await supabase
         .from('profiles')
         .select('id, full_name')
@@ -78,68 +78,48 @@ export const useBooking = (barbershopId: string | null) => {
 
       let clientId = existingClient?.id;
 
+      // Se não encontrou, criar novo lead (sem autenticação)
       if (!clientId) {
-        console.log('[BOOKING] Cliente não encontrado, criando novo usuário...');
+        console.log('[BOOKING] Cliente não encontrado, criando lead no banco...');
         
-        // Criar usuário anônimo temporário para agendamento público
-        const { data: authData, error: authError } = await supabase.auth.signUp({
-          email: data.clientEmail,
-          password: Math.random().toString(36).slice(-12) + Math.random().toString(36).slice(-12),
-          options: {
-            data: {
-              full_name: data.clientName,
-            },
-            emailRedirectTo: `${window.location.origin}/`
-          }
-        });
+        // Gerar UUID para o novo lead
+        const newClientId = crypto.randomUUID();
+        
+        const { data: newProfile, error: insertError } = await supabase
+          .from('profiles')
+          .insert([{
+            id: newClientId,
+            full_name: data.clientName,
+            phone: normalizedPhone,
+          }])
+          .select('id')
+          .single();
 
-        console.log('[BOOKING] Resultado signUp:', { authData, authError });
-
-        if (authError) {
-          console.error('[BOOKING] Error creating anonymous user:', authError);
+        if (insertError) {
+          console.error('[BOOKING] Erro ao criar perfil:', insertError);
           
-          // Se erro for de email já existente, tentar buscar por email
-          if (authError.message?.includes('already registered')) {
-            console.log('[BOOKING] Email já existe, buscando perfil por email...');
-            const { data: profileByEmail } = await supabase
+          // Se for erro de duplicata (telefone já existe), tentar buscar novamente
+          if (insertError.code === '23505') {
+            const { data: retryClient } = await supabase
               .from('profiles')
               .select('id')
-              .eq('id', data.clientEmail)
+              .eq('phone', normalizedPhone)
               .maybeSingle();
             
-            if (profileByEmail) {
-              clientId = profileByEmail.id;
-              console.log('[BOOKING] Perfil encontrado por email:', clientId);
+            if (retryClient) {
+              clientId = retryClient.id;
+              console.log('[BOOKING] Cliente encontrado na segunda tentativa:', clientId);
             }
           }
           
           if (!clientId) {
-            toast.error(`Erro ao criar perfil: ${authError.message}`);
+            toast.error('Erro ao criar perfil do cliente. Tente novamente.');
             return false;
           }
         } else {
-          clientId = authData.user?.id;
-          console.log('[BOOKING] Novo cliente criado:', clientId);
+          clientId = newProfile.id;
+          console.log('[BOOKING] Lead criado com sucesso:', clientId);
         }
-        
-        if (!clientId) {
-          toast.error('Erro ao criar perfil. Tente novamente.');
-          return false;
-        }
-
-        // Atualizar telefone no perfil (salvar normalizado)
-        console.log('[BOOKING] Atualizando telefone no perfil...');
-        const { error: updateError } = await supabase
-          .from('profiles')
-          .update({ phone: normalizedPhone })
-          .eq('id', clientId);
-        
-        if (updateError) {
-          console.error('[BOOKING] Erro ao atualizar telefone:', updateError);
-          toast.error(`Erro ao atualizar telefone: ${updateError.message}`);
-          return false;
-        }
-        console.log('[BOOKING] Telefone atualizado com sucesso');
       }
 
       // Validar se não é data/hora passada
