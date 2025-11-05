@@ -167,31 +167,28 @@ const Settings = () => {
               custom_domain: barbershop.custom_domain || '',
             });
 
-            // Carregar email settings
-            const settings = (barbershop.email_settings || {}) as any;
-            setEmailSettings({
-              from_email: settings.from_email || '',
-              from_name: settings.from_name || '',
-              notifications_enabled: settings.notifications_enabled ?? true,
-            });
-
-            // Carregar WhatsApp settings da tabela barbershop_credentials
+            // Carregar credenciais da tabela barbershop_credentials
             const { data: credentials } = await supabase
               .from('barbershop_credentials')
               .select('whatsapp_credentials, email_credentials')
               .eq('barbershop_id', barbershopId)
               .single();
             
+            const emailCreds = (credentials?.email_credentials || {}) as any;
+            setEmailSettings({
+              from_email: emailCreds.from_email || '',
+              from_name: emailCreds.from_name || '',
+              notifications_enabled: emailCreds.notifications_enabled ?? true,
+            });
+            
             const whatsappCreds = (credentials?.whatsapp_credentials || {}) as any;
-            const whatsappConfig = (barbershop.whatsapp_settings || {}) as any;
             
             setWhatsappSettings({
-              enabled: whatsappConfig.enabled || false,
-              phone_number: whatsappConfig.phone_number || '',
-              message_template: whatsappConfig.message_template || 'Olá {{client_name}}! Seu agendamento foi confirmado para {{date}} às {{time}}. Serviço: {{service_name}} com {{barber_name}}. Aguardamos você!',
-              api_provider: whatsappConfig.api_provider || 'official',
-              daily_offer_message: whatsappConfig.daily_offer_message || '',
-              // Credenciais vêm da tabela protegida
+              enabled: whatsappCreds.enabled || false,
+              phone_number: whatsappCreds.phone_number || '',
+              message_template: whatsappCreds.message_template || 'Olá {{client_name}}! Seu agendamento foi confirmado para {{date}} às {{time}}. Serviço: {{service_name}} com {{barber_name}}. Aguardamos você!',
+              api_provider: whatsappCreds.api_provider || 'official',
+              daily_offer_message: whatsappCreds.daily_offer_message || '',
               whatsapp_api_token: whatsappCreds.whatsapp_api_token || '',
               whatsapp_phone_number_id: whatsappCreds.whatsapp_phone_number_id || '',
               evolution_api_url: whatsappCreds.evolution_api_url || '',
@@ -353,11 +350,11 @@ const Settings = () => {
       const validated = emailSettingsSchema.parse(emailSettings);
       
       const { error } = await supabase
-        .from('barbershops')
+        .from('barbershop_credentials')
         .update({
-          email_settings: validated,
+          email_credentials: validated,
         })
-        .eq('id', barbershopId);
+        .eq('barbershop_id', barbershopId);
       
       if (error) throw error;
       toast.success('Configurações de email atualizadas!');
@@ -380,44 +377,15 @@ const Settings = () => {
     try {
       const validated = whatsappSettingsSchema.parse(whatsappSettings);
       
-      // Separar dados públicos das credenciais
-      const publicData = {
-        enabled: validated.enabled,
-        phone_number: validated.phone_number,
-        message_template: validated.message_template,
-        api_provider: validated.api_provider,
-        daily_offer_message: validated.daily_offer_message || '',
-      };
-
-      const credentialsData = {
-        whatsapp_api_token: validated.whatsapp_api_token || '',
-        whatsapp_phone_number_id: validated.whatsapp_phone_number_id || '',
-        evolution_api_url: validated.evolution_api_url || '',
-        evolution_api_key: validated.evolution_api_key || '',
-        evolution_instance_name: validated.evolution_instance_name || '',
-        z_api_instance_id: validated.z_api_instance_id || '',
-        z_api_token: validated.z_api_token || '',
-      };
-      
-      // Atualizar dados públicos em barbershops
-      const { error: publicError } = await supabase
-        .from('barbershops')
-        .update({
-          whatsapp_settings: publicData,
-        })
-        .eq('id', barbershopId);
-      
-      if (publicError) throw publicError;
-
-      // Atualizar credenciais protegidas
-      const { error: credsError } = await supabase
+      // Salvar todas as configurações (públicas + credenciais) em barbershop_credentials
+      const { error } = await supabase
         .from('barbershop_credentials')
         .update({
-          whatsapp_credentials: credentialsData,
+          whatsapp_credentials: validated,
         })
         .eq('barbershop_id', barbershopId);
       
-      if (credsError) throw credsError;
+      if (error) throw error;
       
       toast.success('Configurações do WhatsApp atualizadas!');
     } catch (error) {

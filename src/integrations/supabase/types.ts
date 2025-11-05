@@ -82,6 +82,57 @@ export type Database = {
           },
         ]
       }
+      audit_logs: {
+        Row: {
+          action: string
+          barbershop_id: string | null
+          created_at: string | null
+          id: string
+          new_data: Json | null
+          old_data: Json | null
+          record_id: string | null
+          table_name: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          barbershop_id?: string | null
+          created_at?: string | null
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string | null
+          table_name: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          barbershop_id?: string | null
+          created_at?: string | null
+          id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string | null
+          table_name?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_logs_barbershop_id_fkey"
+            columns: ["barbershop_id"]
+            isOneToOne: false
+            referencedRelation: "barbershops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "audit_logs_barbershop_id_fkey"
+            columns: ["barbershop_id"]
+            isOneToOne: false
+            referencedRelation: "public_barbershops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       barbers: {
         Row: {
           barbershop_id: string
@@ -229,7 +280,6 @@ export type Database = {
           created_at: string
           custom_domain: string | null
           email: string | null
-          email_settings: Json | null
           id: string
           logo_url: string | null
           name: string
@@ -237,14 +287,12 @@ export type Database = {
           phone: string | null
           slug: string
           updated_at: string
-          whatsapp_settings: Json | null
         }
         Insert: {
           address?: string | null
           created_at?: string
           custom_domain?: string | null
           email?: string | null
-          email_settings?: Json | null
           id?: string
           logo_url?: string | null
           name: string
@@ -252,14 +300,12 @@ export type Database = {
           phone?: string | null
           slug?: string
           updated_at?: string
-          whatsapp_settings?: Json | null
         }
         Update: {
           address?: string | null
           created_at?: string
           custom_domain?: string | null
           email?: string | null
-          email_settings?: Json | null
           id?: string
           logo_url?: string | null
           name?: string
@@ -267,7 +313,6 @@ export type Database = {
           phone?: string | null
           slug?: string
           updated_at?: string
-          whatsapp_settings?: Json | null
         }
         Relationships: []
       }
