@@ -306,33 +306,41 @@ const handler = async (req: Request): Promise<Response> => {
         }
         
         if (subdomain && instanceId && token) {
-          const apiUrl = `https://${subdomain}.uazapi.com/message/text`;
-          console.log('UAZapi URL constructed:', apiUrl);
+          const apiUrl = `https://${subdomain}.uazapi.com/chat/send/text`;
+          const requestBody = {
+            Phone: client_phone,
+            Body: message,
+          };
+          
+          console.log('UAZapi Request:', {
+            url: apiUrl,
+            phone: client_phone,
+            messageLength: message.length,
+          });
           
           const response = await fetch(
             apiUrl,
             {
               method: "POST",
               headers: {
-                "token": token,
+                "Token": token,
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify({
-                id: instanceId,
-                number: client_phone,
-                text: message,
-              }),
+              body: JSON.stringify(requestBody),
             }
           );
           
+          const responseText = await response.text();
+          console.log('UAZapi Response Status:', response.status);
+          console.log('UAZapi Response Body:', responseText);
+          
           if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`UAZapi error: ${errorText}`);
-            throw new Error(`UAZapi error: ${errorText}`);
+            console.error(`UAZapi error: ${responseText}`);
+            throw new Error(`UAZapi error: ${responseText}`);
           }
           
-          apiResponse = await response.json();
-          console.log("UAZapi Response:", apiResponse);
+          apiResponse = JSON.parse(responseText);
+          console.log("UAZapi Message sent successfully");
         }
       }
     } catch (error: any) {
