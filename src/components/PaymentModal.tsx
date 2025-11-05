@@ -1,0 +1,189 @@
+import { useState } from 'react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+import { CreditCard, Banknote, Smartphone, DollarSign } from 'lucide-react';
+
+interface PaymentModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  appointment: {
+    id: string;
+    client_id: string;
+    barbershop_id: string;
+    service: {
+      name: string;
+      price: number;
+    };
+    client: {
+      full_name: string;
+    };
+  };
+  onSuccess: () => void;
+}
+
+export const PaymentModal = ({ isOpen, onClose, appointment, onSuccess }: PaymentModalProps) => {
+  const [paymentMethod, setPaymentMethod] = useState<string>('cash');
+  const [tip, setTip] = useState<string>('0');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const totalAmount = appointment.service.price + Number(tip);
+
+  const handleConfirmPayment = async () => {
+    setIsSubmitting(true);
+    
+    try {
+      // 1. Criar registro de pagamento
+      const { error: paymentError } = await supabase
+        .from('payments')
+        .insert({
+          appointment_id: appointment.id,
+          client_id: appointment.client_id,
+          barbershop_id: appointment.barbershop_id,
+          amount: totalAmount,
+          payment_method: paymentMethod,
+          status: 'completed',
+        });
+
+      if (paymentError) throw paymentError;
+
+      // 2. Atualizar status do appointment
+      const { error: appointmentError } = await supabase
+        .from('appointments')
+        .update({ status: 'completed' })
+        .eq('id', appointment.id);
+
+      if (appointmentError) throw appointmentError;
+
+      toast.success('Pagamento registrado com sucesso!');
+      onSuccess();
+      onClose();
+    } catch (error: any) {
+      console.error('Error processing payment:', error);
+      toast.error('Erro ao processar pagamento');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const getPaymentIcon = (method: string) => {
+    switch (method) {
+      case 'cash':
+        return <Banknote className="h-4 w-4" />;
+      case 'pix':
+        return <Smartphone className="h-4 w-4" />;
+      case 'debit':
+      case 'credit':
+        return <CreditCard className="h-4 w-4" />;
+      default:
+        return <DollarSign className="h-4 w-4" />;
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Finalizar Pagamento</DialogTitle>
+          <DialogDescription>
+            Registre o pagamento do atendimento
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4 py-4">
+          {/* Cliente e Serviço */}
+          <div className="bg-muted/50 p-4 rounded-lg space-y-2">
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">Cliente:</span>
+              <span className="font-medium">{appointment.client.full_name}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">Serviço:</span>
+              <span className="font-medium">{appointment.service.name}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-sm text-muted-foreground">Valor:</span>
+              <span className="font-medium">R$ {appointment.service.price.toFixed(2)}</span>
+            </div>
+          </div>
+
+          {/* Forma de Pagamento */}
+          <div className="space-y-2">
+            <Label htmlFor="payment-method">Forma de Pagamento</Label>
+            <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+              <SelectTrigger id="payment-method">
+                <div className="flex items-center gap-2">
+                  {getPaymentIcon(paymentMethod)}
+                  <SelectValue />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cash">
+                  <div className="flex items-center gap-2">
+                    <Banknote className="h-4 w-4" />
+                    Dinheiro
+                  </div>
+                </SelectItem>
+                <SelectItem value="pix">
+                  <div className="flex items-center gap-2">
+                    <Smartphone className="h-4 w-4" />
+                    Pix
+                  </div>
+                </SelectItem>
+                <SelectItem value="debit">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="h-4 w-4" />
+                    Cartão de Débito
+                  </div>
+                </SelectItem>
+                <SelectItem value="credit">
+                  <div className="flex items-center gap-2">
+                    <CreditCard className="h-4 w-4" />
+                    Cartão de Crédito
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Gorjeta */}
+          <div className="space-y-2">
+            <Label htmlFor="tip">Gorjeta (opcional)</Label>
+            <Input
+              id="tip"
+              type="number"
+              min="0"
+              step="0.01"
+              value={tip}
+              onChange={(e) => setTip(e.target.value)}
+              placeholder="0.00"
+            />
+          </div>
+
+          {/* Total */}
+          <div className="bg-primary/10 p-4 rounded-lg">
+            <div className="flex justify-between items-center">
+              <span className="text-lg font-semibold">Total a Pagar:</span>
+              <span className="text-2xl font-bold text-primary">
+                R$ {totalAmount.toFixed(2)}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter className="flex-col sm:flex-row gap-2">
+          <Button variant="outline" onClick={onClose} disabled={isSubmitting}>
+            Cancelar
+          </Button>
+          <Button onClick={handleConfirmPayment} disabled={isSubmitting}>
+            {isSubmitting ? 'Processando...' : 'Confirmar Pagamento'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
