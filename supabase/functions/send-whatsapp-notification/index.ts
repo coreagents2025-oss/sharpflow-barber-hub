@@ -7,12 +7,16 @@ const corsHeaders = {
 };
 
 interface WhatsAppNotificationRequest {
+  type?: 'booking_notification' | 'manual_message';
   barbershop_id: string;
   client_phone: string;
-  client_name: string;
-  service_name: string;
-  barber_name: string;
-  scheduled_at: string;
+  client_name?: string;
+  service_name?: string;
+  barber_name?: string;
+  scheduled_at?: string;
+  // Para mensagem manual
+  message?: string;
+  conversation_id?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -26,15 +30,19 @@ const handler = async (req: Request): Promise<Response> => {
     const supabase = createClient(supabaseUrl, supabaseKey);
 
     const {
+      type = 'booking_notification',
       barbershop_id,
       client_phone,
       client_name,
       service_name,
       barber_name,
       scheduled_at,
+      message: manualMessage,
+      conversation_id,
     }: WhatsAppNotificationRequest = await req.json();
 
     console.log("Processing WhatsApp notification:", {
+      type,
       barbershop_id,
       client_phone,
       client_name,
@@ -112,33 +120,41 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Formatar data e hora
-    const scheduledDate = new Date(scheduled_at);
-    const formattedDate = scheduledDate.toLocaleDateString("pt-BR", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-    const formattedTime = scheduledDate.toLocaleTimeString("pt-BR", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-
-    // Preparar mensagem usando template
-    let message = settings.message_template || 
-      "Olá {{client_name}}! Seu agendamento foi confirmado para {{date}} às {{time}}. Serviço: {{service_name}} com {{barber_name}}. Aguardamos você!";
+    // Preparar mensagem
+    let message: string;
     
-    message = message
-      .replace(/\{\{client_name\}\}/g, client_name)
-      .replace(/\{\{date\}\}/g, formattedDate)
-      .replace(/\{\{time\}\}/g, formattedTime)
-      .replace(/\{\{service_name\}\}/g, service_name)
-      .replace(/\{\{barber_name\}\}/g, barber_name);
+    if (type === 'manual_message' && manualMessage) {
+      // Mensagem manual enviada pelo usuário
+      message = manualMessage;
+    } else {
+      // Notificação de agendamento usando template
+      // Formatar data e hora
+      const scheduledDate = new Date(scheduled_at!);
+      const formattedDate = scheduledDate.toLocaleDateString("pt-BR", {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+      const formattedTime = scheduledDate.toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
 
-    // Adicionar mensagem de oferta do dia se existir
-    if (settings.daily_offer_message && settings.daily_offer_message.trim()) {
-      message += "\n\n" + settings.daily_offer_message;
+      message = settings.message_template || 
+        "Olá {{client_name}}! Seu agendamento foi confirmado para {{date}} às {{time}}. Serviço: {{service_name}} com {{barber_name}}. Aguardamos você!";
+      
+      message = message
+        .replace(/\{\{client_name\}\}/g, client_name || '')
+        .replace(/\{\{date\}\}/g, formattedDate)
+        .replace(/\{\{time\}\}/g, formattedTime)
+        .replace(/\{\{service_name\}\}/g, service_name || '')
+        .replace(/\{\{barber_name\}\}/g, barber_name || '');
+
+      // Adicionar mensagem de oferta do dia se existir
+      if (settings.daily_offer_message && settings.daily_offer_message.trim()) {
+        message += "\n\n" + settings.daily_offer_message;
+      }
     }
 
     // Log da mensagem que seria enviada

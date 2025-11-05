@@ -748,6 +748,31 @@ const Settings = () => {
                       />
                     </div>
 
+                    {whatsappSettings.enabled && (
+                      <div className="p-4 border rounded-lg bg-muted/50">
+                        <Label className="text-sm font-semibold mb-2 block">URL do Webhook (Receber Mensagens)</Label>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          Configure esta URL no seu provedor WhatsApp para receber mensagens dos clientes
+                        </p>
+                        <div className="flex gap-2">
+                          <Input 
+                            readOnly 
+                            value={`https://jgpffcjktwsohfyljtsg.supabase.co/functions/v1/receive-whatsapp-message?token=${domainData.slug || 'seu-slug'}`}
+                            className="font-mono text-xs"
+                          />
+                          <Button 
+                            size="sm"
+                            onClick={() => {
+                              navigator.clipboard.writeText(`https://jgpffcjktwsohfyljtsg.supabase.co/functions/v1/receive-whatsapp-message?token=${domainData.slug}`);
+                              toast.success('URL copiada!');
+                            }}
+                          >
+                            Copiar
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="space-y-2">
                       <Label htmlFor="api-provider">Provedor de API</Label>
                       <Select 

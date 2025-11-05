@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Calendar, Monitor, Scissors, Users, LogOut, Settings, Layout, ClipboardList } from "lucide-react";
+import { Calendar, Monitor, Scissors, Users, LogOut, Settings, Layout, ClipboardList, MessageCircle } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 export const Navbar = () => {
@@ -57,6 +57,12 @@ export const Navbar = () => {
                   <Button variant={isActive("/schedule-management") ? "default" : "ghost"} size="sm" className="transition-all">
                     <Calendar className="h-4 w-4 mr-2" />
                     Agenda
+                  </Button>
+                </Link>
+                <Link to="/messages">
+                  <Button variant={isActive("/messages") ? "default" : "ghost"} size="sm" className="transition-all">
+                    <MessageCircle className="h-4 w-4 mr-2" />
+                    Mensagens
                   </Button>
                 </Link>
               </> :
