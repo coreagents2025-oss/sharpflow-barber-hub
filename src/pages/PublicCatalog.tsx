@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { ServiceCard } from '@/components/ServiceCard';
 import { BookingModal } from '@/components/BookingModal';
 import { Skeleton } from '@/components/ui/skeleton';
-import { MapPin, Phone, Clock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { MapPin, Phone, Clock, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Service {
@@ -47,6 +48,7 @@ const PublicCatalog = () => {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [barbershopId, setBarbershopId] = useState<string | null>(null);
+  const [whatsappNumber, setWhatsappNumber] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -124,6 +126,22 @@ const PublicCatalog = () => {
 
     if (settingsData) {
       setCatalogSettings(settingsData);
+    }
+
+    // Fetch WhatsApp number
+    const { data: credentialsData } = await supabase
+      .from('barbershop_credentials')
+      .select('whatsapp_credentials')
+      .eq('barbershop_id', barbershopId)
+      .maybeSingle();
+
+    if (credentialsData?.whatsapp_credentials) {
+      const whatsappCreds = credentialsData.whatsapp_credentials as any;
+      if (whatsappCreds.enabled && whatsappCreds.phone_number) {
+        // Clean number (remove special characters)
+        const cleanNumber = whatsappCreds.phone_number.replace(/\D/g, '');
+        setWhatsappNumber(cleanNumber);
+      }
     }
   };
 
@@ -225,6 +243,51 @@ const PublicCatalog = () => {
         service={selectedService}
         barbershopId={barbershopId}
       />
+
+      {/* WhatsApp Floating Button */}
+      {whatsappNumber && (
+        <a
+          href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent('Olá! Gostaria de saber mais sobre os serviços.')}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fixed bottom-6 right-6 z-50 group"
+        >
+          <Button
+            size="lg"
+            className="h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-110 bg-[#25D366] hover:bg-[#128C7E] text-white border-0"
+          >
+            <MessageCircle className="h-6 w-6" />
+          </Button>
+          <span className="absolute bottom-full right-0 mb-2 hidden group-hover:block whitespace-nowrap bg-popover text-popover-foreground px-3 py-1 rounded-md text-sm shadow-md">
+            Fale conosco pelo WhatsApp
+          </span>
+        </a>
+      )}
+
+      {/* Footer */}
+      <footer className="bg-muted mt-16 border-t">
+        <div className="container mx-auto px-4 py-8">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="text-sm text-muted-foreground">
+              © {new Date().getFullYear()} {barbershop?.name}. Todos os direitos reservados.
+            </div>
+            <div className="flex flex-wrap justify-center gap-4 text-sm">
+              <Link 
+                to={`/${slug}/privacidade`} 
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Política de Privacidade
+              </Link>
+              <Link 
+                to={`/${slug}/termos`}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Termos de Uso
+              </Link>
+            </div>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };

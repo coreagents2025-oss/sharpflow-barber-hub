@@ -14,6 +14,8 @@ import PDV from "./pages/PDV";
 import ServicesManagement from "./pages/ServicesManagement";
 import Catalog from "./pages/Catalog";
 import PublicCatalog from "./pages/PublicCatalog";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 import ScheduleManagement from "./pages/ScheduleManagement";
 import Settings from "./pages/Settings";
 import BarbersManagement from "./pages/BarbersManagement";
@@ -37,6 +39,8 @@ const App = () => (
             {/* Catálogo Público Mobile-First */}
             <Route path="/catalogo" element={<PublicCatalog />} />
             <Route path="/:slug" element={<PublicCatalog />} />
+            <Route path="/:slug/privacidade" element={<PrivacyPolicy />} />
+            <Route path="/:slug/termos" element={<TermsOfService />} />
             {/* Painel do Dono da Barbearia - Rotas Protegidas */}
             <Route path="/pdv" element={<ProtectedRoute><PDV /></ProtectedRoute>} />
             <Route path="/services-management" element={<ProtectedRoute><ServicesManagement /></ProtectedRoute>} />
