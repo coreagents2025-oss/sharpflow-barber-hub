@@ -146,6 +146,7 @@ const Settings = () => {
         
         // Buscar barbearia se usuário tiver barbershopId
         if (barbershopId) {
+          // Buscar dados básicos da barbearia
           const { data: barbershop } = await supabase
             .from('barbershops')
             .select('*')
@@ -174,21 +175,30 @@ const Settings = () => {
               notifications_enabled: settings.notifications_enabled ?? true,
             });
 
-            // Carregar WhatsApp settings
+            // Carregar WhatsApp settings da tabela barbershop_credentials
+            const { data: credentials } = await supabase
+              .from('barbershop_credentials')
+              .select('whatsapp_credentials, email_credentials')
+              .eq('barbershop_id', barbershopId)
+              .single();
+            
+            const whatsappCreds = (credentials?.whatsapp_credentials || {}) as any;
             const whatsappConfig = (barbershop.whatsapp_settings || {}) as any;
+            
             setWhatsappSettings({
               enabled: whatsappConfig.enabled || false,
               phone_number: whatsappConfig.phone_number || '',
               message_template: whatsappConfig.message_template || 'Olá {{client_name}}! Seu agendamento foi confirmado para {{date}} às {{time}}. Serviço: {{service_name}} com {{barber_name}}. Aguardamos você!',
               api_provider: whatsappConfig.api_provider || 'official',
               daily_offer_message: whatsappConfig.daily_offer_message || '',
-              whatsapp_api_token: whatsappConfig.whatsapp_api_token || '',
-              whatsapp_phone_number_id: whatsappConfig.whatsapp_phone_number_id || '',
-              evolution_api_url: whatsappConfig.evolution_api_url || '',
-              evolution_api_key: whatsappConfig.evolution_api_key || '',
-              evolution_instance_name: whatsappConfig.evolution_instance_name || '',
-              z_api_instance_id: whatsappConfig.z_api_instance_id || '',
-              z_api_token: whatsappConfig.z_api_token || '',
+              // Credenciais vêm da tabela protegida
+              whatsapp_api_token: whatsappCreds.whatsapp_api_token || '',
+              whatsapp_phone_number_id: whatsappCreds.whatsapp_phone_number_id || '',
+              evolution_api_url: whatsappCreds.evolution_api_url || '',
+              evolution_api_key: whatsappCreds.evolution_api_key || '',
+              evolution_instance_name: whatsappCreds.evolution_instance_name || '',
+              z_api_instance_id: whatsappCreds.z_api_instance_id || '',
+              z_api_token: whatsappCreds.z_api_token || '',
             });
           }
         }
@@ -370,14 +380,45 @@ const Settings = () => {
     try {
       const validated = whatsappSettingsSchema.parse(whatsappSettings);
       
-      const { error } = await supabase
+      // Separar dados públicos das credenciais
+      const publicData = {
+        enabled: validated.enabled,
+        phone_number: validated.phone_number,
+        message_template: validated.message_template,
+        api_provider: validated.api_provider,
+        daily_offer_message: validated.daily_offer_message || '',
+      };
+
+      const credentialsData = {
+        whatsapp_api_token: validated.whatsapp_api_token || '',
+        whatsapp_phone_number_id: validated.whatsapp_phone_number_id || '',
+        evolution_api_url: validated.evolution_api_url || '',
+        evolution_api_key: validated.evolution_api_key || '',
+        evolution_instance_name: validated.evolution_instance_name || '',
+        z_api_instance_id: validated.z_api_instance_id || '',
+        z_api_token: validated.z_api_token || '',
+      };
+      
+      // Atualizar dados públicos em barbershops
+      const { error: publicError } = await supabase
         .from('barbershops')
         .update({
-          whatsapp_settings: validated,
+          whatsapp_settings: publicData,
         })
         .eq('id', barbershopId);
       
-      if (error) throw error;
+      if (publicError) throw publicError;
+
+      // Atualizar credenciais protegidas
+      const { error: credsError } = await supabase
+        .from('barbershop_credentials')
+        .update({
+          whatsapp_credentials: credentialsData,
+        })
+        .eq('barbershop_id', barbershopId);
+      
+      if (credsError) throw credsError;
+      
       toast.success('Configurações do WhatsApp atualizadas!');
     } catch (error) {
       if (error instanceof z.ZodError) {

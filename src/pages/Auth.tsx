@@ -16,6 +16,7 @@ const Auth = () => {
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [signupName, setSignupName] = useState('');
+  const [signupAsAdmin, setSignupAsAdmin] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Redirecionar se já estiver logado
@@ -45,10 +46,11 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      await signUp(signupEmail, signupPassword, signupName);
+      await signUp(signupEmail, signupPassword, signupName, signupAsAdmin ? 'admin' : 'client');
       setSignupEmail('');
       setSignupPassword('');
       setSignupName('');
+      setSignupAsAdmin(false);
     } catch (error) {
       console.error('Signup error:', error);
     } finally {
@@ -188,12 +190,25 @@ const Auth = () => {
                     </div>
                   </div>
 
+                  <div className="flex items-center space-x-2 p-4 bg-secondary/20 rounded-lg">
+                    <input
+                      type="checkbox"
+                      id="signup-admin"
+                      checked={signupAsAdmin}
+                      onChange={(e) => setSignupAsAdmin(e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300"
+                    />
+                    <label htmlFor="signup-admin" className="text-sm">
+                      Quero criar minha própria barbearia (conta admin)
+                    </label>
+                  </div>
+
                   <Button 
                     type="submit" 
                     className="w-full bg-accent hover:bg-accent/90"
                     disabled={loading}
                   >
-                    {loading ? 'Criando conta...' : 'Criar conta'}
+                    {loading ? 'Criando conta...' : (signupAsAdmin ? 'Criar minha barbearia' : 'Criar conta de cliente')}
                   </Button>
                 </form>
               </CardContent>

@@ -9,7 +9,7 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<void>;
-  signUp: (email: string, password: string, fullName: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName: string, role?: 'client' | 'admin') => Promise<void>;
   signOut: () => Promise<void>;
   userRole: string | null;
   barbershopId: string | null;
@@ -47,13 +47,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
             // Fetch barbershop_id for admin/barber users
             if (roleData?.role === 'admin' || roleData?.role === 'barber') {
-              const { data: barberData } = await supabase
-                .from('barbers')
+              const { data: staffData } = await supabase
+                .from('barbershop_staff')
                 .select('barbershop_id')
                 .eq('user_id', session.user.id)
                 .single();
               
-              setBarbershopId(barberData?.barbershop_id ?? null);
+              setBarbershopId(staffData?.barbershop_id ?? null);
+            } else {
+              setBarbershopId(null);
             }
             setRoleLoading(false);
           }, 0);
@@ -83,13 +85,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
           // Fetch barbershop_id for admin/barber users
           if (roleData?.role === 'admin' || roleData?.role === 'barber') {
-            const { data: barberData } = await supabase
-              .from('barbers')
+            const { data: staffData } = await supabase
+              .from('barbershop_staff')
               .select('barbershop_id')
               .eq('user_id', session.user.id)
               .single();
             
-            setBarbershopId(barberData?.barbershop_id ?? null);
+            setBarbershopId(staffData?.barbershop_id ?? null);
+          } else {
+            setBarbershopId(null);
           }
           setRoleLoading(false);
           setLoading(false);
@@ -119,7 +123,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = async (email: string, password: string, fullName: string, role: 'client' | 'admin' = 'client') => {
     try {
       const redirectUrl = `${window.location.origin}/`;
       
@@ -130,13 +134,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           emailRedirectTo: redirectUrl,
           data: {
             full_name: fullName,
+            role: role, // Passa role para o trigger handle_new_user
           },
         },
       });
 
       if (error) throw error;
       
-      toast.success('Cadastro realizado! Você já pode fazer login.');
+      if (role === 'admin') {
+        toast.success('Barbearia criada! Você já pode fazer login.');
+      } else {
+        toast.success('Cadastro realizado! Você já pode fazer login.');
+      }
     } catch (error: any) {
       if (error.message?.includes('already registered')) {
         toast.error('Este email já está cadastrado');
