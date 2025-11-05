@@ -7,9 +7,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
 import { Scissors, Lock, Mail, User } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-
 const Auth = () => {
-  const { signIn, signUp, user, userRole } = useAuth();
+  const {
+    signIn,
+    signUp,
+    user,
+    userRole
+  } = useAuth();
   const navigate = useNavigate();
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
@@ -23,13 +27,16 @@ const Auth = () => {
   useEffect(() => {
     if (user && userRole) {
       if (userRole === 'admin' || userRole === 'barber') {
-        navigate('/pdv', { replace: true });
+        navigate('/pdv', {
+          replace: true
+        });
       } else {
-        navigate('/', { replace: true });
+        navigate('/', {
+          replace: true
+        });
       }
     }
   }, [user, userRole, navigate]);
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -41,7 +48,6 @@ const Auth = () => {
       setLoading(false);
     }
   };
-
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -57,16 +63,12 @@ const Auth = () => {
       setLoading(false);
     }
   };
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background flex items-center justify-center p-4">
+  return <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center gap-2 mb-4">
             <Scissors className="h-8 w-8 text-accent" />
-            <span className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-              BarberPro
-            </span>
+            <span className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">BarberPLUS</span>
           </Link>
           <p className="text-muted-foreground">Gestão profissional para barbearias</p>
         </div>
@@ -91,15 +93,7 @@ const Auth = () => {
                     <Label htmlFor="login-email">Email</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="login-email"
-                        type="email"
-                        placeholder="seu@email.com"
-                        className="pl-9"
-                        value={loginEmail}
-                        onChange={(e) => setLoginEmail(e.target.value)}
-                        required
-                      />
+                      <Input id="login-email" type="email" placeholder="seu@email.com" className="pl-9" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} required />
                     </div>
                   </div>
                   
@@ -107,23 +101,11 @@ const Auth = () => {
                     <Label htmlFor="login-password">Senha</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="login-password"
-                        type="password"
-                        placeholder="••••••••"
-                        className="pl-9"
-                        value={loginPassword}
-                        onChange={(e) => setLoginPassword(e.target.value)}
-                        required
-                      />
+                      <Input id="login-password" type="password" placeholder="••••••••" className="pl-9" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} required />
                     </div>
                   </div>
 
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-accent hover:bg-accent/90"
-                    disabled={loading}
-                  >
+                  <Button type="submit" className="w-full bg-accent hover:bg-accent/90" disabled={loading}>
                     {loading ? 'Entrando...' : 'Entrar'}
                   </Button>
                 </form>
@@ -145,15 +127,7 @@ const Auth = () => {
                     <Label htmlFor="signup-name">Nome Completo</Label>
                     <div className="relative">
                       <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="signup-name"
-                        type="text"
-                        placeholder="João Silva"
-                        className="pl-9"
-                        value={signupName}
-                        onChange={(e) => setSignupName(e.target.value)}
-                        required
-                      />
+                      <Input id="signup-name" type="text" placeholder="João Silva" className="pl-9" value={signupName} onChange={e => setSignupName(e.target.value)} required />
                     </div>
                   </div>
 
@@ -161,15 +135,7 @@ const Auth = () => {
                     <Label htmlFor="signup-email">Email</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="signup-email"
-                        type="email"
-                        placeholder="seu@email.com"
-                        className="pl-9"
-                        value={signupEmail}
-                        onChange={(e) => setSignupEmail(e.target.value)}
-                        required
-                      />
+                      <Input id="signup-email" type="email" placeholder="seu@email.com" className="pl-9" value={signupEmail} onChange={e => setSignupEmail(e.target.value)} required />
                     </div>
                   </div>
                   
@@ -177,38 +143,19 @@ const Auth = () => {
                     <Label htmlFor="signup-password">Senha</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input
-                        id="signup-password"
-                        type="password"
-                        placeholder="••••••••"
-                        className="pl-9"
-                        value={signupPassword}
-                        onChange={(e) => setSignupPassword(e.target.value)}
-                        required
-                        minLength={6}
-                      />
+                      <Input id="signup-password" type="password" placeholder="••••••••" className="pl-9" value={signupPassword} onChange={e => setSignupPassword(e.target.value)} required minLength={6} />
                     </div>
                   </div>
 
                   <div className="flex items-center space-x-2 p-4 bg-secondary/20 rounded-lg">
-                    <input
-                      type="checkbox"
-                      id="signup-admin"
-                      checked={signupAsAdmin}
-                      onChange={(e) => setSignupAsAdmin(e.target.checked)}
-                      className="h-4 w-4 rounded border-gray-300"
-                    />
+                    <input type="checkbox" id="signup-admin" checked={signupAsAdmin} onChange={e => setSignupAsAdmin(e.target.checked)} className="h-4 w-4 rounded border-gray-300" />
                     <label htmlFor="signup-admin" className="text-sm">
                       Quero criar minha própria barbearia (conta admin)
                     </label>
                   </div>
 
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-accent hover:bg-accent/90"
-                    disabled={loading}
-                  >
-                    {loading ? 'Criando conta...' : (signupAsAdmin ? 'Criar minha barbearia' : 'Criar conta de cliente')}
+                  <Button type="submit" className="w-full bg-accent hover:bg-accent/90" disabled={loading}>
+                    {loading ? 'Criando conta...' : signupAsAdmin ? 'Criar minha barbearia' : 'Criar conta de cliente'}
                   </Button>
                 </form>
               </CardContent>
@@ -222,8 +169,6 @@ const Auth = () => {
           </Link>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
-
 export default Auth;
