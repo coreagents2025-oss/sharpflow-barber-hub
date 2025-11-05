@@ -49,10 +49,18 @@ const ServicesManagement = () => {
   }, []);
 
   const fetchServices = async () => {
+    setLoading(true);
     try {
+      if (!barbershopId) {
+        toast.error('Erro: Barbearia não identificada');
+        setLoading(false);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('services')
         .select('*')
+        .eq('barbershop_id', barbershopId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;

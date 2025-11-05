@@ -141,11 +141,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (error) throw error;
       
-      if (role === 'admin') {
-        toast.success('Barbearia criada! Você já pode fazer login.');
-      } else {
-        toast.success('Cadastro realizado! Você já pode fazer login.');
-      }
+      toast.success('Sua barbearia foi criada! Faça login para configurar seus dados.');
     } catch (error: any) {
       if (error.message?.includes('already registered')) {
         toast.error('Este email já está cadastrado');
