@@ -31,6 +31,13 @@ interface CatalogSettings {
   show_popular_badge: boolean;
 }
 
+const isLovableDomain = (hostname: string) => {
+  return hostname === 'localhost' || 
+         hostname.includes('lovableproject') ||
+         hostname.includes('.lovable.app') ||
+         hostname.includes('.lovable.dev');
+};
+
 const PublicCatalog = () => {
   const { slug } = useParams();
   const [services, setServices] = useState<Service[]>([]);
@@ -62,8 +69,8 @@ const PublicCatalog = () => {
       else {
         const hostname = window.location.hostname;
         
-        // Ignorar localhost e domínios Lovable
-        if (hostname !== 'localhost' && !hostname.includes('lovableproject')) {
+        // Ignorar domínios Lovable
+        if (!isLovableDomain(hostname)) {
           const { data: byDomain } = await supabase
             .from('barbershops')
             .select('*')

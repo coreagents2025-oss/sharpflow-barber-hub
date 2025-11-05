@@ -26,6 +26,7 @@ const Catalog = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [barbershopSlug, setBarbershopSlug] = useState<string>('');
+  const [customDomain, setCustomDomain] = useState<string | null>(null);
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [heroFile, setHeroFile] = useState<File | null>(null);
   const [settings, setSettings] = useState<CatalogSettings>({
@@ -64,15 +65,16 @@ const Catalog = () => {
         setSettings(prev => ({ ...prev, barbershop_id: barbershopId }));
       }
 
-      // Buscar slug da barbearia
+      // Buscar slug e custom_domain da barbearia
       const { data: barbershopData } = await supabase
         .from('barbershops')
-        .select('slug')
+        .select('slug, custom_domain')
         .eq('id', barbershopId)
         .maybeSingle();
 
       if (barbershopData) {
         setBarbershopSlug(barbershopData.slug);
+        setCustomDomain(barbershopData.custom_domain);
       }
     } catch (error) {
       console.error('Error fetching settings:', error);
@@ -80,6 +82,15 @@ const Catalog = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const getCatalogUrl = () => {
+    if (customDomain) {
+      return `https://${customDomain}`;
+    } else if (barbershopSlug) {
+      return `${window.location.origin}/${barbershopSlug}`;
+    }
+    return '';
   };
 
   const handleSave = async () => {
@@ -148,7 +159,16 @@ const Catalog = () => {
           <div className="flex gap-2">
             <Button
               variant="outline"
-              onClick={() => window.open(`/${barbershopSlug}`, '_blank')}
+              onClick={() => {
+                const url = getCatalogUrl();
+                if (url) {
+                  if (customDomain) {
+                    window.open(url, '_blank');
+                  } else {
+                    window.open(`/${barbershopSlug}`, '_blank');
+                  }
+                }
+              }}
               disabled={!barbershopSlug}
             >
               <Eye className="h-4 w-4 mr-2" />
@@ -175,32 +195,57 @@ const Catalog = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div>
-                <p className="font-medium mb-2">✅ Link Direto (Pronto para usar):</p>
-                <code className="block bg-muted px-3 py-2 rounded text-sm">
-                  {barbershopSlug ? `${window.location.origin}/${barbershopSlug}` : 'Carregando...'}
-                </code>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  className="mt-2"
-                  disabled={!barbershopSlug}
-                  onClick={() => {
-                    navigator.clipboard.writeText(`${window.location.origin}/${barbershopSlug}`);
-                    toast.success('Link copiado para área de transferência!');
-                  }}
-                >
-                  Copiar Link
-                </Button>
-              </div>
+              {customDomain ? (
+                <div>
+                  <p className="font-medium mb-2">✅ Seu Domínio Personalizado (Configurado):</p>
+                  <code className="block bg-muted px-3 py-2 rounded text-sm">
+                    https://{customDomain}
+                  </code>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-2"
+                    onClick={() => {
+                      navigator.clipboard.writeText(`https://${customDomain}`);
+                      toast.success('Link copiado para área de transferência!');
+                    }}
+                  >
+                    Copiar Link
+                  </Button>
+                </div>
+              ) : (
+                <div>
+                  <p className="font-medium mb-2">📍 Link Temporário:</p>
+                  <code className="block bg-muted px-3 py-2 rounded text-sm">
+                    {barbershopSlug ? `/${barbershopSlug}` : 'Carregando...'}
+                  </code>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    ⚠️ Este é um link temporário. Configure seu domínio personalizado para um link profissional.
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="mt-2"
+                    disabled={!barbershopSlug}
+                    onClick={() => {
+                      navigator.clipboard.writeText(`${window.location.origin}/${barbershopSlug}`);
+                      toast.success('Link copiado para área de transferência!');
+                    }}
+                  >
+                    Copiar Link Temporário
+                  </Button>
+                </div>
+              )}
               
-              <div>
-                <p className="font-medium mb-2">🌐 Domínio Personalizado:</p>
-                <p className="text-sm text-muted-foreground">
-                  Configure seu próprio domínio em Configurações → Domínio & Emails. 
-                  Após configurar o DNS, seu catálogo estará acessível em seu domínio personalizado.
-                </p>
-              </div>
+              {!customDomain && (
+                <div>
+                  <p className="font-medium mb-2">🌐 Domínio Personalizado:</p>
+                  <p className="text-sm text-muted-foreground">
+                    Configure seu próprio domínio em <strong>Configurações → Domínio & Emails</strong>. 
+                    Após configurar o DNS, seu catálogo estará acessível em seu domínio personalizado.
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         
