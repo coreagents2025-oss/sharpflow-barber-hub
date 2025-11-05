@@ -306,16 +306,55 @@ const handler = async (req: Request): Promise<Response> => {
         }
         
         if (subdomain && instanceId && token) {
+          console.log('UAZapi Config:', {
+            subdomain,
+            instanceId,
+            tokenLength: token.length,
+            baseUrl: `https://${subdomain}.uazapi.com`,
+          });
+
+          // Verificar status da instância primeiro
+          const statusUrl = `https://${subdomain}.uazapi.com/instance/status`;
+          console.log('Checking UAZapi instance status:', statusUrl);
+          
+          try {
+            const statusResponse = await fetch(statusUrl, {
+              method: "GET",
+              headers: {
+                "Token": token,
+                "Content-Type": "application/json",
+              },
+            });
+            
+            const statusData = await statusResponse.json();
+            console.log('UAZapi Instance Status Response:', statusData);
+            
+            if (statusResponse.status !== 200) {
+              throw new Error(`Failed to check instance status: ${JSON.stringify(statusData)}`);
+            }
+            
+            if (statusData.status !== 'CONNECTED') {
+              throw new Error(`Instance not connected. Current status: ${statusData.status}. Please scan QR code in UAZapi dashboard.`);
+            }
+            
+            console.log('✅ Instance is CONNECTED, proceeding with message send...');
+          } catch (statusError: any) {
+            console.error('Instance status check failed:', statusError.message);
+            throw new Error(`UAZapi instance not ready: ${statusError.message}`);
+          }
+          
+          // Enviar mensagem
           const apiUrl = `https://${subdomain}.uazapi.com/chat/send/text`;
           const requestBody = {
             Phone: client_phone,
             Body: message,
           };
           
-          console.log('UAZapi Request:', {
+          console.log('UAZapi Send Request:', {
             url: apiUrl,
             phone: client_phone,
             messageLength: message.length,
+            bodyKeys: Object.keys(requestBody),
           });
           
           const response = await fetch(
@@ -335,12 +374,22 @@ const handler = async (req: Request): Promise<Response> => {
           console.log('UAZapi Response Body:', responseText);
           
           if (!response.ok) {
-            console.error(`UAZapi error: ${responseText}`);
-            throw new Error(`UAZapi error: ${responseText}`);
+            let errorMessage = `UAZapi error (${response.status}): ${responseText}`;
+            
+            if (response.status === 405) {
+              errorMessage = 'Method not allowed. Instance may be disconnected or endpoint incorrect.';
+            } else if (response.status === 401 || response.status === 403) {
+              errorMessage = 'Authentication failed. Check your UAZapi token.';
+            } else if (response.status === 404) {
+              errorMessage = 'Endpoint not found. Verify instance ID and subdomain.';
+            }
+            
+            console.error(`UAZapi error: ${errorMessage}`);
+            throw new Error(errorMessage);
           }
           
           apiResponse = JSON.parse(responseText);
-          console.log("UAZapi Message sent successfully");
+          console.log("✅ UAZapi Message sent successfully:", apiResponse);
         }
       }
     } catch (error: any) {

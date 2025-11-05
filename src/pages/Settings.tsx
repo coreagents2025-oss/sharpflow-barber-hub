@@ -411,6 +411,31 @@ const Settings = () => {
     }
   };
 
+  const handleTestUAZapiConnection = async () => {
+    if (!barbershopId) return;
+    
+    setLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-whatsapp-notification', {
+        body: {
+          type: 'manual_message',
+          barbershop_id: barbershopId,
+          client_phone: whatsappSettings.phone_number || '5511999999999',
+          message: '🧪 Teste de conexão UAZapi - Mensagem enviada com sucesso!',
+        },
+      });
+
+      if (error) throw error;
+
+      toast.success('✅ Teste enviado! Verifique os logs do edge function para detalhes.');
+    } catch (error: any) {
+      console.error('Erro ao testar conexão:', error);
+      toast.error(`Erro no teste: ${error.message || 'Verifique as configurações'}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
       <Navbar />
@@ -1016,6 +1041,22 @@ const Settings = () => {
                             onChange={(e) => setWhatsappSettings({ ...whatsappSettings, uazapi_token: e.target.value })}
                             disabled={loading}
                           />
+                        </div>
+
+                        <div className="pt-4 border-t">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            onClick={handleTestUAZapiConnection}
+                            disabled={loading || !whatsappSettings.uazapi_account_id || !whatsappSettings.uazapi_instance_id || !whatsappSettings.uazapi_token}
+                            className="w-full"
+                          >
+                            <MessageCircle className="h-4 w-4 mr-2" />
+                            {loading ? 'Testando...' : 'Testar Conexão UAZapi'}
+                          </Button>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            Envia uma mensagem de teste e verifica o status da instância. Confira os logs do edge function para detalhes.
+                          </p>
                         </div>
                       </div>
                     )}
