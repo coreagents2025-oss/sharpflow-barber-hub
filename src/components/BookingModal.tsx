@@ -6,8 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useBooking } from '@/hooks/useBooking';
+import { checkBarberAvailability } from '@/hooks/useBarberAvailability';
 import { format, addDays, setHours, setMinutes, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { User, X } from 'lucide-react';
@@ -44,6 +46,7 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId }: Booking
   const [clientEmail, setClientEmail] = useState('');
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
   const [occupiedTimes, setOccupiedTimes] = useState<string[]>([]);
+  const [barberAvailability, setBarberAvailability] = useState<Record<string, boolean>>({});
   
   const { createBooking, isSubmitting } = useBooking(barbershopId);
 
@@ -59,6 +62,13 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId }: Booking
       fetchOccupiedTimes();
     }
   }, [selectedDate, selectedBarber]);
+
+  // Verificar disponibilidade de barbeiros quando hora mudar
+  useEffect(() => {
+    if (selectedTime && selectedDate && service) {
+      checkAllBarbersAvailability();
+    }
+  }, [selectedTime, selectedDate, service, barbers]);
 
   const fetchBarbers = async () => {
     if (!barbershopId) return;
@@ -155,22 +165,59 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId }: Booking
 
     const dateStr = selectedDate.toISOString().split('T')[0];
     
-    // Buscar appointments do barbeiro neste dia
+    // Buscar appointments COM informações do serviço para calcular duração
     const { data: appointments } = await supabase
       .from('appointments')
-      .select('scheduled_at')
+      .select(`
+        scheduled_at,
+        services (
+          duration_minutes
+        )
+      `)
       .eq('barber_id', selectedBarber)
       .gte('scheduled_at', `${dateStr}T00:00:00`)
       .lt('scheduled_at', `${dateStr}T23:59:59`)
       .neq('status', 'cancelled');
 
-    // Converter para formato HH:mm
-    const times = appointments?.map(apt => {
-      const date = new Date(apt.scheduled_at);
-      return `${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
-    }) || [];
+    // Calcular TODOS os slots ocupados baseado na duração
+    const occupiedSlots: string[] = [];
     
-    setOccupiedTimes(times);
+    appointments?.forEach(apt => {
+      const startTime = new Date(apt.scheduled_at);
+      const duration = (apt.services as any)?.duration_minutes || 30;
+      const slots = Math.ceil(duration / 30); // Quantos slots de 30min
+      
+      for (let i = 0; i < slots; i++) {
+        const slotTime = new Date(startTime);
+        slotTime.setMinutes(startTime.getMinutes() + (i * 30));
+        
+        const timeStr = `${slotTime.getHours().toString().padStart(2, '0')}:${slotTime.getMinutes().toString().padStart(2, '0')}`;
+        occupiedSlots.push(timeStr);
+      }
+    });
+    
+    setOccupiedTimes(occupiedSlots);
+  };
+
+  const checkAllBarbersAvailability = async () => {
+    if (!selectedTime || !selectedDate || !service) return;
+    
+    const [hours, minutes] = selectedTime.split(':');
+    const checkTime = new Date(selectedDate);
+    checkTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+    
+    const availability: Record<string, boolean> = {};
+    
+    for (const barber of barbers) {
+      const isAvailable = await checkBarberAvailability(
+        barber.id,
+        checkTime,
+        service.duration_minutes
+      );
+      availability[barber.id] = isAvailable;
+    }
+    
+    setBarberAvailability(availability);
   };
 
   const handleSubmit = async () => {
@@ -285,30 +332,43 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId }: Booking
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-3">
-                  {barbers.map((barber) => (
-                    <button
-                      key={barber.id}
-                      onClick={() => setSelectedBarber(barber.id)}
-                      className={`flex items-center gap-3 p-3 rounded-lg border-2 transition-all ${
-                        selectedBarber === barber.id
-                          ? 'border-accent bg-accent/10'
-                          : 'border-border hover:border-accent/50'
-                      }`}
-                    >
-                      <Avatar>
-                        <AvatarImage src={barber.photo_url || undefined} />
-                        <AvatarFallback>
-                          <User className="h-5 w-5" />
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="text-left flex-1">
-                        <p className="font-medium">{barber.name}</p>
-                        {barber.specialty && (
-                          <p className="text-sm text-muted-foreground">{barber.specialty}</p>
+                  {barbers.map((barber) => {
+                    const isAvailable = selectedTime ? barberAvailability[barber.id] !== false : true;
+                    
+                    return (
+                      <button
+                        key={barber.id}
+                        onClick={() => isAvailable && setSelectedBarber(barber.id)}
+                        disabled={!isAvailable}
+                        className={cn(
+                          "flex items-center gap-3 p-3 rounded-lg border-2 transition-all",
+                          selectedBarber === barber.id && "border-accent bg-accent/10",
+                          !isAvailable && "opacity-50 cursor-not-allowed",
+                          isAvailable && selectedBarber !== barber.id && "border-border hover:border-accent/50"
                         )}
-                      </div>
-                    </button>
-                  ))}
+                      >
+                        <Avatar>
+                          <AvatarImage src={barber.photo_url || undefined} />
+                          <AvatarFallback>
+                            <User className="h-5 w-5" />
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="text-left flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium">{barber.name}</p>
+                            {!isAvailable && selectedTime && (
+                              <Badge variant="destructive" className="text-xs">
+                                Ocupado
+                              </Badge>
+                            )}
+                          </div>
+                          {barber.specialty && (
+                            <p className="text-sm text-muted-foreground">{barber.specialty}</p>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>

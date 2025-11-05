@@ -58,11 +58,14 @@ export const useBooking = (barbershopId: string | null) => {
         }
       }
 
-      // Create or get client profile
+      // Normalizar telefone (remover formatação)
+      const normalizedPhone = data.clientPhone.replace(/\D/g, '');
+
+      // Create or get client profile (buscar apenas por telefone normalizado)
       const { data: existingClient } = await supabase
         .from('profiles')
-        .select('id')
-        .or(`phone.eq.${data.clientPhone},id.eq.${data.clientEmail}`)
+        .select('id, full_name')
+        .eq('phone', normalizedPhone)
         .maybeSingle();
 
       let clientId = existingClient?.id;
@@ -93,23 +96,67 @@ export const useBooking = (barbershopId: string | null) => {
           return false;
         }
 
-        // Atualizar telefone no perfil
+        // Atualizar telefone no perfil (salvar normalizado)
         await supabase
           .from('profiles')
-          .update({ phone: data.clientPhone })
+          .update({ phone: normalizedPhone })
           .eq('id', clientId);
       }
 
-      // Verificar se horário está disponível
+      // Validar se não é data/hora passada
+      const now = new Date();
+      if (scheduledAt <= now) {
+        toast.error('Não é possível agendar para datas passadas.');
+        return false;
+      }
+
+      // Buscar serviço para pegar duração
+      const { data: serviceData } = await supabase
+        .from('services')
+        .select('duration_minutes')
+        .eq('id', data.serviceId)
+        .single();
+
+      const durationMinutes = serviceData?.duration_minutes || 30;
+      const endTime = new Date(scheduledAt);
+      endTime.setMinutes(endTime.getMinutes() + durationMinutes);
+
+      // Verificar se HÁ OVERLAP com agendamentos existentes
       const { data: existingAppointments } = await supabase
         .from('appointments')
-        .select('id')
+        .select('scheduled_at, services(duration_minutes)')
         .eq('barber_id', data.barberId)
-        .eq('scheduled_at', scheduledAt.toISOString())
+        .gte('scheduled_at', scheduledAt.toISOString())
+        .lt('scheduled_at', endTime.toISOString())
         .neq('status', 'cancelled');
 
-      if (existingAppointments && existingAppointments.length > 0) {
-        toast.error('Este horário já está ocupado. Escolha outro horário.');
+      // Também verificar agendamentos que COMEÇAM ANTES mas TERMINAM DURANTE
+      const { data: overlappingBefore } = await supabase
+        .from('appointments')
+        .select('scheduled_at, services(duration_minutes)')
+        .eq('barber_id', data.barberId)
+        .lt('scheduled_at', scheduledAt.toISOString())
+        .neq('status', 'cancelled');
+
+      // Validar overlaps
+      let hasOverlap = existingAppointments && existingAppointments.length > 0;
+
+      if (!hasOverlap && overlappingBefore) {
+        overlappingBefore.forEach(apt => {
+          const aptStart = new Date(apt.scheduled_at);
+          const aptDuration = (apt.services as any)?.duration_minutes || 30;
+          const aptEnd = new Date(aptStart);
+          aptEnd.setMinutes(aptStart.getMinutes() + aptDuration);
+          
+          // Se o agendamento anterior termina DEPOIS do novo começar, há overlap
+          if (aptEnd > scheduledAt) {
+            hasOverlap = true;
+          }
+        });
+      }
+
+      if (hasOverlap) {
+        toast.error('Este horário está ocupado ou conflita com outro agendamento.');
         return false;
       }
 
@@ -178,7 +225,17 @@ export const useBooking = (barbershopId: string | null) => {
       return true;
     } catch (error: any) {
       console.error('Error creating booking:', error);
-      toast.error('Erro ao realizar agendamento. Tente novamente.');
+      
+      // Mensagens específicas por tipo de erro
+      if (error.code === '23505') { // Unique violation
+        toast.error('Já existe um agendamento neste horário.');
+      } else if (error.message?.includes('RLS') || error.message?.includes('policy')) {
+        toast.error('Erro de permissão. Entre em contato com a barbearia.');
+      } else if (error.message) {
+        toast.error(`Erro ao realizar agendamento: ${error.message}`);
+      } else {
+        toast.error('Erro ao realizar agendamento. Tente novamente.');
+      }
       return false;
     } finally {
       setIsSubmitting(false);
