@@ -130,8 +130,8 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId }: Booking
       .maybeSingle();
 
     const times: string[] = [];
-    let startHour = 9;
-    let endHour = 19;
+    let startHour = 7;
+    let endHour = 22;
 
     // Se tem schedule configurado, usar horários do banco
     if (schedule) {
@@ -267,7 +267,7 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId }: Booking
         </SheetHeader>
 
         <ScrollArea className="h-[calc(90vh-120px)] mt-6">
-          <div className="space-y-6 pb-6">
+          <div className="space-y-6 pb-28">
             {/* Client Info */}
             <div className="space-y-4">
               <div>
@@ -319,16 +319,64 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId }: Booking
               </div>
             </div>
 
-            {/* Barber Selection */}
+            {/* Date Selection */}
+            <div className="space-y-3">
+              <Label>Escolha a Data</Label>
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={setSelectedDate}
+                disabled={(date) => startOfDay(date) < startOfDay(new Date())}
+                locale={ptBR}
+                className="rounded-md border w-full pointer-events-auto"
+              />
+            </div>
+
+            {/* Time Selection */}
+            {selectedDate && (
+              <div className="space-y-3">
+                <Label>Escolha o Horário</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {availableTimes.map((time) => {
+                    const isOccupied = occupiedTimes.includes(time);
+                    
+                    return (
+                      <Button
+                        key={time}
+                        variant={selectedTime === time ? 'default' : 'outline'}
+                        onClick={() => !isOccupied && setSelectedTime(time)}
+                        disabled={isOccupied}
+                        className={cn(
+                          selectedTime === time && 'bg-accent hover:bg-accent/90',
+                          isOccupied && 'opacity-50 cursor-not-allowed line-through'
+                        )}
+                        title={isOccupied ? 'Horário ocupado' : undefined}
+                      >
+                        {time}
+                        {isOccupied && <X className="h-3 w-3 ml-1" />}
+                      </Button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Barber Selection - Agora por último */}
             <div className="space-y-3">
               <Label>Escolha o Barbeiro</Label>
-              {loadingBarbers ? (
+              {!selectedDate || !selectedTime ? (
+                <div className="text-center py-6 px-4 bg-muted/50 rounded-lg border border-dashed">
+                  <p className="text-sm text-muted-foreground">
+                    Selecione data e horário primeiro para ver os barbeiros disponíveis
+                  </p>
+                </div>
+              ) : loadingBarbers ? (
                 <div className="text-center py-6 text-muted-foreground">
                   Carregando barbeiros...
                 </div>
               ) : barbers.length === 0 ? (
                 <div className="text-center py-6 text-muted-foreground">
-                  Nenhum barbeiro disponível
+                  Nenhum barbeiro disponível para este horário
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-3">
@@ -372,48 +420,6 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId }: Booking
                 </div>
               )}
             </div>
-
-            {/* Date Selection */}
-            <div className="space-y-3">
-              <Label>Escolha a Data</Label>
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                disabled={(date) => startOfDay(date) < startOfDay(new Date())}
-                locale={ptBR}
-                className="rounded-md border w-full pointer-events-auto"
-              />
-            </div>
-
-            {/* Time Selection */}
-            {selectedDate && (
-              <div className="space-y-3">
-                <Label>Escolha o Horário</Label>
-                <div className="grid grid-cols-3 gap-2">
-                  {availableTimes.map((time) => {
-                    const isOccupied = occupiedTimes.includes(time);
-                    
-                    return (
-                      <Button
-                        key={time}
-                        variant={selectedTime === time ? 'default' : 'outline'}
-                        onClick={() => !isOccupied && setSelectedTime(time)}
-                        disabled={isOccupied}
-                        className={cn(
-                          selectedTime === time && 'bg-accent hover:bg-accent/90',
-                          isOccupied && 'opacity-50 cursor-not-allowed line-through'
-                        )}
-                        title={isOccupied ? 'Horário ocupado' : undefined}
-                      >
-                        {time}
-                        {isOccupied && <X className="h-3 w-3 ml-1" />}
-                      </Button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
           </div>
         </ScrollArea>
 
