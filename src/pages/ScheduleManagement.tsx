@@ -36,7 +36,7 @@ const timeSlots = [
 ];
 
 const ScheduleManagement = () => {
-  const { user } = useAuth();
+  const { barbershopId } = useAuth();
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [workingBarbers, setWorkingBarbers] = useState<string[]>([]);
@@ -45,13 +45,9 @@ const ScheduleManagement = () => {
     start: '09:00',
     end: '20:00',
   });
-  const [barbershopId, setBarbershopId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [loadingBarbers, setLoadingBarbers] = useState(false);
-
-  useEffect(() => {
-    fetchBarbershopId();
-  }, [user]);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (barbershopId) {
@@ -65,24 +61,15 @@ const ScheduleManagement = () => {
     }
   }, [selectedDate, barbershopId]);
 
-  const fetchBarbershopId = async () => {
-    try {
-      const { data } = await supabase
-        .from('barbers')
-        .select('barbershop_id')
-        .eq('user_id', user?.id)
-        .single();
-      
-      setBarbershopId(data?.barbershop_id || null);
-    } catch (error) {
-      console.error('Error fetching barbershop_id:', error);
-    }
-  };
-
   const fetchBarbers = async () => {
-    if (!barbershopId) return;
+    if (!barbershopId) {
+      setError('Barbearia não encontrada. Verifique suas permissões.');
+      return;
+    }
     
     setLoadingBarbers(true);
+    setError(null);
+    
     try {
       const { data, error } = await supabase
         .from('barbers')
@@ -92,10 +79,14 @@ const ScheduleManagement = () => {
 
       if (error) throw error;
       
-      console.log('Barbeiros carregados:', data);
+      if (!data || data.length === 0) {
+        setError('Nenhum barbeiro cadastrado. Cadastre barbeiros antes de configurar a agenda.');
+      }
+      
       setBarbers(data || []);
     } catch (error: any) {
       console.error('Erro ao carregar barbeiros:', error);
+      setError('Erro ao carregar barbeiros. Tente novamente.');
       toast.error('Erro ao carregar barbeiros');
     } finally {
       setLoadingBarbers(false);
@@ -125,9 +116,9 @@ const ScheduleManagement = () => {
         setWorkingBarbers(data.barbers_working || []);
         setBlockedSlots(data.blocked_slots || []);
       } else {
-        // Reset para padrões
+        // Reset para padrões - inicia vazio para forçar seleção manual
         setWorkingHours({ start: '09:00', end: '20:00' });
-        setWorkingBarbers(barbers.filter(b => b.is_available).map(b => b.id));
+        setWorkingBarbers([]);
         setBlockedSlots([]);
       }
     } catch (error: any) {
@@ -250,6 +241,13 @@ const ScheduleManagement = () => {
                 selected={selectedDate}
                 onSelect={(date) => date && setSelectedDate(date)}
                 className="rounded-md border"
+                disabled={(date) => {
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const checkDate = new Date(date);
+                  checkDate.setHours(0, 0, 0, 0);
+                  return checkDate < today;
+                }}
               />
               
               <div className="mt-6 space-y-4">
@@ -300,41 +298,47 @@ const ScheduleManagement = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
-                {barbers.map((barber) => (
-                  <div
-                    key={barber.id}
-                    className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-accent/10 flex items-center justify-center">
-                        <Users className="h-5 w-5 text-accent" />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="font-medium">
-                          {barber.name || 'Barbeiro sem nome'}
-                        </span>
-                        {barber.specialty && (
-                          <span className="text-xs text-muted-foreground">
-                            {barber.specialty}
+              {error ? (
+                <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20">
+                  <p className="text-sm text-destructive text-center">{error}</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {barbers.map((barber) => (
+                    <div
+                      key={barber.id}
+                      className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="h-10 w-10 rounded-full bg-accent/10 flex items-center justify-center">
+                          <Users className="h-5 w-5 text-accent" />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {barber.name || 'Barbeiro sem nome'}
                           </span>
-                        )}
+                          {barber.specialty && (
+                            <span className="text-xs text-muted-foreground">
+                              {barber.specialty}
+                            </span>
+                          )}
+                        </div>
                       </div>
+                      
+                      <Switch
+                        checked={workingBarbers.includes(barber.id)}
+                        onCheckedChange={() => toggleBarberWorking(barber.id)}
+                      />
                     </div>
-                    
-                    <Switch
-                      checked={workingBarbers.includes(barber.id)}
-                      onCheckedChange={() => toggleBarberWorking(barber.id)}
-                    />
-                  </div>
-                ))}
-                
-                {barbers.length === 0 && (
-                  <p className="text-center text-muted-foreground py-8">
-                    Nenhum barbeiro cadastrado
-                  </p>
-                )}
-              </div>
+                  ))}
+                  
+                  {barbers.length === 0 && !loadingBarbers && (
+                    <p className="text-center text-muted-foreground py-8">
+                      Cadastre barbeiros na página de Gerenciar Barbeiros
+                    </p>
+                  )}
+                </div>
+              )}
             </CardContent>
           </Card>
 
