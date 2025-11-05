@@ -5,6 +5,7 @@ import { ServiceCard } from '@/components/ServiceCard';
 import { BookingModal } from '@/components/BookingModal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MapPin, Phone, Clock } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface Service {
   id: string;
