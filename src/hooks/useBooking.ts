@@ -98,8 +98,9 @@ export const useBooking = (barbershopId: string | null) => {
         if (insertError) {
           console.error('[BOOKING] Erro ao criar perfil:', insertError);
           
-          // Se for erro de duplicata (telefone já existe), tentar buscar novamente
+          // Se for erro de duplicata (telefone já existe), buscar cliente existente
           if (insertError.code === '23505') {
+            console.log('[BOOKING] Telefone já existe, buscando cliente...');
             const { data: retryClient } = await supabase
               .from('profiles')
               .select('id')
@@ -108,12 +109,15 @@ export const useBooking = (barbershopId: string | null) => {
             
             if (retryClient) {
               clientId = retryClient.id;
-              console.log('[BOOKING] Cliente encontrado na segunda tentativa:', clientId);
+              console.log('[BOOKING] Cliente encontrado:', clientId);
+            } else {
+              toast.error('Erro: telefone já cadastrado mas cliente não encontrado.');
+              return false;
             }
-          }
-          
-          if (!clientId) {
-            toast.error('Erro ao criar perfil do cliente. Tente novamente.');
+          } else {
+            // Erro diferente de duplicata
+            console.error('[BOOKING] Erro inesperado ao criar perfil:', insertError.message);
+            toast.error(`Erro ao criar perfil: ${insertError.message}`);
             return false;
           }
         } else {
