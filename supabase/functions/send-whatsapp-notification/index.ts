@@ -51,7 +51,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Buscar configurações de WhatsApp da barbearia
     const { data: barbershop, error: barbershopError } = await supabase
       .from("barbershops")
-      .select("name, whatsapp_settings")
+      .select("name")
       .eq("id", barbershop_id)
       .single();
 
@@ -60,7 +60,25 @@ const handler = async (req: Request): Promise<Response> => {
       throw barbershopError;
     }
 
-    const settings = barbershop.whatsapp_settings || {};
+    // Buscar credenciais do WhatsApp de barbershop_credentials
+    const { data: credentials, error: credentialsError } = await supabase
+      .from("barbershop_credentials")
+      .select("whatsapp_credentials")
+      .eq("barbershop_id", barbershop_id)
+      .single();
+
+    if (credentialsError) {
+      console.error("Error fetching credentials:", credentialsError);
+      throw credentialsError;
+    }
+
+    const settings = credentials?.whatsapp_credentials || {};
+    
+    console.log("WhatsApp settings loaded:", {
+      enabled: settings.enabled,
+      api_provider: settings.api_provider,
+      has_phone: !!settings.phone_number,
+    });
 
     if (!settings.enabled) {
       console.log("WhatsApp notifications disabled for this barbershop");
