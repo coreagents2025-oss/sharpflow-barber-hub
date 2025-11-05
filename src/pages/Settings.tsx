@@ -585,7 +585,7 @@ const Settings = () => {
                       <div className="space-y-2">
                         <Label htmlFor="slug">Identificador (Slug)</Label>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground whitespace-nowrap">lovable.app/</span>
+                          <span className="text-sm text-muted-foreground whitespace-nowrap">barberplus.shop/</span>
                           <Input 
                             id="slug"
                             placeholder="minha-barbearia"
@@ -597,7 +597,10 @@ const Settings = () => {
                         <p className="text-xs text-muted-foreground">
                           Seu catálogo estará disponível em:{' '}
                           <strong className="text-foreground">
-                            {window.location.origin}/{domainData.slug || 'seu-slug'}
+                            {domainData.custom_domain 
+                              ? `https://${domainData.custom_domain}`
+                              : `https://barberplus.shop/${domainData.slug || 'seu-slug'}`
+                            }
                           </strong>
                         </p>
                       </div>
@@ -626,12 +629,12 @@ const Settings = () => {
                         <Button 
                           variant="outline"
                           onClick={() => {
-                            const url = domainData.slug 
-                              ? `${window.location.origin}/${domainData.slug}`
-                              : `${window.location.origin}/catalogo`;
+                            const url = domainData.custom_domain
+                              ? `https://${domainData.custom_domain}`
+                              : `https://barberplus.shop/${domainData.slug}`;
                             window.open(url, '_blank');
                           }}
-                          disabled={!domainData.slug}
+                          disabled={!domainData.slug && !domainData.custom_domain}
                         >
                           <Eye className="h-4 w-4 mr-2" />
                           Visualizar Catálogo

@@ -123,19 +123,56 @@ const handler = async (req: Request): Promise<Response> => {
       </html>
     `;
 
-    // Por enquanto, apenas log do email (Resend será configurado pelo usuário)
-    console.log("Email would be sent to:", client_email);
-    console.log("From:", settings.from_email || "noreply@barbershop.com");
-    console.log("Subject: Agendamento Confirmado -", barbershop.name);
+    // Enviar email via Resend
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
+    
+    if (!resendApiKey) {
+      console.log("RESEND_API_KEY not configured, skipping email send");
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "Email notification processed (email service not configured)",
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
 
-    // TODO: Integrar com Resend quando o usuário configurar a API key
-    // const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
-    // await resend.emails.send({
-    //   from: `${settings.from_name || barbershop.name} <${settings.from_email || 'noreply@lovable.app'}>`,
-    //   to: [client_email],
-    //   subject: `Agendamento Confirmado - ${barbershop.name}`,
-    //   html: emailHTML,
-    // });
+    if (!settings.from_email) {
+      console.log("from_email not configured, skipping email send");
+      return new Response(
+        JSON.stringify({
+          success: true,
+          message: "Email notification processed (sender email not configured)",
+        }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    const { Resend } = await import("https://esm.sh/resend@2.0.0");
+    const resend = new Resend(resendApiKey);
+
+    console.log("Sending email to:", client_email);
+    console.log("From:", settings.from_email);
+    
+    const { data, error } = await resend.emails.send({
+      from: `${settings.from_name || barbershop.name} <${settings.from_email}>`,
+      to: [client_email],
+      subject: `Agendamento Confirmado - ${barbershop.name}`,
+      html: emailHTML,
+    });
+
+    if (error) {
+      console.error("Resend error:", error);
+      throw error;
+    }
+
+    console.log("Email sent successfully:", data);
 
     return new Response(
       JSON.stringify({

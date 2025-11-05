@@ -521,6 +521,51 @@ export type Database = {
           },
         ]
       }
+      email_campaigns: {
+        Row: {
+          barbershop_id: string
+          created_at: string | null
+          created_by: string | null
+          id: string
+          message: string
+          sent_count: number | null
+          subject: string
+        }
+        Insert: {
+          barbershop_id: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          message: string
+          sent_count?: number | null
+          subject: string
+        }
+        Update: {
+          barbershop_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          message?: string
+          sent_count?: number | null
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_campaigns_barbershop_id_fkey"
+            columns: ["barbershop_id"]
+            isOneToOne: false
+            referencedRelation: "barbershops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_campaigns_barbershop_id_fkey"
+            columns: ["barbershop_id"]
+            isOneToOne: false
+            referencedRelation: "public_barbershops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       integrations: {
         Row: {
           barbershop_id: string
