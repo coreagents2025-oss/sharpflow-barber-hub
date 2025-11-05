@@ -14,6 +14,7 @@ interface WebhookMessage {
   media_url?: string;
   provider_message_id?: string;
   metadata?: any;
+  client_name?: string;
 }
 
 serve(async (req) => {
@@ -85,8 +86,11 @@ serve(async (req) => {
     } else if (payload.phone || payload.instanceId) {
       // Z-API
       parsedMessage = parseZAPIWebhook(payload);
+    } else if (payload.EventType === 'chats' && payload.chat) {
+      // UAZapi - Chat event format
+      parsedMessage = parseUAZapiChatsWebhook(payload);
     } else if (payload.key && payload.message) {
-      // UAZapi
+      // UAZapi - Direct message format
       parsedMessage = parseUAZapiWebhook(payload);
     }
 
@@ -129,7 +133,7 @@ serve(async (req) => {
         .insert({
           barbershop_id,
           client_phone: parsedMessage.from,
-          client_name: parsedMessage.from, // Melhorar depois com dados reais
+          client_name: parsedMessage.client_name || parsedMessage.from,
           last_message: parsedMessage.message.substring(0, 100),
           last_message_at: new Date().toISOString(),
           unread_count: 1,
@@ -243,28 +247,95 @@ function parseZAPIWebhook(payload: any): WebhookMessage | null {
   }
 }
 
+// Parse UAZapi "chats" event webhook (EventType: "chats")
+function parseUAZapiChatsWebhook(payload: any): WebhookMessage | null {
+  try {
+    console.log('Attempting to parse UAZapi Chats webhook...');
+    
+    if (payload.EventType !== 'chats' || !payload.chat) {
+      console.log('Not a UAZapi chats event');
+      return null;
+    }
+
+    const chat = payload.chat;
+    const from = chat.wa_chatid?.replace('@s.whatsapp.net', '');
+    const messageContent = chat.wa_lastMessageTextVote || '';
+    const clientName = chat.wa_name || chat.name || from;
+    
+    console.log('Parsed UAZapi chat:', { from, messageContent, clientName });
+
+    if (!from || !messageContent) {
+      console.log('Missing required fields in UAZapi chat:', { from, messageContent });
+      return null;
+    }
+
+    return {
+      provider: 'uazapi',
+      from,
+      message: messageContent,
+      media_url: undefined,
+      provider_message_id: `uazapi_chat_${chat.wa_lastMsgTimestamp || Date.now()}`,
+      client_name: clientName,
+      metadata: { raw: payload },
+    };
+  } catch (error) {
+    console.error('Error parsing UAZapi Chats webhook:', error);
+    return null;
+  }
+}
+
+// Parse UAZapi direct message webhook (legacy format)
 function parseUAZapiWebhook(payload: any): WebhookMessage | null {
   try {
+    console.log('Attempting to parse UAZapi direct message...');
+    
     const key = payload.key;
     const message = payload.message;
 
-    if (!key || !message) return null;
+    if (!key || !message) {
+      console.log('Not a UAZapi direct message');
+      return null;
+    }
 
     // UAZapi usa key.remoteJid para o número
     const from = key.remoteJid?.replace('@s.whatsapp.net', '') || '';
     
     // Extrair texto da mensagem
-    const text = message.conversation || 
-                 message.extendedTextMessage?.text || 
-                 message.imageMessage?.caption || 
-                 message.videoMessage?.caption || '';
+    let text = '';
+    let mediaUrl = null;
+    
+    if (message.conversation) {
+      text = message.conversation;
+    } else if (message.extendedTextMessage?.text) {
+      text = message.extendedTextMessage.text;
+    } else if (message.imageMessage) {
+      text = message.imageMessage.caption || '[Imagem]';
+      mediaUrl = message.imageMessage.url;
+    } else if (message.videoMessage) {
+      text = message.videoMessage.caption || '[Vídeo]';
+      mediaUrl = message.videoMessage.url;
+    } else if (message.audioMessage) {
+      text = '[Áudio]';
+      mediaUrl = message.audioMessage.url;
+    } else if (message.documentMessage) {
+      text = '[Documento]';
+      mediaUrl = message.documentMessage.url;
+    }
+
+    console.log('Parsed UAZapi message:', { from, text, mediaUrl });
+
+    if (!from || !text) {
+      console.log('Missing required fields in UAZapi message:', { from, text });
+      return null;
+    }
 
     return {
       provider: 'uazapi',
       from,
       message: text,
-      media_url: message.imageMessage?.url || message.videoMessage?.url || message.documentMessage?.url,
-      provider_message_id: key.id,
+      media_url: mediaUrl,
+      provider_message_id: key.id || `uazapi_${Date.now()}`,
+      client_name: from,
       metadata: { raw: payload },
     };
   } catch (error) {
