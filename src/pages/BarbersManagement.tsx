@@ -41,7 +41,7 @@ const BarbersManagement = () => {
     photo_url: '',
     is_available: true,
   });
-  const { user } = useAuth();
+  const { user, barbershopId } = useAuth();
   const { uploadImage, uploading } = useImageUpload();
 
   useEffect(() => {
@@ -51,22 +51,16 @@ const BarbersManagement = () => {
   const fetchBarbers = async () => {
     setLoading(true);
     try {
-      // Buscar barbershop_id do usuário atual
-      const { data: barberData } = await supabase
-        .from('barbers')
-        .select('barbershop_id')
-        .eq('user_id', user?.id)
-        .single();
-
-      if (!barberData?.barbershop_id) {
-        toast.error('Erro: Barbearia não encontrada');
+      if (!barbershopId) {
+        toast.error('Erro: Barbearia não identificada');
+        setLoading(false);
         return;
       }
 
       const { data, error } = await supabase
         .from('barbers')
         .select('*')
-        .eq('barbershop_id', barberData.barbershop_id);
+        .eq('barbershop_id', barbershopId);
 
       if (error) throw error;
       setBarbers(data || []);
@@ -112,15 +106,8 @@ const BarbersManagement = () => {
         return;
       }
 
-      // Buscar barbershop_id do usuário logado
-      const { data: barberData } = await supabase
-        .from('barbers')
-        .select('barbershop_id')
-        .eq('user_id', user?.id)
-        .maybeSingle();
-
-      if (!barberData?.barbershop_id) {
-        toast.error('Erro: Barbearia não encontrada');
+      if (!barbershopId) {
+        toast.error('Erro: Barbearia não identificada');
         return;
       }
 
@@ -155,7 +142,7 @@ const BarbersManagement = () => {
           .insert({
             name: formData.name,
             phone: formData.phone || null,
-            barbershop_id: barberData.barbershop_id,
+            barbershop_id: barbershopId,
             bio: formData.bio || null,
             specialty: formData.specialty || null,
             photo_url: photoUrl || null,

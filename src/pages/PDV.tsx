@@ -37,7 +37,7 @@ interface BarberStatus {
 }
 
 const PDV = () => {
-  const { user } = useAuth();
+  const { user, barbershopId: authBarbershopId } = useAuth();
   const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([]);
   const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([]);
   const [barberStatuses, setBarberStatuses] = useState<BarberStatus[]>([]);
@@ -48,14 +48,8 @@ const PDV = () => {
     occupancyRate: 0,
   });
   const [popularServices, setPopularServices] = useState<Array<{ name: string; count: number }>>([]);
-  const [barbershopId, setBarbershopId] = useState<string | null>(null);
-
   useEffect(() => {
-    fetchBarbershopId();
-  }, [user]);
-
-  useEffect(() => {
-    if (barbershopId) {
+    if (authBarbershopId) {
       fetchTodayAppointments();
       fetchStats();
       fetchBarberStatuses();
@@ -83,24 +77,10 @@ const PDV = () => {
         supabase.removeChannel(channel);
       };
     }
-  }, [barbershopId]);
-
-  const fetchBarbershopId = async () => {
-    try {
-      const { data } = await supabase
-        .from('barbers')
-        .select('barbershop_id')
-        .eq('user_id', user?.id)
-        .single();
-      
-      setBarbershopId(data?.barbershop_id || null);
-    } catch (error) {
-      console.error('Error fetching barbershop_id:', error);
-    }
-  };
+  }, [authBarbershopId]);
 
   const fetchTodayAppointments = async () => {
-    if (!barbershopId) return;
+    if (!authBarbershopId) return;
     
     try {
       const today = new Date();
@@ -116,7 +96,7 @@ const PDV = () => {
           services (name, duration_minutes),
           barbers (id, name, specialty)
         `)
-        .eq('barbershop_id', barbershopId)
+        .eq('barbershop_id', authBarbershopId)
         .gte('scheduled_at', today.toISOString())
         .lt('scheduled_at', tomorrow.toISOString())
         .order('scheduled_at', { ascending: true });
@@ -155,7 +135,7 @@ const PDV = () => {
   };
 
   const fetchStats = async () => {
-    if (!barbershopId) return;
+    if (!authBarbershopId) return;
     
     try {
       const today = new Date();
@@ -167,7 +147,7 @@ const PDV = () => {
       const { count: todayCount } = await supabase
         .from('appointments')
         .select('*', { count: 'exact', head: true })
-        .eq('barbershop_id', barbershopId)
+        .eq('barbershop_id', authBarbershopId)
         .gte('scheduled_at', today.toISOString())
         .lt('scheduled_at', tomorrow.toISOString());
       
@@ -176,7 +156,7 @@ const PDV = () => {
       const { data: payments } = await supabase
         .from('payments')
         .select('amount')
-        .eq('barbershop_id', barbershopId)
+        .eq('barbershop_id', authBarbershopId)
         .gte('created_at', firstDay.toISOString())
         .eq('status', 'completed');
       
@@ -186,7 +166,7 @@ const PDV = () => {
       const { data: appointments } = await supabase
         .from('appointments')
         .select('client_id')
-        .eq('barbershop_id', barbershopId)
+        .eq('barbershop_id', authBarbershopId)
         .gte('scheduled_at', firstDay.toISOString());
       
       const uniqueClients = new Set(appointments?.map(a => a.client_id)).size;
@@ -203,14 +183,14 @@ const PDV = () => {
   };
 
   const fetchBarberStatuses = async () => {
-    if (!barbershopId) return;
+    if (!authBarbershopId) return;
     
     try {
       const now = new Date();
       const { data: barbers } = await supabase
         .from('barbers')
         .select('id, name, is_available')
-        .eq('barbershop_id', barbershopId);
+        .eq('barbershop_id', authBarbershopId);
       
       if (!barbers) return;
       
@@ -263,7 +243,7 @@ const PDV = () => {
   };
 
   const fetchPopularServices = async () => {
-    if (!barbershopId) return;
+    if (!authBarbershopId) return;
     
     try {
       const firstDay = new Date();
@@ -275,7 +255,7 @@ const PDV = () => {
           service_id,
           services (name)
         `)
-        .eq('barbershop_id', barbershopId)
+        .eq('barbershop_id', authBarbershopId)
         .gte('scheduled_at', firstDay.toISOString());
       
       // Contar por serviço
