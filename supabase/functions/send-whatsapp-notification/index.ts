@@ -333,8 +333,8 @@ const handler = async (req: Request): Promise<Response> => {
               throw new Error(`Failed to check instance status: ${JSON.stringify(statusData)}`);
             }
             
-            if (statusData.status !== 'CONNECTED') {
-              throw new Error(`Instance not connected. Current status: ${statusData.status}. Please scan QR code in UAZapi dashboard.`);
+            if (statusData.status?.connected !== true || statusData.instance?.status !== 'connected') {
+              throw new Error(`Instance not connected. Status: ${statusData.instance?.status}, Connected: ${statusData.status?.connected}. Please scan QR code in UAZapi dashboard.`);
             }
             
             console.log('✅ Instance is CONNECTED, proceeding with message send...');
