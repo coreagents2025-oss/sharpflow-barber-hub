@@ -87,7 +87,7 @@ const handler = async (req: Request): Promise<Response> => {
     const apiProvider = settings.api_provider || "official";
     
     // Verificar se as credenciais necessárias estão configuradas
-    if (apiProvider === "official" && (!settings.whatsapp_api_token || !settings.whatsapp_phone_number_id)) {
+      if (apiProvider === "official" && (!settings.whatsapp_api_token || !settings.whatsapp_phone_number_id)) {
       console.log("WhatsApp Business API credentials not configured");
       return new Response(
         JSON.stringify({ message: "WhatsApp Business API credentials not configured" }),
@@ -113,6 +113,17 @@ const handler = async (req: Request): Promise<Response> => {
       console.log("Z-API credentials not configured");
       return new Response(
         JSON.stringify({ message: "Z-API credentials not configured" }),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        }
+      );
+    }
+
+    if (apiProvider === "uazapi" && (!settings.uazapi_instance_id || !settings.uazapi_token || !settings.uazapi_account_id)) {
+      console.log("UAZapi credentials not configured");
+      return new Response(
+        JSON.stringify({ message: "UAZapi credentials not configured" }),
         {
           status: 200,
           headers: { "Content-Type": "application/json", ...corsHeaders },
@@ -258,6 +269,38 @@ const handler = async (req: Request): Promise<Response> => {
           
           apiResponse = await response.json();
           console.log("Z-API Response:", apiResponse);
+        }
+      } else if (apiProvider === "uazapi") {
+        // UAZapi
+        const subdomain = settings.uazapi_account_id;
+        const instanceId = settings.uazapi_instance_id;
+        const token = settings.uazapi_token;
+        
+        if (subdomain && instanceId && token) {
+          const response = await fetch(
+            `https://${subdomain}.uazapi.com/message/text`,
+            {
+              method: "POST",
+              headers: {
+                "token": token,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                id: instanceId,
+                number: client_phone,
+                text: message,
+              }),
+            }
+          );
+          
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`UAZapi error: ${errorText}`);
+            throw new Error(`UAZapi error: ${errorText}`);
+          }
+          
+          apiResponse = await response.json();
+          console.log("UAZapi Response:", apiResponse);
         }
       }
     } catch (error: any) {

@@ -8,7 +8,7 @@ const corsHeaders = {
 
 interface WebhookMessage {
   barbershop_token?: string;
-  provider: 'official' | 'evolution_api' | 'z_api';
+  provider: 'official' | 'evolution_api' | 'z_api' | 'uazapi';
   from: string;
   message: string;
   media_url?: string;
@@ -85,6 +85,9 @@ serve(async (req) => {
     } else if (payload.phone || payload.instanceId) {
       // Z-API
       parsedMessage = parseZAPIWebhook(payload);
+    } else if (payload.key && payload.message) {
+      // UAZapi
+      parsedMessage = parseUAZapiWebhook(payload);
     }
 
     if (!parsedMessage) {
@@ -236,6 +239,36 @@ function parseZAPIWebhook(payload: any): WebhookMessage | null {
     };
   } catch (error) {
     console.error('Error parsing Z-API webhook:', error);
+    return null;
+  }
+}
+
+function parseUAZapiWebhook(payload: any): WebhookMessage | null {
+  try {
+    const key = payload.key;
+    const message = payload.message;
+
+    if (!key || !message) return null;
+
+    // UAZapi usa key.remoteJid para o número
+    const from = key.remoteJid?.replace('@s.whatsapp.net', '') || '';
+    
+    // Extrair texto da mensagem
+    const text = message.conversation || 
+                 message.extendedTextMessage?.text || 
+                 message.imageMessage?.caption || 
+                 message.videoMessage?.caption || '';
+
+    return {
+      provider: 'uazapi',
+      from,
+      message: text,
+      media_url: message.imageMessage?.url || message.videoMessage?.url || message.documentMessage?.url,
+      provider_message_id: key.id,
+      metadata: { raw: payload },
+    };
+  } catch (error) {
+    console.error('Error parsing UAZapi webhook:', error);
     return null;
   }
 }

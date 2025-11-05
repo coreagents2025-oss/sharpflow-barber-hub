@@ -56,7 +56,7 @@ const whatsappSettingsSchema = z.object({
   enabled: z.boolean(),
   phone_number: z.string().regex(/^\d{10,15}$/, 'Número de telefone inválido (apenas números)').or(z.literal('')),
   message_template: z.string().min(10, 'Template deve ter pelo menos 10 caracteres'),
-  api_provider: z.enum(['official', 'evolution_api', 'z_api']),
+  api_provider: z.enum(['official', 'evolution_api', 'z_api', 'uazapi']),
   daily_offer_message: z.string().optional().or(z.literal('')),
   // WhatsApp Business API (Oficial)
   whatsapp_api_token: z.string().optional().or(z.literal('')),
@@ -68,6 +68,10 @@ const whatsappSettingsSchema = z.object({
   // Z-API
   z_api_instance_id: z.string().optional().or(z.literal('')),
   z_api_token: z.string().optional().or(z.literal('')),
+  // UAZapi
+  uazapi_instance_id: z.string().optional().or(z.literal('')),
+  uazapi_token: z.string().optional().or(z.literal('')),
+  uazapi_account_id: z.string().optional().or(z.literal('')),
 });
 
 const Settings = () => {
@@ -108,7 +112,7 @@ const Settings = () => {
     enabled: false,
     phone_number: '',
     message_template: 'Olá {{client_name}}! Seu agendamento foi confirmado para {{date}} às {{time}}. Serviço: {{service_name}} com {{barber_name}}. Aguardamos você!',
-    api_provider: 'official' as 'official' | 'evolution_api' | 'z_api',
+    api_provider: 'official' as 'official' | 'evolution_api' | 'z_api' | 'uazapi',
     daily_offer_message: '',
     // WhatsApp Business API (Oficial)
     whatsapp_api_token: '',
@@ -120,6 +124,10 @@ const Settings = () => {
     // Z-API
     z_api_instance_id: '',
     z_api_token: '',
+    // UAZapi
+    uazapi_instance_id: '',
+    uazapi_token: '',
+    uazapi_account_id: '',
   });
 
   const [showDomainGuide, setShowDomainGuide] = useState(false);
@@ -196,6 +204,9 @@ const Settings = () => {
               evolution_instance_name: whatsappCreds.evolution_instance_name || '',
               z_api_instance_id: whatsappCreds.z_api_instance_id || '',
               z_api_token: whatsappCreds.z_api_token || '',
+              uazapi_instance_id: whatsappCreds.uazapi_instance_id || '',
+              uazapi_token: whatsappCreds.uazapi_token || '',
+              uazapi_account_id: whatsappCreds.uazapi_account_id || '',
             });
           }
         }
@@ -787,6 +798,7 @@ const Settings = () => {
                           <SelectItem value="official">WhatsApp Business API (Oficial)</SelectItem>
                           <SelectItem value="evolution_api">Evolution API (Não oficial)</SelectItem>
                           <SelectItem value="z_api">Z-API (Não oficial)</SelectItem>
+                          <SelectItem value="uazapi">UAZapi (Não oficial)</SelectItem>
                         </SelectContent>
                       </Select>
                       <p className="text-xs text-muted-foreground">
@@ -949,6 +961,50 @@ const Settings = () => {
                       </div>
                     )}
 
+                    {/* Campos de configuração da UAZapi */}
+                    {whatsappSettings.api_provider === 'uazapi' && (
+                      <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+                        <h4 className="font-semibold text-sm">Configuração UAZapi</h4>
+                        
+                        <div className="space-y-2">
+                          <Label htmlFor="uazapi-subdomain">Subdomínio UAZapi</Label>
+                          <Input 
+                            id="uazapi-subdomain"
+                            placeholder="seusubdominio"
+                            value={whatsappSettings.uazapi_account_id}
+                            onChange={(e) => setWhatsappSettings({ ...whatsappSettings, uazapi_account_id: e.target.value })}
+                            disabled={loading}
+                          />
+                          <p className="text-xs text-muted-foreground">
+                            Exemplo: se sua URL é https://meunegocio.uazapi.com, use "meunegocio"
+                          </p>
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="uazapi-instance">Instance ID</Label>
+                          <Input 
+                            id="uazapi-instance"
+                            placeholder="SUA_INSTANCIA"
+                            value={whatsappSettings.uazapi_instance_id}
+                            onChange={(e) => setWhatsappSettings({ ...whatsappSettings, uazapi_instance_id: e.target.value })}
+                            disabled={loading}
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label htmlFor="uazapi-token">Token</Label>
+                          <Input 
+                            id="uazapi-token"
+                            type="password"
+                            placeholder="seu-token-uazapi"
+                            value={whatsappSettings.uazapi_token}
+                            onChange={(e) => setWhatsappSettings({ ...whatsappSettings, uazapi_token: e.target.value })}
+                            disabled={loading}
+                          />
+                        </div>
+                      </div>
+                    )}
+
                     <div className="bg-blue-50 dark:bg-blue-950 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
                       <h4 className="font-semibold text-sm mb-2 flex items-center gap-2">
                         <MessageCircle className="h-4 w-4" />
@@ -974,6 +1030,13 @@ const Settings = () => {
                           <ol className="space-y-1 mt-1 ml-4">
                             <li>1. <a href="https://z-api.io" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 underline">Z-API Docs</a></li>
                             <li>2. Crie uma conta e obtenha suas credenciais</li>
+                          </ol>
+                        </div>
+                        <div>
+                          <strong className="text-foreground">UAZapi:</strong>
+                          <ol className="space-y-1 mt-1 ml-4">
+                            <li>1. <a href="https://docs.uazapi.com" target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 underline">UAZapi Docs</a></li>
+                            <li>2. Configure sua instância e obtenha o token</li>
                           </ol>
                         </div>
                       </div>
