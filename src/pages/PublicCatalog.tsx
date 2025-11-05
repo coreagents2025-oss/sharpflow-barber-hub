@@ -46,47 +46,48 @@ const PublicCatalog = () => {
 
   const fetchData = async () => {
     try {
-      let query = supabase.from('barbershops').select('*');
+      let barbershopData = null;
       
-      // Se tiver slug na URL, buscar por slug
-      // Caso contrário, buscar por domínio customizado (hostname) ou primeiro barbershop
+      // 1️⃣ Se tiver slug na URL, buscar por slug
       if (slug) {
-        query = query.eq('slug', slug);
-      } else {
-        const hostname = window.location.hostname;
-        // Tentar por domínio customizado primeiro
-        const { data: byDomain } = await supabase
+        const { data } = await supabase
           .from('barbershops')
           .select('*')
-          .eq('custom_domain', hostname)
+          .eq('slug', slug)
           .maybeSingle();
+        barbershopData = data;
+      } 
+      // 2️⃣ Se não tiver slug, tentar por domínio customizado
+      else {
+        const hostname = window.location.hostname;
         
-        if (byDomain) {
-          setBarbershop(byDomain);
-          setBarbershopId(byDomain.id);
-          await fetchServicesAndSettings(byDomain.id);
-          setLoading(false);
-          return;
+        // Ignorar localhost e domínios Lovable
+        if (hostname !== 'localhost' && !hostname.includes('lovableproject')) {
+          const { data: byDomain } = await supabase
+            .from('barbershops')
+            .select('*')
+            .eq('custom_domain', hostname)
+            .maybeSingle();
+          
+          if (byDomain) {
+            barbershopData = byDomain;
+          }
         }
-        
-        // Fallback: usar primeiro barbershop
-        query = query.limit(1);
       }
 
-      const { data: barbershopData } = await supabase
-        .from('barbershops')
-        .select('*')
-        .limit(1)
-        .maybeSingle();
-
-      if (barbershopData) {
-        setBarbershop(barbershopData);
-        setBarbershopId(barbershopData.id);
-        await fetchServicesAndSettings(barbershopData.id);
-
+      // ✅ Se não encontrou barbearia, mostrar erro
+      if (!barbershopData) {
+        toast.error('Barbearia não encontrada');
+        setLoading(false);
+        return;
       }
+
+      setBarbershop(barbershopData);
+      setBarbershopId(barbershopData.id);
+      await fetchServicesAndSettings(barbershopData.id);
     } catch (error) {
       console.error('Error fetching data:', error);
+      toast.error('Erro ao carregar catálogo');
     } finally {
       setLoading(false);
     }

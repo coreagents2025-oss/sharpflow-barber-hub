@@ -21,11 +21,11 @@ interface CatalogSettings {
 }
 
 const Catalog = () => {
-  const { user } = useAuth();
+  const { user, barbershopId } = useAuth();
   const { uploadImage, uploading } = useImageUpload();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [barbershopId, setBarbershopId] = useState<string | null>(null);
+  const [barbershopSlug, setBarbershopSlug] = useState<string>('');
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [heroFile, setHeroFile] = useState<File | null>(null);
   const [settings, setSettings] = useState<CatalogSettings>({
@@ -37,37 +37,45 @@ const Catalog = () => {
   });
 
   useEffect(() => {
-    if (user) {
-      fetchBarbershopAndSettings();
+    if (barbershopId) {
+      fetchCatalogSettings();
     }
-  }, [user]);
+  }, [barbershopId]);
 
-  const fetchBarbershopAndSettings = async () => {
+  const fetchCatalogSettings = async () => {
     setLoading(true);
     try {
-      const { data: barberData } = await supabase
-        .from('barbers')
-        .select('barbershop_id')
-        .eq('user_id', user?.id)
+      if (!barbershopId) {
+        toast.error('Erro: Barbearia não identificada');
+        setLoading(false);
+        return;
+      }
+
+      // Buscar configurações do catálogo
+      const { data: settingsData } = await supabase
+        .from('catalog_settings')
+        .select('*')
+        .eq('barbershop_id', barbershopId)
         .maybeSingle();
 
-      if (barberData?.barbershop_id) {
-        setBarbershopId(barberData.barbershop_id);
+      if (settingsData) {
+        setSettings(settingsData);
+      } else {
+        setSettings(prev => ({ ...prev, barbershop_id: barbershopId }));
+      }
 
-        const { data: settingsData } = await supabase
-          .from('catalog_settings')
-          .select('*')
-          .eq('barbershop_id', barberData.barbershop_id)
-          .maybeSingle();
+      // Buscar slug da barbearia
+      const { data: barbershopData } = await supabase
+        .from('barbershops')
+        .select('slug')
+        .eq('id', barbershopId)
+        .maybeSingle();
 
-        if (settingsData) {
-          setSettings(settingsData);
-        } else {
-          setSettings(prev => ({ ...prev, barbershop_id: barberData.barbershop_id }));
-        }
+      if (barbershopData) {
+        setBarbershopSlug(barbershopData.slug);
       }
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('Error fetching settings:', error);
       toast.error('Erro ao carregar configurações');
     } finally {
       setLoading(false);
@@ -140,7 +148,8 @@ const Catalog = () => {
           <div className="flex gap-2">
             <Button
               variant="outline"
-              onClick={() => window.open('/minha-barbearia', '_blank')}
+              onClick={() => window.open(`/${barbershopSlug}`, '_blank')}
+              disabled={!barbershopSlug}
             >
               <Eye className="h-4 w-4 mr-2" />
               Visualizar Catálogo
@@ -169,14 +178,15 @@ const Catalog = () => {
               <div>
                 <p className="font-medium mb-2">✅ Link Direto (Pronto para usar):</p>
                 <code className="block bg-muted px-3 py-2 rounded text-sm">
-                  {window.location.origin}/minha-barbearia
+                  {barbershopSlug ? `${window.location.origin}/${barbershopSlug}` : 'Carregando...'}
                 </code>
                 <Button 
                   variant="outline" 
                   size="sm" 
                   className="mt-2"
+                  disabled={!barbershopSlug}
                   onClick={() => {
-                    navigator.clipboard.writeText(`${window.location.origin}/minha-barbearia`);
+                    navigator.clipboard.writeText(`${window.location.origin}/${barbershopSlug}`);
                     toast.success('Link copiado para área de transferência!');
                   }}
                 >
