@@ -8,27 +8,27 @@ interface LeadStatusBadgeProps {
 
 export function LeadStatusBadge({ status }: LeadStatusBadgeProps) {
   const configs = {
-    novo: {
+    new: {
       label: 'Novo',
       icon: User,
       className: 'bg-blue-500/10 text-blue-600 hover:bg-blue-500/20',
     },
-    ativo: {
+    contacted: {
+      label: 'Contatado',
+      icon: Clock,
+      className: 'bg-yellow-500/10 text-yellow-600 hover:bg-yellow-500/20',
+    },
+    active: {
       label: 'Ativo',
       icon: TrendingUp,
       className: 'bg-green-500/10 text-green-600 hover:bg-green-500/20',
     },
-    inativo: {
-      label: 'Inativo',
-      icon: Clock,
-      className: 'bg-yellow-500/10 text-yellow-600 hover:bg-yellow-500/20',
-    },
-    vip: {
-      label: 'VIP',
+    converted: {
+      label: 'Convertido',
       icon: Star,
       className: 'bg-purple-500/10 text-purple-600 hover:bg-purple-500/20',
     },
-    perdido: {
+    lost: {
       label: 'Perdido',
       icon: XCircle,
       className: 'bg-red-500/10 text-red-600 hover:bg-red-500/20',
