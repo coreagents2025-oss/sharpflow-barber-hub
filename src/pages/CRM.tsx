@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Navbar } from '@/components/Navbar';
 import { useAuth } from '@/hooks/useAuth';
-import { useLeads, Lead, LeadStatus } from '@/hooks/useLeads';
+import { useLeads, type Lead, type LeadStatus } from '@/hooks/useLeads';
 import { LeadsFilters } from '@/components/crm/LeadsFilters';
 import { LeadsList } from '@/components/crm/LeadsList';
 import { LeadDetailsPanel } from '@/components/crm/LeadDetailsPanel';

@@ -18,9 +18,10 @@ export type Database = {
         Row: {
           barber_id: string
           barbershop_id: string
-          client_id: string
+          client_id: string | null
           created_at: string
           id: string
+          lead_id: string | null
           notes: string | null
           scheduled_at: string
           service_id: string
@@ -30,9 +31,10 @@ export type Database = {
         Insert: {
           barber_id: string
           barbershop_id: string
-          client_id: string
+          client_id?: string | null
           created_at?: string
           id?: string
+          lead_id?: string | null
           notes?: string | null
           scheduled_at: string
           service_id: string
@@ -42,9 +44,10 @@ export type Database = {
         Update: {
           barber_id?: string
           barbershop_id?: string
-          client_id?: string
+          client_id?: string | null
           created_at?: string
           id?: string
+          lead_id?: string | null
           notes?: string | null
           scheduled_at?: string
           service_id?: string
@@ -92,6 +95,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
             referencedColumns: ["id"]
           },
           {
@@ -644,6 +654,60 @@ export type Database = {
           },
         ]
       }
+      leads: {
+        Row: {
+          barbershop_id: string
+          created_at: string | null
+          email: string | null
+          full_name: string
+          id: string
+          last_interaction_at: string | null
+          phone: string
+          source: string | null
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          barbershop_id: string
+          created_at?: string | null
+          email?: string | null
+          full_name: string
+          id?: string
+          last_interaction_at?: string | null
+          phone: string
+          source?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          barbershop_id?: string
+          created_at?: string | null
+          email?: string | null
+          full_name?: string
+          id?: string
+          last_interaction_at?: string | null
+          phone?: string
+          source?: string | null
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_barbershop_id_fkey"
+            columns: ["barbershop_id"]
+            isOneToOne: false
+            referencedRelation: "barbershops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_barbershop_id_fkey"
+            columns: ["barbershop_id"]
+            isOneToOne: false
+            referencedRelation: "public_barbershops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount: number
@@ -687,6 +751,13 @@ export type Database = {
             columns: ["appointment_id"]
             isOneToOne: false
             referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments_with_client"
             referencedColumns: ["id"]
           },
           {
@@ -787,6 +858,13 @@ export type Database = {
             columns: ["appointment_id"]
             isOneToOne: true
             referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: true
+            referencedRelation: "appointments_with_client"
             referencedColumns: ["id"]
           },
           {
@@ -1200,6 +1278,86 @@ export type Database = {
       }
     }
     Views: {
+      appointments_with_client: {
+        Row: {
+          barber_id: string | null
+          barbershop_id: string | null
+          client_email: string | null
+          client_id: string | null
+          client_name: string | null
+          client_phone: string | null
+          client_type: string | null
+          created_at: string | null
+          id: string | null
+          lead_id: string | null
+          lead_source: string | null
+          lead_status: string | null
+          notes: string | null
+          scheduled_at: string | null
+          service_id: string | null
+          status: string | null
+          unified_client_id: string | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "public_barbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_barbershop_id_fkey"
+            columns: ["barbershop_id"]
+            isOneToOne: false
+            referencedRelation: "barbershops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_barbershop_id_fkey"
+            columns: ["barbershop_id"]
+            isOneToOne: false
+            referencedRelation: "public_barbershops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       public_barbers: {
         Row: {
           barbershop_id: string | null

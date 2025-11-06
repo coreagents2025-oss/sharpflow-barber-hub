@@ -67,7 +67,7 @@ export function LeadDetailsPanel({ lead }: LeadDetailsPanelProps) {
             <h2 className="text-2xl font-bold mb-1">{lead.full_name}</h2>
             <div className="flex items-center gap-2 mb-2">
               <LeadStatusBadge status={lead.status} />
-              {lead.status === 'vip' && (
+              {lead.lifetime_value > 500 && (
                 <Badge className="bg-gradient-to-r from-amber-500 to-amber-600">
                   Cliente Premium
                 </Badge>

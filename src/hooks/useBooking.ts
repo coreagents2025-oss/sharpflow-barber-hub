@@ -61,68 +61,70 @@ export const useBooking = (barbershopId: string | null) => {
       // Normalizar telefone (remover formatação)
       const normalizedPhone = data.clientPhone.replace(/\D/g, '');
       
-      console.log('[BOOKING] Buscando cliente por telefone:', normalizedPhone);
+      console.log('[BOOKING] Buscando lead por telefone:', normalizedPhone);
 
-      // Buscar cliente existente por telefone usando view segura
-      const { data: existingClient, error: searchError } = await supabase
-        .from('public_profiles')
+      // Buscar lead existente na barbearia
+      const { data: existingLead, error: searchError } = await supabase
+        .from('leads')
         .select('id, full_name')
+        .eq('barbershop_id', barbershopId)
         .eq('phone', normalizedPhone)
         .maybeSingle();
 
       if (searchError) {
-        console.error('[BOOKING] Erro ao buscar cliente:', searchError);
+        console.error('[BOOKING] Erro ao buscar lead:', searchError);
       } else {
-        console.log('[BOOKING] Cliente encontrado:', existingClient);
+        console.log('[BOOKING] Lead encontrado:', existingLead);
       }
 
-      let clientId = existingClient?.id;
+      let leadId = existingLead?.id;
 
-      // Se não encontrou, criar novo lead (sem autenticação)
-      if (!clientId) {
-        console.log('[BOOKING] Cliente não encontrado, criando lead no banco...');
+      // Se não encontrou, criar novo lead
+      if (!leadId) {
+        console.log('[BOOKING] Lead não encontrado, criando novo...');
         
-        // Gerar UUID para o novo lead
-        const newClientId = crypto.randomUUID();
-        
-        const { data: newProfile, error: insertError } = await supabase
-          .from('profiles')
+        const { data: newLead, error: insertError } = await supabase
+          .from('leads')
           .insert([{
-            id: newClientId,
+            barbershop_id: barbershopId,
             full_name: data.clientName,
             phone: normalizedPhone,
+            email: data.clientEmail || null,
+            source: 'public_booking',
+            status: 'new',
+            last_interaction_at: new Date().toISOString(),
           }])
           .select('id')
           .single();
 
         if (insertError) {
-          console.error('[BOOKING] Erro ao criar perfil:', insertError);
+          console.error('[BOOKING] Erro ao criar lead:', insertError);
           
-          // Se for erro de duplicata (telefone já existe), buscar cliente existente
+          // Se for duplicata, buscar novamente
           if (insertError.code === '23505') {
-            console.log('[BOOKING] Telefone já existe, buscando cliente...');
-            const { data: retryClient } = await supabase
-              .from('public_profiles')
+            console.log('[BOOKING] Lead já existe, buscando novamente...');
+            const { data: retryLead } = await supabase
+              .from('leads')
               .select('id')
+              .eq('barbershop_id', barbershopId)
               .eq('phone', normalizedPhone)
               .maybeSingle();
             
-            if (retryClient) {
-              clientId = retryClient.id;
-              console.log('[BOOKING] Cliente encontrado:', clientId);
+            if (retryLead) {
+              leadId = retryLead.id;
+              console.log('[BOOKING] Lead encontrado após retry:', leadId);
             } else {
-              toast.error('Erro: telefone já cadastrado mas cliente não encontrado.');
+              toast.error('Erro: telefone já cadastrado mas lead não encontrado.');
               return false;
             }
           } else {
-            // Erro diferente de duplicata
-            console.error('[BOOKING] Erro inesperado ao criar perfil:', insertError.message);
-            toast.error(`Erro ao criar perfil: ${insertError.message}`);
+            console.error('[BOOKING] Erro inesperado ao criar lead:', insertError.message);
+            toast.error(`Erro ao criar lead: ${insertError.message}`);
             return false;
           }
         } else {
-          clientId = newProfile.id;
-          console.log('[BOOKING] Lead criado com sucesso:', clientId);
+          leadId = newLead.id;
+          console.log('[BOOKING] Lead criado com sucesso:', leadId);
         }
       }
 
@@ -183,15 +185,8 @@ export const useBooking = (barbershopId: string | null) => {
         return false;
       }
 
-      // Create appointment
-      console.log('[BOOKING] Criando appointment com dados:', {
-        barbershop_id: barbershopId,
-        service_id: data.serviceId,
-        barber_id: data.barberId,
-        client_id: clientId,
-        scheduled_at: scheduledAt.toISOString(),
-        status: 'scheduled',
-      });
+      // Criar appointment com lead_id
+      console.log('[BOOKING] Criando appointment com lead_id:', leadId);
       
       const { error: appointmentError } = await supabase
         .from('appointments')
@@ -199,7 +194,8 @@ export const useBooking = (barbershopId: string | null) => {
           barbershop_id: barbershopId,
           service_id: data.serviceId,
           barber_id: data.barberId,
-          client_id: clientId,
+          lead_id: leadId,        // ✅ Usar lead_id
+          client_id: null,        // ✅ Explicitamente null
           scheduled_at: scheduledAt.toISOString(),
           status: 'scheduled',
         });

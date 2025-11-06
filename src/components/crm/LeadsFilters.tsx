@@ -19,11 +19,11 @@ export function LeadsFilters({
 }: LeadsFiltersProps) {
   const statuses: Array<{ value: LeadStatus | 'all'; label: string }> = [
     { value: 'all', label: 'Todos' },
-    { value: 'novo', label: 'Novos' },
-    { value: 'ativo', label: 'Ativos' },
-    { value: 'inativo', label: 'Inativos' },
-    { value: 'vip', label: 'VIP' },
-    { value: 'perdido', label: 'Perdidos' },
+    { value: 'new', label: 'Novos' },
+    { value: 'contacted', label: 'Contatados' },
+    { value: 'active', label: 'Ativos' },
+    { value: 'converted', label: 'Convertidos' },
+    { value: 'lost', label: 'Perdidos' },
   ];
 
   return (
