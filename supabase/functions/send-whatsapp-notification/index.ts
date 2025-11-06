@@ -289,7 +289,7 @@ const handler = async (req: Request): Promise<Response> => {
           console.log("Z-API Response:", apiResponse);
         }
       } else if (apiProvider === "uazapi") {
-        // UAZapi
+        // UAZapi - Formato oficial wuzapi
         let subdomain = settings.uazapi_account_id;
         const instanceId = settings.uazapi_instance_id;
         const token = settings.uazapi_token;
@@ -298,7 +298,7 @@ const handler = async (req: Request): Promise<Response> => {
         if (subdomain && subdomain.includes('://')) {
           try {
             const url = new URL(subdomain);
-            subdomain = url.hostname.split('.')[0]; // Pega apenas "core-agents" de "core-agents.uazapi.com"
+            subdomain = url.hostname.split('.')[0];
             console.log('Extracted subdomain from URL:', subdomain);
           } catch (error) {
             console.error('Error parsing UAZapi URL:', error);
@@ -306,11 +306,16 @@ const handler = async (req: Request): Promise<Response> => {
         }
         
         if (subdomain && instanceId && token) {
+          // Normalizar telefone - remover caracteres especiais e garantir apenas números
+          const normalizedPhone = client_phone.replace(/[^\d]/g, '');
+          
           console.log('UAZapi Config:', {
             subdomain,
             instanceId,
             tokenLength: token.length,
             baseUrl: `https://${subdomain}.uazapi.com`,
+            originalPhone: client_phone,
+            normalizedPhone: normalizedPhone,
           });
 
           // Verificar status da instância primeiro
@@ -327,14 +332,18 @@ const handler = async (req: Request): Promise<Response> => {
             });
             
             const statusData = await statusResponse.json();
-            console.log('UAZapi Instance Status Response:', statusData);
+            console.log('UAZapi Instance Status:', {
+              status: statusResponse.status,
+              connected: statusData.status?.connected,
+              instanceStatus: statusData.instance?.status,
+            });
             
             if (statusResponse.status !== 200) {
               throw new Error(`Failed to check instance status: ${JSON.stringify(statusData)}`);
             }
             
             if (statusData.status?.connected !== true || statusData.instance?.status !== 'connected') {
-              throw new Error(`Instance not connected. Status: ${statusData.instance?.status}, Connected: ${statusData.status?.connected}. Please scan QR code in UAZapi dashboard.`);
+              throw new Error(`Instance not connected. Status: ${statusData.instance?.status}. Please scan QR code in UAZapi dashboard.`);
             }
             
             console.log('✅ Instance is CONNECTED, proceeding with message send...');
@@ -343,154 +352,53 @@ const handler = async (req: Request): Promise<Response> => {
             throw new Error(`UAZapi instance not ready: ${statusError.message}`);
           }
           
-          // Sistema de fallback com 3 tentativas automáticas
-          let response: Response | null = null;
-          let responseText = '';
-          let lastError = '';
+          // Enviar mensagem usando formato oficial wuzapi
+          // Formato: POST https://subdomain.uazapi.com/chat/send/text
+          // Body: { Phone: "número", Body: "mensagem" }
+          const apiUrl = `https://${subdomain}.uazapi.com/chat/send/text`;
+          const requestBody = {
+            Phone: normalizedPhone,
+            Body: message,
+          };
           
-          // Tentativa 1: Com instanceId no body
-          try {
-            console.log('🔄 Tentativa 1: Adicionando instanceId no body...');
-            const apiUrl = `https://${subdomain}.uazapi.com/chat/send/text`;
-            const requestBody = {
-              instanceId: instanceId,
-              Phone: client_phone,
-              Body: message,
-            };
-            
-            console.log('UAZapi Send Request (Tentativa 1):', {
-              url: apiUrl,
-              phone: client_phone,
-              messageLength: message.length,
-              bodyKeys: Object.keys(requestBody),
-            });
-            
-            response = await fetch(apiUrl, {
-              method: "POST",
-              headers: {
-                "Token": token,
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify(requestBody),
-            });
-            
-            responseText = await response.text();
-            console.log('UAZapi Response Status (Tentativa 1):', response.status);
-            console.log('UAZapi Response Body (Tentativa 1):', responseText);
-            
-            if (response.ok) {
-              console.log('✅ Tentativa 1 bem-sucedida!');
-            } else {
-              throw new Error(`Status ${response.status}: ${responseText}`);
-            }
-          } catch (error: any) {
-            console.log('❌ Tentativa 1 falhou:', error.message);
-            lastError = error.message;
-            response = null;
-          }
+          console.log('UAZapi Send Request:', {
+            url: apiUrl,
+            phone: normalizedPhone,
+            messageLength: message.length,
+            timestamp: new Date().toISOString(),
+          });
           
-          // Tentativa 2: Com instanceId na URL
-          if (!response || !response.ok) {
+          const response = await fetch(apiUrl, {
+            method: "POST",
+            headers: {
+              "Token": token,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(requestBody),
+          });
+          
+          const responseText = await response.text();
+          console.log('UAZapi Response:', {
+            status: response.status,
+            statusText: response.statusText,
+            body: responseText,
+          });
+          
+          if (!response.ok) {
+            let errorDetail = responseText;
             try {
-              console.log('🔄 Tentativa 2: Usando instanceId na URL...');
-              const apiUrl = `https://${subdomain}.uazapi.com/instance/${instanceId}/chat/send/text`;
-              const requestBody = {
-                Phone: client_phone,
-                Body: message,
-              };
-              
-              console.log('UAZapi Send Request (Tentativa 2):', {
-                url: apiUrl,
-                phone: client_phone,
-                messageLength: message.length,
-                bodyKeys: Object.keys(requestBody),
-              });
-              
-              response = await fetch(apiUrl, {
-                method: "POST",
-                headers: {
-                  "Token": token,
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify(requestBody),
-              });
-              
-              responseText = await response.text();
-              console.log('UAZapi Response Status (Tentativa 2):', response.status);
-              console.log('UAZapi Response Body (Tentativa 2):', responseText);
-              
-              if (response.ok) {
-                console.log('✅ Tentativa 2 bem-sucedida!');
-              } else {
-                throw new Error(`Status ${response.status}: ${responseText}`);
-              }
-            } catch (error: any) {
-              console.log('❌ Tentativa 2 falhou:', error.message);
-              lastError = error.message;
-              response = null;
-            }
-          }
-          
-          // Tentativa 3: Com sufixo @s.whatsapp.net
-          if (!response || !response.ok) {
-            try {
-              console.log('🔄 Tentativa 3: Adicionando sufixo @s.whatsapp.net...');
-              const apiUrl = `https://${subdomain}.uazapi.com/chat/send/text`;
-              const requestBody = {
-                instanceId: instanceId,
-                Phone: `${client_phone}@s.whatsapp.net`,
-                Body: message,
-              };
-              
-              console.log('UAZapi Send Request (Tentativa 3):', {
-                url: apiUrl,
-                phone: `${client_phone}@s.whatsapp.net`,
-                messageLength: message.length,
-                bodyKeys: Object.keys(requestBody),
-              });
-              
-              response = await fetch(apiUrl, {
-                method: "POST",
-                headers: {
-                  "Token": token,
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify(requestBody),
-              });
-              
-              responseText = await response.text();
-              console.log('UAZapi Response Status (Tentativa 3):', response.status);
-              console.log('UAZapi Response Body (Tentativa 3):', responseText);
-              
-              if (response.ok) {
-                console.log('✅ Tentativa 3 bem-sucedida!');
-              } else {
-                throw new Error(`Status ${response.status}: ${responseText}`);
-              }
-            } catch (error: any) {
-              console.log('❌ Tentativa 3 falhou:', error.message);
-              lastError = error.message;
-            }
-          }
-          
-          // Verificar resultado final
-          if (!response || !response.ok) {
-            let errorMessage = `Todas as 3 tentativas falharam. Último erro: ${lastError}`;
-            
-            if (response?.status === 405) {
-              errorMessage = 'Method not allowed após todas as tentativas. Considere migrar para Evolution API ou Z-API.';
-            } else if (response?.status === 401 || response?.status === 403) {
-              errorMessage = 'Authentication failed. Check your UAZapi token.';
-            } else if (response?.status === 404) {
-              errorMessage = 'Endpoint not found. Verify instance ID and subdomain.';
+              const errorJson = JSON.parse(responseText);
+              errorDetail = errorJson.message || errorJson.error || responseText;
+            } catch (e) {
+              // responseText já é a mensagem de erro
             }
             
-            console.error(`UAZapi error: ${errorMessage}`);
-            throw new Error(errorMessage);
+            console.error(`UAZapi error (${response.status}): ${errorDetail}`);
+            throw new Error(`UAZapi error (${response.status}): ${errorDetail}`);
           }
           
           apiResponse = JSON.parse(responseText);
-          console.log("✅ UAZapi Message sent successfully:", apiResponse);
+          console.log("✅ UAZapi Message Sent Successfully:", apiResponse);
         }
       }
     } catch (error: any) {
