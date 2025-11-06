@@ -56,9 +56,15 @@ export function LeadDetailsPanel({ lead }: LeadDetailsPanelProps) {
     }
 
     const normalizedPhone = normalizePhoneForWhatsApp(lead.phone);
-    const whatsappUrl = `https://web.whatsapp.com/send?phone=${normalizedPhone}`;
     
-    // Abrir WhatsApp Web em nova aba
+    // Mensagem personalizada para o lead
+    const message = `Olá ${lead.full_name}! Como posso ajudar você hoje?`;
+    const encodedMessage = encodeURIComponent(message);
+    
+    // Usar API do WhatsApp ao invés do Web
+    const whatsappUrl = `https://api.whatsapp.com/send/?phone=${normalizedPhone}&text=${encodedMessage}&type=phone_number&app_absent=0`;
+    
+    // Abrir WhatsApp em nova aba
     window.open(whatsappUrl, '_blank');
   };
 
