@@ -219,22 +219,28 @@ export type Database = {
           barbershop_id: string
           created_at: string
           email_credentials: Json
+          email_sender: string | null
           updated_at: string
           whatsapp_credentials: Json
+          whatsapp_phone: string | null
         }
         Insert: {
           barbershop_id: string
           created_at?: string
           email_credentials?: Json
+          email_sender?: string | null
           updated_at?: string
           whatsapp_credentials?: Json
+          whatsapp_phone?: string | null
         }
         Update: {
           barbershop_id?: string
           created_at?: string
           email_credentials?: Json
+          email_sender?: string | null
           updated_at?: string
           whatsapp_credentials?: Json
+          whatsapp_phone?: string | null
         }
         Relationships: [
           {

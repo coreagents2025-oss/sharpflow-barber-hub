@@ -82,12 +82,11 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId }: Booking
 
     setLoadingBarbers(true);
     try {
-      // Buscar todos os barbeiros disponíveis
+      // Buscar todos os barbeiros disponíveis usando view segura
       const { data: allBarbers, error } = await supabase
-        .from('barbers')
+        .from('public_barbers')
         .select('*')
         .eq('barbershop_id', barbershopId)
-        .eq('is_available', true)
         .order('name');
 
       if (error || !allBarbers) {

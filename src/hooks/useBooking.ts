@@ -63,9 +63,9 @@ export const useBooking = (barbershopId: string | null) => {
       
       console.log('[BOOKING] Buscando cliente por telefone:', normalizedPhone);
 
-      // Buscar cliente existente por telefone
+      // Buscar cliente existente por telefone usando view segura
       const { data: existingClient, error: searchError } = await supabase
-        .from('profiles')
+        .from('public_profiles')
         .select('id, full_name')
         .eq('phone', normalizedPhone)
         .maybeSingle();
@@ -102,7 +102,7 @@ export const useBooking = (barbershopId: string | null) => {
           if (insertError.code === '23505') {
             console.log('[BOOKING] Telefone já existe, buscando cliente...');
             const { data: retryClient } = await supabase
-              .from('profiles')
+              .from('public_profiles')
               .select('id')
               .eq('phone', normalizedPhone)
               .maybeSingle();
