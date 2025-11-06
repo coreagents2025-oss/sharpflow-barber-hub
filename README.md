@@ -9,6 +9,7 @@ Sistema completo para gestão de barbearias com catálogo público, agendamentos
 
 ## 📋 Índice
 
+- [Documentação](#-documentação)
 - [Funcionalidades](#-funcionalidades)
 - [Tecnologias](#-tecnologias)
 - [Pré-requisitos](#-pré-requisitos)
@@ -19,6 +20,19 @@ Sistema completo para gestão de barbearias com catálogo público, agendamentos
 - [Segurança e Permissões](#-segurança-e-permissões)
 - [Deploy](#-deploy)
 - [Como Usar](#-como-usar)
+
+## 📚 Documentação
+
+Este projeto possui documentação completa na pasta `docs/`:
+
+- **[SECURITY.md](./docs/SECURITY.md)** - Documentação completa de segurança, níveis de acesso, RLS policies, e checklist de segurança
+- **[DATABASE.md](./docs/DATABASE.md)** - Schema do banco de dados (versão anterior)
+- **[DATABASE_UPDATED.md](./docs/DATABASE_UPDATED.md)** - Schema atualizado com multi-tenancy e roles
+- **[API.md](./docs/API.md)** - Documentação das APIs e Edge Functions
+- **[AUDIT_SECURITY.sql](./docs/AUDIT_SECURITY.sql)** - Script SQL para auditoria de segurança
+- **[README.md](./docs/README.md)** - Guia completo da documentação do projeto
+
+Para informações detalhadas sobre segurança, consulte a [documentação de segurança](./docs/README.md).
 
 ## ✨ Funcionalidades
 
@@ -42,6 +56,21 @@ Sistema completo para gestão de barbearias com catálogo público, agendamentos
 - Registro de pagamentos
 - Múltiplas formas de pagamento (dinheiro, cartão, PIX)
 
+### 🎯 CRM (Gestão de Leads)
+- Dashboard com métricas de leads (total, qualificados, convertidos, perdidos)
+- Listagem de leads com filtros avançados
+- Status de leads: novo, contatado, qualificado, convertido, perdido
+- Painel de detalhes do lead com informações completas
+- Integração com WhatsApp para comunicação direta
+- Histórico de interações com o cliente
+
+### 💬 Sistema de Mensagens
+- Visualização de conversas com clientes
+- Painel de informações do cliente
+- Integração com WhatsApp para envio de mensagens
+- Notificações de novas mensagens
+- Histórico completo de mensagens
+
 ### 👥 Gestão de Barbeiros
 - Cadastro de barbeiros
 - Perfil com foto e especialidade
@@ -55,11 +84,18 @@ Sistema completo para gestão de barbearias com catálogo público, agendamentos
 - Marcação de serviços populares
 - Upload de imagens
 
+### 📧 Marketing e Comunicação
+- Campanhas de email personalizadas
+- Templates de email reutilizáveis
+- Envio de notificações por WhatsApp
+- Confirmações automáticas de agendamento
+
 ### ⚙️ Configurações
 - Personalização do catálogo (cores, logo, imagem hero)
 - Configuração de domínio personalizado
 - Dados da barbearia (nome, endereço, telefone, email)
 - Horários de funcionamento
+- Configuração de credenciais (WhatsApp, Email)
 
 ### 🔐 Sistema de Autenticação
 - Login com email e senha
@@ -166,17 +202,32 @@ src/
 ├── assets/              # Imagens e assets estáticos
 ├── components/          # Componentes React reutilizáveis
 │   ├── ui/             # Componentes shadcn/ui
+│   ├── crm/            # Componentes do CRM
+│   │   ├── LeadCard.tsx
+│   │   ├── LeadDetailsPanel.tsx
+│   │   ├── LeadMetrics.tsx
+│   │   ├── LeadStatusBadge.tsx
+│   │   ├── LeadsFilters.tsx
+│   │   └── LeadsList.tsx
+│   ├── messages/       # Componentes de mensagens
+│   │   ├── ChatArea.tsx
+│   │   ├── ClientInfoPanel.tsx
+│   │   ├── ConversationList.tsx
+│   │   └── MessageBubble.tsx
 │   ├── BookingModal.tsx
 │   ├── Navbar.tsx
 │   ├── ServiceCard.tsx
+│   ├── PaymentModal.tsx
 │   └── ...
 ├── hooks/              # Custom React hooks
 │   ├── useAuth.tsx
 │   ├── useBooking.ts
+│   ├── useLeads.ts
+│   ├── useSendMessage.ts
 │   └── use-toast.ts
 ├── integrations/       # Integrações externas
 │   └── supabase/
-│       ├── client.ts   # Cliente Supabase
+│       ├── client.ts   # Cliente Supabase (auto-gerado)
 │       └── types.ts    # Tipos TypeScript gerados
 ├── lib/                # Utilitários
 │   └── utils.ts
@@ -184,6 +235,8 @@ src/
 │   ├── Auth.tsx
 │   ├── Dashboard.tsx
 │   ├── PDV.tsx
+│   ├── CRM.tsx
+│   ├── Messages.tsx
 │   ├── ScheduleManagement.tsx
 │   ├── BarbersManagement.tsx
 │   ├── ServicesManagement.tsx
@@ -198,7 +251,11 @@ src/
 supabase/
 ├── config.toml         # Configuração do Supabase
 ├── functions/          # Edge Functions
-│   └── send-booking-confirmation/
+│   ├── send-booking-confirmation/
+│   ├── send-whatsapp-notification/
+│   ├── receive-whatsapp-message/
+│   ├── send-promotional-email/
+│   └── webhook-dispatcher/
 └── migrations/         # Migrações do banco de dados
 ```
 
@@ -326,6 +383,86 @@ Registro de pagamentos.
 - transaction_id (text)
 ```
 
+#### `leads`
+Gestão de leads e potenciais clientes.
+
+```sql
+- id (uuid, PK)
+- barbershop_id (uuid, FK)
+- full_name (text)
+- phone (text)
+- email (text, nullable)
+- source (text: website, referral, social_media, walk_in, other)
+- status (text: new, contacted, qualified, converted, lost)
+- notes (text)
+- last_contact (timestamp)
+```
+
+#### `conversations`
+Conversas com clientes via WhatsApp.
+
+```sql
+- id (uuid, PK)
+- barbershop_id (uuid, FK)
+- client_id (uuid, FK)
+- client_phone (text)
+- last_message (text)
+- last_message_at (timestamp)
+- unread_count (integer)
+- status (text: active, archived)
+```
+
+#### `messages`
+Mensagens trocadas com clientes.
+
+```sql
+- id (uuid, PK)
+- conversation_id (uuid, FK)
+- sender_type (text: barber, client)
+- content (text)
+- status (text: sent, delivered, read, failed)
+- sent_at (timestamp)
+```
+
+#### `email_campaigns`
+Campanhas de email marketing.
+
+```sql
+- id (uuid, PK)
+- barbershop_id (uuid, FK)
+- name (text)
+- subject (text)
+- template_id (uuid, FK, nullable)
+- status (text: draft, scheduled, sent, cancelled)
+- scheduled_for (timestamp, nullable)
+- sent_at (timestamp, nullable)
+```
+
+#### `email_templates`
+Templates reutilizáveis para emails.
+
+```sql
+- id (uuid, PK)
+- barbershop_id (uuid, FK)
+- name (text)
+- subject (text)
+- body (text)
+- variables (jsonb)
+```
+
+#### `credentials`
+Credenciais para integrações externas.
+
+```sql
+- id (uuid, PK)
+- barbershop_id (uuid, FK)
+- service_type (text: whatsapp, email, sms)
+- identifier (text) # phone, email sender, etc. (NÃO armazenar tokens aqui)
+- is_active (boolean)
+```
+
+**⚠️ Importante sobre credenciais:** Nunca armazene tokens de API no banco de dados. Use Supabase Secrets para armazenar tokens sensíveis.
+
 ### Funções do Banco de Dados
 
 #### `has_role(user_id, role)`
@@ -384,6 +521,65 @@ BEGIN
 END;
 $$;
 ```
+
+#### `check_time_slot_available()`
+Verifica disponibilidade de horário para agendamento (view segura).
+
+```sql
+CREATE OR REPLACE FUNCTION public.check_time_slot_available(
+  _barbershop_id uuid,
+  _barber_id uuid,
+  _scheduled_at timestamp,
+  _duration_minutes integer
+)
+RETURNS boolean
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+-- Implementação que verifica conflitos de horário sem expor dados sensíveis
+$$;
+```
+
+### Edge Functions
+
+O sistema utiliza Edge Functions (Supabase Functions) para funcionalidades serverless:
+
+#### `send-booking-confirmation`
+Envia confirmação de agendamento por email/WhatsApp após um booking ser criado.
+
+#### `send-whatsapp-notification`
+Envia mensagens via WhatsApp para clientes.
+
+**Parâmetros:**
+```typescript
+{
+  to: string,      // Número de telefone do destinatário
+  message: string, // Conteúdo da mensagem
+  barbershopId: string
+}
+```
+
+#### `receive-whatsapp-message`
+Webhook que recebe mensagens de WhatsApp e as armazena no banco de dados.
+
+#### `send-promotional-email`
+Envia campanhas de email para lista de clientes.
+
+#### `webhook-dispatcher`
+Dispatcher genérico para webhooks de serviços externos.
+
+### Views Seguras
+
+Para proteger dados sensíveis, o sistema utiliza views que expõem apenas informações públicas:
+
+#### `public_profiles`
+Expõe apenas `id`, `phone` e `full_name` dos perfis.
+
+#### `public_barbers`
+Expõe informações públicas dos barbeiros (sem `phone` e `user_id`).
+
+#### `public_barbershops`
+Expõe informações públicas das barbearias.
 
 ## 🔐 Segurança e Permissões
 
@@ -474,6 +670,7 @@ bun run build
    - Cadastre barbeiros em `/barbers`
    - Cadastre serviços em `/services`
    - Configure horários em `/schedule`
+   - Configure credenciais de WhatsApp e Email em `/settings`
 
 2. **Personalização do Catálogo:**
    - Acesse `/catalog`
@@ -486,12 +683,26 @@ bun run build
    - Registre pagamentos após atendimentos
    - Monitore status dos barbeiros
 
+4. **CRM e Leads:**
+   - Acesse `/crm` para visualizar leads
+   - Filtre por status (novo, contatado, qualificado, convertido, perdido)
+   - Visualize métricas e KPIs
+   - Entre em contato via WhatsApp diretamente do painel
+   - Adicione notas e acompanhe o histórico de cada lead
+
+5. **Mensagens:**
+   - Acesse `/messages` para ver conversas ativas
+   - Responda mensagens de clientes
+   - Visualize informações do cliente no painel lateral
+   - Envie mensagens via WhatsApp com um clique
+
 ### Para Barbeiros
 
 1. Acesse o sistema com suas credenciais
 2. Visualize seus agendamentos em `/schedule`
 3. Use `/pdv` para ver próximos clientes
 4. Atualize seu perfil em `/barbers`
+5. Responda mensagens de clientes em `/messages`
 
 ### Para Clientes
 
@@ -500,6 +711,7 @@ bun run build
 3. Selecione barbeiro, data e horário
 4. Preencha seus dados (nome, telefone, email)
 5. Confirme o agendamento
+6. Receba confirmação por WhatsApp ou Email
 
 ## 🔧 Comandos Úteis
 
@@ -533,6 +745,12 @@ npm run type-check
 
 ### Problema: Redirecionamento para localhost após login
 **Solução:** Configure as URLs corretas nas configurações de Auth do Supabase.
+
+### Problema: WhatsApp abrindo bloqueado (ERR_BLOCKED_BY_RESPONSE)
+**Solução:** O sistema usa `wa.me` para links diretos do WhatsApp. Se o navegador bloquear, use o botão de copiar link (📋) e cole em outra aba. Alternativamente, verifique as configurações de pop-up do navegador.
+
+### Problema: Edge Functions não estão sendo executadas
+**Solução:** Verifique se as credenciais necessárias estão configuradas em Supabase Secrets. Edge Functions são deployadas automaticamente.
 
 ## 📝 Licença
 
