@@ -25,6 +25,43 @@ interface LeadDetailsPanelProps {
 }
 
 export function LeadDetailsPanel({ lead }: LeadDetailsPanelProps) {
+  // Função para normalizar telefone para WhatsApp Web
+  const normalizePhoneForWhatsApp = (phone: string): string => {
+    // Remove todos os caracteres não numéricos
+    const cleanPhone = phone.replace(/\D/g, '');
+    
+    // Se começar com 55 (DDI Brasil), retorna direto
+    if (cleanPhone.startsWith('55')) {
+      return cleanPhone;
+    }
+    
+    // Se tem 11 dígitos (DDD + número), adiciona DDI 55
+    if (cleanPhone.length === 11) {
+      return `55${cleanPhone}`;
+    }
+    
+    // Se tem 10 dígitos (DDD + número sem 9), adiciona DDI 55
+    if (cleanPhone.length === 10) {
+      return `55${cleanPhone}`;
+    }
+    
+    // Retorna o número limpo como está
+    return cleanPhone;
+  };
+
+  const handleSendWhatsApp = () => {
+    if (!lead?.phone) {
+      console.warn('Lead sem número de telefone');
+      return;
+    }
+
+    const normalizedPhone = normalizePhoneForWhatsApp(lead.phone);
+    const whatsappUrl = `https://web.whatsapp.com/send?phone=${normalizedPhone}`;
+    
+    // Abrir WhatsApp Web em nova aba
+    window.open(whatsappUrl, '_blank');
+  };
+
   if (!lead) {
     return (
       <Card className="h-full flex items-center justify-center">
@@ -167,23 +204,15 @@ export function LeadDetailsPanel({ lead }: LeadDetailsPanelProps) {
               <Calendar className="h-4 w-4 mr-2" />
               Criar Agendamento
             </Button>
-            <div className="relative">
-              <Button 
-                variant="outline" 
-                className="w-full justify-start opacity-50" 
-                size="sm"
-                disabled
-              >
-                <MessageCircle className="h-4 w-4 mr-2" />
-                Enviar Mensagem
-              </Button>
-              <Badge 
-                variant="secondary" 
-                className="absolute -top-2 -right-2 bg-amber-500 text-white text-xs"
-              >
-                🚧 Em construção
-              </Badge>
-            </div>
+            <Button 
+              variant="outline" 
+              className="w-full justify-start" 
+              size="sm"
+              onClick={handleSendWhatsApp}
+            >
+              <MessageCircle className="h-4 w-4 mr-2" />
+              Enviar Mensagem
+            </Button>
             <Button variant="outline" className="w-full justify-start" size="sm">
               <Tag className="h-4 w-4 mr-2" />
               Gerenciar Tags
