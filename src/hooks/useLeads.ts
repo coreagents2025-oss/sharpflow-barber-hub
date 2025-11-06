@@ -72,10 +72,34 @@ export function useLeads(barbershopId: string | null) {
     const loadLeads = async () => {
       setLoading(true);
       try {
-        // Buscar profiles (todos os clientes)
-        const { data: profiles } = await supabase
+        // Buscar IDs de usuários que são staff/barbeiros para excluir
+        const { data: staffIds } = await supabase
+          .from('barbershop_staff')
+          .select('user_id')
+          .eq('barbershop_id', barbershopId);
+
+        const { data: barberUserIds } = await supabase
+          .from('barbers')
+          .select('user_id')
+          .not('user_id', 'is', null)
+          .eq('barbershop_id', barbershopId);
+
+        // Criar lista de IDs para excluir (staff + barbeiros)
+        const excludeIds = [
+          ...(staffIds?.map(s => s.user_id) || []),
+          ...(barberUserIds?.map(b => b.user_id) || [])
+        ].filter(Boolean);
+
+        // Buscar apenas profiles que NÃO são staff/barbeiros
+        let profilesQuery = supabase
           .from('profiles')
           .select('*');
+
+        if (excludeIds.length > 0) {
+          profilesQuery = profilesQuery.not('id', 'in', `(${excludeIds.join(',')})`);
+        }
+
+        const { data: profiles } = await profilesQuery;
         
         if (!profiles) {
           setLeads([]);
