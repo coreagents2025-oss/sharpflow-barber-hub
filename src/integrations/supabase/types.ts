@@ -713,9 +713,10 @@ export type Database = {
           amount: number
           appointment_id: string | null
           barbershop_id: string
-          client_id: string
+          client_id: string | null
           created_at: string
           id: string
+          lead_id: string | null
           payment_method: string
           status: string
           subscription_id: string | null
@@ -725,9 +726,10 @@ export type Database = {
           amount: number
           appointment_id?: string | null
           barbershop_id: string
-          client_id: string
+          client_id?: string | null
           created_at?: string
           id?: string
+          lead_id?: string | null
           payment_method: string
           status?: string
           subscription_id?: string | null
@@ -737,9 +739,10 @@ export type Database = {
           amount?: number
           appointment_id?: string | null
           barbershop_id?: string
-          client_id?: string
+          client_id?: string | null
           created_at?: string
           id?: string
+          lead_id?: string | null
           payment_method?: string
           status?: string
           subscription_id?: string | null
@@ -786,6 +789,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "public_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
             referencedColumns: ["id"]
           },
           {

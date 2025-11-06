@@ -105,17 +105,6 @@ export const useLeads = (barbershopId: string | null) => {
           console.error('Error fetching appointments:', appointmentsError);
         }
 
-        // Buscar pagamentos dos leads
-        const { data: paymentsData, error: paymentsError } = await supabase
-          .from('payments')
-          .select('client_id, amount, status')
-          .eq('barbershop_id', barbershopId)
-          .eq('status', 'completed');
-
-        if (paymentsError) {
-          console.error('Error fetching payments:', paymentsError);
-        }
-
         // Buscar conversas do WhatsApp
         const { data: conversationsData, error: conversationsError } = await supabase
           .from('whatsapp_conversations')
@@ -136,6 +125,19 @@ export const useLeads = (barbershopId: string | null) => {
           console.error('Error fetching notes:', notesError);
         }
 
+        // Buscar pagamentos dos leads usando lead_id
+        const leadIds2 = leadsData.map(l => l.id);
+        const { data: leadPaymentsData, error: leadPaymentsError } = await supabase
+          .from('payments')
+          .select('lead_id, amount, created_at')
+          .in('lead_id', leadIds2)
+          .not('lead_id', 'is', null)
+          .eq('status', 'completed');
+
+        if (leadPaymentsError) {
+          console.error('Error fetching lead payments:', leadPaymentsError);
+        }
+
         // Processar dados dos leads
         const processedLeads: Lead[] = leadsData.map(lead => {
           // Appointments do lead
@@ -145,8 +147,8 @@ export const useLeads = (barbershopId: string | null) => {
           const completedAppointments = leadAppointments.filter(a => a.status === 'completed');
           const cancelledAppointments = leadAppointments.filter(a => a.status === 'cancelled');
 
-          // Calcular total gasto
-          const leadPayments = paymentsData?.filter(p => p.client_id === lead.id) || [];
+          // Pagamentos do lead
+          const leadPayments = leadPaymentsData?.filter(p => p.lead_id === lead.id) || [];
           const totalSpent = leadPayments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
 
           // Calcular ticket médio

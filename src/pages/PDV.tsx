@@ -14,20 +14,18 @@ interface Appointment {
   scheduled_at: string;
   status: string;
   notes: string | null;
-  client_id: string;
+  unified_client_id: string;
+  client_type: 'lead' | 'client';
+  client_name: string;
+  client_phone: string;
   barbershop_id: string;
-  profiles: {
-    full_name: string;
-    phone: string | null;
-  };
   services: {
     name: string;
     duration_minutes: number;
+    price: number;
   };
   barbers: {
-    profiles: {
-      full_name: string;
-    };
+    name: string;
   };
 }
 
@@ -97,13 +95,21 @@ const PDV = () => {
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
-      // Buscar appointments com serviços e barbeiros
+      // Usar view unificada appointments_with_client
       const { data: appointmentsData, error } = await supabase
-        .from('appointments')
+        .from('appointments_with_client')
         .select(`
-          *,
-          services (name, duration_minutes),
-          barbers (id, name, specialty)
+          id,
+          scheduled_at,
+          status,
+          notes,
+          unified_client_id,
+          client_name,
+          client_phone,
+          client_type,
+          barbershop_id,
+          services (name, duration_minutes, price),
+          barbers (name)
         `)
         .eq('barbershop_id', authBarbershopId)
         .gte('scheduled_at', today.toISOString())
@@ -112,30 +118,10 @@ const PDV = () => {
 
       if (error) throw error;
 
-      // Buscar dados dos clientes separadamente
-      const clientIds = [...new Set(appointmentsData?.map(a => a.client_id) || [])];
-      
-      const { data: profilesData } = await supabase
-        .from('profiles')
-        .select('id, full_name, phone')
-        .in('id', clientIds);
-
-      // Combinar dados
-      const appointmentsWithClients = appointmentsData?.map(appointment => ({
-        ...appointment,
-        profiles: profilesData?.find(p => p.id === appointment.client_id) || null,
-        barbers: {
-          ...appointment.barbers,
-          profiles: {
-            full_name: (appointment.barbers as any)?.name || 'Sem nome'
-          }
-        }
-      }));
-
       const now = new Date();
-      const upcoming = (appointmentsWithClients || []).filter(apt => new Date(apt.scheduled_at) > now);
+      const upcoming = (appointmentsData || []).filter(apt => new Date(apt.scheduled_at) > now);
       
-      setTodayAppointments(appointmentsWithClients as any || []);
+      setTodayAppointments(appointmentsData as any || []);
       setUpcomingAppointments(upcoming.slice(0, 5) as any);
     } catch (error: any) {
       console.error('Error fetching appointments:', error);
@@ -171,14 +157,16 @@ const PDV = () => {
       
       const revenue = payments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0;
       
-      // Clientes ativos (distintos no mês)
+      // Clientes ativos (distintos no mês) - incluindo leads
       const { data: appointments } = await supabase
-        .from('appointments')
-        .select('client_id')
+        .from('appointments_with_client')
+        .select('unified_client_id')
         .eq('barbershop_id', authBarbershopId)
         .gte('scheduled_at', firstDay.toISOString());
       
-      const uniqueClients = new Set(appointments?.map(a => a.client_id)).size;
+      const uniqueClients = new Set(
+        appointments?.map(a => a.unified_client_id).filter(Boolean)
+      ).size;
 
       // Calcular taxa de ocupação
       const { data: barbers } = await supabase
@@ -226,22 +214,17 @@ const PDV = () => {
       // Para cada barbeiro, buscar agendamentos
       const statuses = await Promise.all(
         barbers.map(async (barber: any) => {
-          // Buscar appointment em andamento
+          // Buscar appointment em andamento usando view unificada
           const { data: current } = await supabase
-            .from('appointments')
-            .select('id, client_id')
+            .from('appointments_with_client')
+            .select('id, unified_client_id, client_name')
             .eq('barber_id', barber.id)
             .eq('status', 'in_progress')
             .maybeSingle();
           
           let currentClientName: string | undefined;
           if (current) {
-            const { data: clientProfile } = await supabase
-              .from('profiles')
-              .select('full_name')
-              .eq('id', current.client_id)
-              .maybeSingle();
-            currentClientName = clientProfile?.full_name || 'Cliente';
+            currentClientName = current.client_name || 'Cliente';
           }
           
           // Buscar próximo agendamento
@@ -396,7 +379,14 @@ const PDV = () => {
   };
 
   const handleOpenPaymentModal = (appointment: any) => {
-    setSelectedAppointment(appointment);
+    // Passar dados unificados para o modal
+    setSelectedAppointment({
+      ...appointment,
+      client: {
+        full_name: appointment.client_name || 'Cliente',
+      },
+      service: appointment.services,
+    });
     setPaymentModalOpen(true);
   };
 
@@ -556,14 +546,14 @@ const PDV = () => {
                         <div>
                           <div className="font-medium flex items-center gap-2">
                             <User className="h-4 w-4 text-muted-foreground" />
-                            {apt.profiles?.full_name || 'Cliente'}
+                            {apt.client_name || 'Cliente'}
                           </div>
                           <div className="text-sm text-muted-foreground mt-1">
                             <Scissors className="h-3 w-3 inline mr-1" />
                             {apt.services?.name || 'Serviço'}
                           </div>
                           <div className="text-sm text-muted-foreground mt-1">
-                            Barbeiro: {apt.barbers?.profiles?.full_name || 'N/A'}
+                            Barbeiro: {apt.barbers?.name || 'N/A'}
                           </div>
                         </div>
                         
@@ -684,10 +674,10 @@ const PDV = () => {
                         <div className="flex-1">
                           <div className="font-medium flex items-center gap-2 mb-2">
                             <User className="h-4 w-4 text-muted-foreground" />
-                            {apt.profiles?.full_name || 'Cliente'}
-                            {apt.profiles?.phone && (
+                            {apt.client_name || 'Cliente'}
+                            {apt.client_phone && (
                               <span className="text-sm text-muted-foreground">
-                                • {apt.profiles.phone}
+                                • {apt.client_phone}
                               </span>
                             )}
                           </div>
@@ -703,7 +693,7 @@ const PDV = () => {
                             </div>
                             <div className="flex items-center gap-1">
                               <User className="h-3 w-3" />
-                              {apt.barbers?.profiles?.full_name || 'N/A'}
+                              {apt.barbers?.name || 'N/A'}
                             </div>
                             <Badge className={getStatusColor(apt.status)}>
                               {getStatusLabel(apt.status)}
@@ -738,15 +728,14 @@ const PDV = () => {
                               size="sm"
                               onClick={() => handleOpenPaymentModal({
                                 id: apt.id,
-                                client_id: apt.client_id,
+                                unified_client_id: apt.unified_client_id,
+                                client_type: apt.client_type,
                                 barbershop_id: apt.barbershop_id,
-                                service: {
+                                services: {
                                   name: apt.services?.name || 'Serviço',
-                                  price: 50,
+                                  price: apt.services?.price || 50,
                                 },
-                                client: {
-                                  full_name: apt.profiles?.full_name || 'Cliente'
-                                }
+                                client_name: apt.client_name,
                               })}
                             >
                               <CreditCard className="h-4 w-4 mr-1" />

@@ -13,7 +13,8 @@ interface PaymentModalProps {
   onClose: () => void;
   appointment: {
     id: string;
-    client_id: string;
+    unified_client_id: string;
+    client_type: 'lead' | 'client';
     barbershop_id: string;
     service: {
       name: string;
@@ -37,17 +38,27 @@ export const PaymentModal = ({ isOpen, onClose, appointment, onSuccess }: Paymen
     setIsSubmitting(true);
     
     try {
-      // 1. Criar registro de pagamento
+      // Determinar se é client_id ou lead_id
+      const paymentData: any = {
+        appointment_id: appointment.id,
+        barbershop_id: appointment.barbershop_id,
+        amount: totalAmount,
+        payment_method: paymentMethod,
+        status: 'completed',
+      };
+
+      // Adicionar client_id OU lead_id baseado no tipo
+      if (appointment.client_type === 'client') {
+        paymentData.client_id = appointment.unified_client_id;
+        paymentData.lead_id = null;
+      } else {
+        paymentData.lead_id = appointment.unified_client_id;
+        paymentData.client_id = null;
+      }
+
       const { error: paymentError } = await supabase
         .from('payments')
-        .insert({
-          appointment_id: appointment.id,
-          client_id: appointment.client_id,
-          barbershop_id: appointment.barbershop_id,
-          amount: totalAmount,
-          payment_method: paymentMethod,
-          status: 'completed',
-        });
+        .insert(paymentData);
 
       if (paymentError) throw paymentError;
 

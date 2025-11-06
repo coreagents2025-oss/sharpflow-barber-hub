@@ -39,8 +39,9 @@ export const ClientInfoPanel = ({ conversation, barbershopId }: ClientInfoPanelP
     const loadAppointments = async () => {
       setLoading(true);
       try {
+        // Usar view unificada
         const { data, error } = await supabase
-          .from('appointments')
+          .from('appointments_with_client')
           .select(`
             id,
             scheduled_at,
@@ -49,7 +50,7 @@ export const ClientInfoPanel = ({ conversation, barbershopId }: ClientInfoPanelP
             services (name),
             barbers (name)
           `)
-          .eq('client_id', conversation.client_id)
+          .eq('unified_client_id', conversation.client_id)
           .eq('barbershop_id', barbershopId)
           .order('scheduled_at', { ascending: false })
           .limit(5);
