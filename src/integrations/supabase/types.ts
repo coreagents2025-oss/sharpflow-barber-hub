@@ -287,7 +287,9 @@ export type Database = {
           created_at: string
           custom_domain: string | null
           email: string | null
+          facebook_url: string | null
           id: string
+          instagram_url: string | null
           logo_url: string | null
           name: string
           operating_hours: Json | null
@@ -300,7 +302,9 @@ export type Database = {
           created_at?: string
           custom_domain?: string | null
           email?: string | null
+          facebook_url?: string | null
           id?: string
+          instagram_url?: string | null
           logo_url?: string | null
           name: string
           operating_hours?: Json | null
@@ -313,7 +317,9 @@ export type Database = {
           created_at?: string
           custom_domain?: string | null
           email?: string | null
+          facebook_url?: string | null
           id?: string
+          instagram_url?: string | null
           logo_url?: string | null
           name?: string
           operating_hours?: Json | null

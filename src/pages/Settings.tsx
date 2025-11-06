@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { User, Building2, Bell, Shield, Globe, Eye, ExternalLink, MessageCircle } from 'lucide-react';
+import { User, Building2, Bell, Shield, Globe, Eye, ExternalLink, MessageCircle, Facebook, Instagram } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
@@ -24,6 +24,14 @@ const barbershopSchema = z.object({
   email: z.string().email('E-mail inválido'),
   phone: z.string().min(10, 'Telefone inválido'),
   address: z.string().min(10, 'Endereço completo obrigatório'),
+  facebook_url: z.string()
+    .url('URL do Facebook inválida')
+    .optional()
+    .or(z.literal('')),
+  instagram_url: z.string()
+    .url('URL do Instagram inválida')
+    .optional()
+    .or(z.literal('')),
 });
 
 const passwordSchema = z.object({
@@ -89,6 +97,8 @@ const Settings = () => {
     phone: '',
     email: '',
     address: '',
+    facebook_url: '',
+    instagram_url: '',
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -167,6 +177,8 @@ const Settings = () => {
               phone: barbershop.phone || '',
               email: barbershop.email || '',
               address: barbershop.address || '',
+              facebook_url: barbershop.facebook_url || '',
+              instagram_url: barbershop.instagram_url || '',
             });
 
             // Carregar domínio
@@ -265,6 +277,8 @@ const Settings = () => {
           phone: validated.phone,
           email: validated.email,
           address: validated.address,
+          facebook_url: validated.facebook_url || null,
+          instagram_url: validated.instagram_url || null,
         })
         .eq('id', barbershopId);
       
@@ -591,6 +605,47 @@ const Settings = () => {
                           onChange={(e) => setBarbershopData({ ...barbershopData, email: e.target.value })}
                           disabled={loading}
                         />
+                      </div>
+                    </div>
+                    
+                    {/* Redes Sociais */}
+                    <div className="space-y-4 pt-4 border-t">
+                      <h3 className="text-sm font-medium text-muted-foreground">Redes Sociais</h3>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="facebook_url" className="flex items-center gap-2">
+                          <Facebook className="h-4 w-4 text-[#1877F2]" />
+                          Facebook
+                        </Label>
+                        <Input 
+                          id="facebook_url" 
+                          type="url"
+                          placeholder="https://facebook.com/minhabarbearia"
+                          value={barbershopData.facebook_url}
+                          onChange={(e) => setBarbershopData({ ...barbershopData, facebook_url: e.target.value })}
+                          disabled={loading}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Cole o link completo do seu perfil no Facebook
+                        </p>
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="instagram_url" className="flex items-center gap-2">
+                          <Instagram className="h-4 w-4 text-[#E4405F]" />
+                          Instagram
+                        </Label>
+                        <Input 
+                          id="instagram_url" 
+                          type="url"
+                          placeholder="https://instagram.com/minhabarbearia"
+                          value={barbershopData.instagram_url}
+                          onChange={(e) => setBarbershopData({ ...barbershopData, instagram_url: e.target.value })}
+                          disabled={loading}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Cole o link completo do seu perfil no Instagram
+                        </p>
                       </div>
                     </div>
                     

@@ -5,7 +5,7 @@ import { ServiceCard } from '@/components/ServiceCard';
 import { BookingModal } from '@/components/BookingModal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { MapPin, Phone, Clock, MessageCircle } from 'lucide-react';
+import { MapPin, Phone, Clock, MessageCircle, Facebook, Instagram } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Service {
@@ -24,6 +24,8 @@ interface Barbershop {
   phone: string | null;
   address: string | null;
   operating_hours: any;
+  facebook_url: string | null;
+  instagram_url: string | null;
 }
 
 interface CatalogSettings {
@@ -271,6 +273,35 @@ const PublicCatalog = () => {
             <div className="text-sm text-muted-foreground">
               © {new Date().getFullYear()} {barbershop?.name}. Todos os direitos reservados.
             </div>
+            
+            {/* Redes Sociais */}
+            {(barbershop?.facebook_url || barbershop?.instagram_url) && (
+              <div className="flex gap-3">
+                {barbershop.facebook_url && (
+                  <a
+                    href={barbershop.facebook_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-[#1877F2] hover:bg-[#1565c0] p-2 rounded-full transition-all duration-300 hover:scale-110 text-white"
+                    aria-label="Siga-nos no Facebook"
+                  >
+                    <Facebook className="h-5 w-5" />
+                  </a>
+                )}
+                {barbershop.instagram_url && (
+                  <a
+                    href={barbershop.instagram_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-gradient-to-br from-[#833AB4] via-[#E4405F] to-[#F77737] hover:opacity-90 p-2 rounded-full transition-all duration-300 hover:scale-110 text-white"
+                    aria-label="Siga-nos no Instagram"
+                  >
+                    <Instagram className="h-5 w-5" />
+                  </a>
+                )}
+              </div>
+            )}
+            
             <div className="flex flex-wrap justify-center gap-4 text-sm">
               <Link 
                 to={`/${slug}/privacidade`} 
