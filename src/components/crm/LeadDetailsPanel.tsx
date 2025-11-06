@@ -49,23 +49,16 @@ export function LeadDetailsPanel({ lead }: LeadDetailsPanelProps) {
     return cleanPhone;
   };
 
-  const handleSendWhatsApp = () => {
-    if (!lead?.phone) {
-      console.warn('Lead sem número de telefone');
-      return;
-    }
+  const getWhatsAppUrl = () => {
+    if (!lead?.phone) return '#';
 
     const normalizedPhone = normalizePhoneForWhatsApp(lead.phone);
     
-    // Mensagem personalizada para o lead
-    const message = `Olá ${lead.full_name}! Como posso ajudar você hoje?`;
+    // Mensagem padrão de confirmação
+    const message = `Olá ${lead.full_name}! Seu agendamento foi confirmado, aguardamos sua presença.`;
     const encodedMessage = encodeURIComponent(message);
     
-    // Usar API do WhatsApp ao invés do Web
-    const whatsappUrl = `https://api.whatsapp.com/send/?phone=${normalizedPhone}&text=${encodedMessage}&type=phone_number&app_absent=0`;
-    
-    // Abrir WhatsApp em nova aba
-    window.open(whatsappUrl, '_blank');
+    return `https://api.whatsapp.com/send/?phone=${normalizedPhone}&text=${encodedMessage}&type=phone_number&app_absent=0`;
   };
 
   if (!lead) {
@@ -214,10 +207,22 @@ export function LeadDetailsPanel({ lead }: LeadDetailsPanelProps) {
               variant="outline" 
               className="w-full justify-start" 
               size="sm"
-              onClick={handleSendWhatsApp}
+              asChild
             >
-              <MessageCircle className="h-4 w-4 mr-2" />
-              Enviar Mensagem
+              <a 
+                href={getWhatsAppUrl()} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                onClick={(e) => {
+                  if (!lead?.phone) {
+                    e.preventDefault();
+                    alert('⚠️ Este lead não possui um número de telefone cadastrado.');
+                  }
+                }}
+              >
+                <MessageCircle className="h-4 w-4 mr-2" />
+                Enviar Mensagem
+              </a>
             </Button>
             <Button variant="outline" className="w-full justify-start" size="sm">
               <Tag className="h-4 w-4 mr-2" />
