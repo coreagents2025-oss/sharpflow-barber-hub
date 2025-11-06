@@ -58,7 +58,31 @@ export function LeadDetailsPanel({ lead }: LeadDetailsPanelProps) {
     const message = `Olá ${lead.full_name}! Seu agendamento foi confirmado, aguardamos sua presença.`;
     const encodedMessage = encodeURIComponent(message);
     
-    return `https://api.whatsapp.com/send/?phone=${normalizedPhone}&text=${encodedMessage}&type=phone_number&app_absent=0`;
+    // Usar wa.me que é menos bloqueado
+    return `https://wa.me/${normalizedPhone}?text=${encodedMessage}`;
+  };
+
+  const handleCopyWhatsAppLink = async () => {
+    if (!lead?.phone) {
+      alert('⚠️ Este lead não possui um número de telefone cadastrado.');
+      return;
+    }
+
+    const url = getWhatsAppUrl();
+    
+    try {
+      await navigator.clipboard.writeText(url);
+      alert('✅ Link do WhatsApp copiado! Cole no navegador para abrir.');
+    } catch (error) {
+      // Fallback se clipboard não funcionar
+      const textarea = document.createElement('textarea');
+      textarea.value = url;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textarea);
+      alert('✅ Link do WhatsApp copiado! Cole no navegador para abrir.');
+    }
   };
 
   if (!lead) {
@@ -203,27 +227,37 @@ export function LeadDetailsPanel({ lead }: LeadDetailsPanelProps) {
               <Calendar className="h-4 w-4 mr-2" />
               Criar Agendamento
             </Button>
-            <Button 
-              variant="outline" 
-              className="w-full justify-start" 
-              size="sm"
-              asChild
-            >
-              <a 
-                href={getWhatsAppUrl()} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                onClick={(e) => {
-                  if (!lead?.phone) {
-                    e.preventDefault();
-                    alert('⚠️ Este lead não possui um número de telefone cadastrado.');
-                  }
-                }}
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                className="flex-1 justify-start" 
+                size="sm"
+                asChild
               >
-                <MessageCircle className="h-4 w-4 mr-2" />
-                Enviar Mensagem
-              </a>
-            </Button>
+                <a 
+                  href={getWhatsAppUrl()} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  onClick={(e) => {
+                    if (!lead?.phone) {
+                      e.preventDefault();
+                      alert('⚠️ Este lead não possui um número de telefone cadastrado.');
+                    }
+                  }}
+                >
+                  <MessageCircle className="h-4 w-4 mr-2" />
+                  Enviar Mensagem
+                </a>
+              </Button>
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={handleCopyWhatsAppLink}
+                title="Copiar link do WhatsApp"
+              >
+                📋
+              </Button>
+            </div>
             <Button variant="outline" className="w-full justify-start" size="sm">
               <Tag className="h-4 w-4 mr-2" />
               Gerenciar Tags
