@@ -43,7 +43,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Buscar configurações de email da barbearia
     const { data: barbershop, error: barbershopError } = await supabase
       .from("barbershops")
-      .select("name, email_settings")
+      .select("name")
       .eq("id", barbershop_id)
       .single();
 
@@ -52,7 +52,18 @@ const handler = async (req: Request): Promise<Response> => {
       throw barbershopError;
     }
 
-    const settings = barbershop.email_settings || {};
+    // Buscar credenciais de email
+    const { data: credentials, error: credentialsError } = await supabase
+      .from("barbershop_credentials")
+      .select("email_credentials")
+      .eq("barbershop_id", barbershop_id)
+      .single();
+
+    if (credentialsError) {
+      console.error("Error fetching credentials:", credentialsError);
+    }
+
+    const settings = (credentials?.email_credentials || {}) as any;
 
     if (!settings.notifications_enabled) {
       console.log("Notifications disabled for this barbershop");

@@ -696,25 +696,6 @@ const Settings = () => {
                         </p>
                       </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="custom-domain">Domínio Personalizado (Opcional)</Label>
-                        <Input 
-                          id="custom-domain"
-                          placeholder="www.minhabarbearia.com.br"
-                          value={domainData.custom_domain}
-                          onChange={(e) => setDomainData({ ...domainData, custom_domain: e.target.value })}
-                          disabled={loading}
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Configure seu próprio domínio.{' '}
-                          <button 
-                            onClick={() => setShowDomainGuide(true)}
-                            className="text-accent hover:underline inline-flex items-center gap-1"
-                          >
-                            Saiba como <ExternalLink className="h-3 w-3" />
-                          </button>
-                        </p>
-                      </div>
 
                       <div className="flex gap-2 pt-2">
                         <Button 
@@ -888,7 +869,7 @@ const Settings = () => {
 
                     <div className="space-y-2">
                       <Label htmlFor="whatsapp-phone">
-                        Número do WhatsApp (com DDD, sem símbolos)
+                        Número do WhatsApp da Barbearia (com DDI + DDD)
                       </Label>
                       <Input 
                         id="whatsapp-phone"
@@ -899,7 +880,7 @@ const Settings = () => {
                         maxLength={15}
                       />
                       <p className="text-xs text-muted-foreground">
-                        Este número receberá as notificações de agendamento
+                        Este é o número de WhatsApp da sua barbearia (remetente). Formato: 5511999999999 (DDI 55 + DDD + número)
                       </p>
                     </div>
 

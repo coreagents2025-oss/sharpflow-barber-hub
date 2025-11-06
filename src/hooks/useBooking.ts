@@ -222,7 +222,7 @@ export const useBooking = (barbershopId: string | null) => {
 
       // Enviar email de confirmação (se configurado)
       try {
-        await supabase.functions.invoke('send-booking-confirmation', {
+        const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-booking-confirmation', {
           body: {
             barbershop_id: barbershopId,
             client_email: data.clientEmail,
@@ -232,26 +232,40 @@ export const useBooking = (barbershopId: string | null) => {
             scheduled_at: scheduledAt.toISOString(),
           },
         });
-      } catch (emailError) {
-        console.log('Email notification failed (não configurado):', emailError);
-        // Não falhar o agendamento se o email não funcionar
+        
+        if (emailError) {
+          console.error('❌ Email error:', emailError);
+        } else if (emailResult?.success === false) {
+          console.warn('⚠️ Email não enviado:', emailResult.message);
+        } else {
+          console.log('✅ Email enviado com sucesso!');
+        }
+      } catch (err) {
+        console.error('❌ Email exception:', err);
       }
 
       // Enviar notificação WhatsApp (se configurado)
       try {
-        await supabase.functions.invoke('send-whatsapp-notification', {
+        const { data: whatsappResult, error: whatsappError } = await supabase.functions.invoke('send-whatsapp-notification', {
           body: {
             barbershop_id: barbershopId,
-            client_phone: data.clientPhone,
+            client_phone: normalizedPhone, // ✅ Enviar telefone normalizado
             client_name: data.clientName,
             service_name: service?.name || 'Serviço',
             barber_name: barber?.name || 'Barbeiro',
             scheduled_at: scheduledAt.toISOString(),
           },
         });
-      } catch (whatsappError) {
-        console.log('WhatsApp notification failed (não configurado):', whatsappError);
-        // Não falhar o agendamento se o WhatsApp não funcionar
+        
+        if (whatsappError) {
+          console.error('❌ WhatsApp error:', whatsappError);
+        } else if (whatsappResult?.success === false) {
+          console.warn('⚠️ WhatsApp não enviado:', whatsappResult.message);
+        } else {
+          console.log('✅ WhatsApp enviado com sucesso!');
+        }
+      } catch (err) {
+        console.error('❌ WhatsApp exception:', err);
       }
 
       toast.success('Agendamento realizado com sucesso!');
