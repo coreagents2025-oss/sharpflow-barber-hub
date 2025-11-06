@@ -928,6 +928,101 @@ export type Database = {
         }
         Relationships: []
       }
+      webhook_logs: {
+        Row: {
+          attempts: number | null
+          created_at: string | null
+          delivered_at: string | null
+          event_type: string
+          id: string
+          payload: Json
+          response_body: string | null
+          response_status: number | null
+          subscription_id: string | null
+        }
+        Insert: {
+          attempts?: number | null
+          created_at?: string | null
+          delivered_at?: string | null
+          event_type: string
+          id?: string
+          payload: Json
+          response_body?: string | null
+          response_status?: number | null
+          subscription_id?: string | null
+        }
+        Update: {
+          attempts?: number | null
+          created_at?: string | null
+          delivered_at?: string | null
+          event_type?: string
+          id?: string
+          payload?: Json
+          response_body?: string | null
+          response_status?: number | null
+          subscription_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_logs_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "webhook_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      webhook_subscriptions: {
+        Row: {
+          barbershop_id: string
+          created_at: string | null
+          events: string[]
+          id: string
+          is_active: boolean | null
+          retry_config: Json | null
+          secret_key: string
+          updated_at: string | null
+          webhook_url: string
+        }
+        Insert: {
+          barbershop_id: string
+          created_at?: string | null
+          events: string[]
+          id?: string
+          is_active?: boolean | null
+          retry_config?: Json | null
+          secret_key: string
+          updated_at?: string | null
+          webhook_url: string
+        }
+        Update: {
+          barbershop_id?: string
+          created_at?: string | null
+          events?: string[]
+          id?: string
+          is_active?: boolean | null
+          retry_config?: Json | null
+          secret_key?: string
+          updated_at?: string | null
+          webhook_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "webhook_subscriptions_barbershop_id_fkey"
+            columns: ["barbershop_id"]
+            isOneToOne: false
+            referencedRelation: "barbershops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "webhook_subscriptions_barbershop_id_fkey"
+            columns: ["barbershop_id"]
+            isOneToOne: false
+            referencedRelation: "public_barbershops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_conversations: {
         Row: {
           barbershop_id: string

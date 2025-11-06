@@ -59,10 +59,10 @@ export const Navbar = () => {
                     Agenda
                   </Button>
                 </Link>
-                <Link to="/messages">
-                  <Button variant={isActive("/messages") ? "default" : "ghost"} size="sm" className="transition-all">
+                <Link to="/crm">
+                  <Button variant={isActive("/crm") || isActive("/messages") ? "default" : "ghost"} size="sm" className="transition-all">
                     <MessageCircle className="h-4 w-4 mr-2" />
-                    Mensagens
+                    CRM
                   </Button>
                 </Link>
               </> :

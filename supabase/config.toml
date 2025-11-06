@@ -11,3 +11,6 @@ verify_jwt = true
 
 [functions.receive-whatsapp-message]
 verify_jwt = false
+
+[functions.webhook-dispatcher]
+verify_jwt = true

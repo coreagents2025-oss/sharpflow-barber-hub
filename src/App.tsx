@@ -19,7 +19,7 @@ import TermsOfService from "./pages/TermsOfService";
 import ScheduleManagement from "./pages/ScheduleManagement";
 import Settings from "./pages/Settings";
 import BarbersManagement from "./pages/BarbersManagement";
-import Messages from "./pages/Messages";
+import CRM from "./pages/CRM";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -47,7 +47,8 @@ const App = () => (
             <Route path="/barbers-management" element={<ProtectedRoute><BarbersManagement /></ProtectedRoute>} />
             <Route path="/catalog" element={<ProtectedRoute><Catalog /></ProtectedRoute>} />
             <Route path="/schedule-management" element={<ProtectedRoute><ScheduleManagement /></ProtectedRoute>} />
-            <Route path="/messages" element={<ProtectedRoute><Messages /></ProtectedRoute>} />
+            <Route path="/crm" element={<ProtectedRoute><CRM /></ProtectedRoute>} />
+            <Route path="/messages" element={<ProtectedRoute><CRM /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute requiredRoles={[]}><Settings /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
