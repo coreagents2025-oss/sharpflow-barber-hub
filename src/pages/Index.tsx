@@ -4,7 +4,7 @@ import { Navbar } from "@/components/Navbar";
 import { PricingCard } from "@/components/PricingCard";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useNavigate } from "react-router-dom";
-import { Calendar, TrendingUp, Users, Clock, Star, Shield, Zap, CheckCircle2, ArrowRight } from "lucide-react";
+import { Calendar, TrendingUp, Users, Clock, Star, Shield, Zap, CheckCircle2, ArrowRight, Scissors } from "lucide-react";
 import heroImage from "@/assets/hero-barbershop.jpg";
 const Index = () => {
   const navigate = useNavigate();
@@ -256,7 +256,7 @@ const Index = () => {
       </section>
 
       {/* Pricing Section */}
-      <section className="py-20 bg-gradient-to-b from-background to-secondary/20">
+      <section id="pricing" className="py-20 bg-gradient-to-b from-background to-secondary/20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-4">
@@ -282,7 +282,7 @@ const Index = () => {
       </section>
 
       {/* FAQ Section */}
-      <section className="py-20 bg-secondary/20">
+      <section id="faq" className="py-20 bg-secondary/20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-4">Perguntas Frequentes</h2>
@@ -344,6 +344,108 @@ const Index = () => {
           </Card>
         </div>
       </section>
+
+      {/* Footer */}
+      <footer className="bg-primary text-primary-foreground">
+        <div className="container mx-auto px-4 py-12">
+          <div className="grid md:grid-cols-4 gap-8 mb-8">
+            {/* Coluna 1: Logo e Descrição */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <Scissors className="h-6 w-6 text-accent" />
+                <span className="text-xl font-bold">BarberPLUS</span>
+              </div>
+              <p className="text-sm text-primary-foreground/80 mb-4">
+                Sistema completo de gestão para barbearias modernas. Transforme seu negócio com tecnologia.
+              </p>
+            </div>
+
+            {/* Coluna 2: Links Rápidos */}
+            <div>
+              <h4 className="font-semibold mb-4">Links Rápidos</h4>
+              <ul className="space-y-2 text-sm">
+                <li>
+                  <button 
+                    onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
+                    className="text-primary-foreground/80 hover:text-accent transition-colors"
+                  >
+                    Funcionalidades
+                  </button>
+                </li>
+                <li>
+                  <button 
+                    onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
+                    className="text-primary-foreground/80 hover:text-accent transition-colors"
+                  >
+                    Planos e Preços
+                  </button>
+                </li>
+                <li>
+                  <button 
+                    onClick={() => document.getElementById('faq')?.scrollIntoView({ behavior: 'smooth' })}
+                    className="text-primary-foreground/80 hover:text-accent transition-colors"
+                  >
+                    Perguntas Frequentes
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            {/* Coluna 3: Suporte */}
+            <div>
+              <h4 className="font-semibold mb-4">Suporte</h4>
+              <ul className="space-y-2 text-sm">
+                <li>
+                  <a 
+                    href="https://wa.me/5511915761294" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-primary-foreground/80 hover:text-accent transition-colors flex items-center gap-2"
+                  >
+                    <span>WhatsApp: (11) 91576-1294</span>
+                  </a>
+                </li>
+                <li>
+                  <button 
+                    onClick={() => navigate("/auth")}
+                    className="text-primary-foreground/80 hover:text-accent transition-colors"
+                  >
+                    Central de Ajuda
+                  </button>
+                </li>
+              </ul>
+            </div>
+
+            {/* Coluna 4: Legal */}
+            <div>
+              <h4 className="font-semibold mb-4">Legal</h4>
+              <ul className="space-y-2 text-sm">
+                <li>
+                  <button 
+                    onClick={() => navigate("/privacy-policy")}
+                    className="text-primary-foreground/80 hover:text-accent transition-colors"
+                  >
+                    Política de Privacidade
+                  </button>
+                </li>
+                <li>
+                  <button 
+                    onClick={() => navigate("/terms-of-service")}
+                    className="text-primary-foreground/80 hover:text-accent transition-colors"
+                  >
+                    Termos de Serviço
+                  </button>
+                </li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Linha de Copyright */}
+          <div className="border-t border-primary-foreground/10 pt-8 text-center text-sm text-primary-foreground/60">
+            <p>© {new Date().getFullYear()} BarberPLUS. Todos os direitos reservados.</p>
+          </div>
+        </div>
+      </footer>
     </div>;
 };
 export default Index;
