@@ -205,7 +205,7 @@ const Index = () => {
       <section className="py-20 bg-primary text-primary-foreground">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <p className="text-accent font-semibold mb-2">🔥 Mais de 500 barbearias já usam</p>
+            <p className="text-accent font-semibold mb-2">🔥 Mais de 100 barbearias já usam</p>
           </div>
           <div className="grid md:grid-cols-4 gap-8 text-center">
             <div>
@@ -319,7 +319,7 @@ const Index = () => {
                 Teste grátis por 14 dias. Sem cartão de crédito.
               </p>
               <p className="text-sm mb-8 max-w-xl mx-auto opacity-75">
-                Junte-se a mais de 500 barbearias que já aumentaram seu faturamento 
+                Junte-se a mais de 100 barbearias que já aumentaram seu faturamento 
                 e melhoraram a experiência dos clientes
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
