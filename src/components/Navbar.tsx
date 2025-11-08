@@ -112,7 +112,7 @@ export const Navbar = () => {
                 className="bg-gradient-to-r from-accent to-accent/80 hover:from-accent/90 hover:to-accent/70 transition-all"
                 onClick={() => window.open('https://wa.me/5511915761294', '_blank')}
               >
-                Agendar Horário
+                Chamar no WhatsApp
               </Button>}
           </div>
         </div>
