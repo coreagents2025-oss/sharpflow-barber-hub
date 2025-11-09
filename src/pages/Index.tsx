@@ -33,88 +33,55 @@ const Index = () => {
     title: "Pagamentos Seguros",
     description: "Aceite cartões, Pix e tenha controle financeiro total em um só lugar"
   }];
-
-  const plans = [
-    {
-      title: "Mensal",
-      price: "R$ 89,90",
-      period: "mês",
-      features: [
-        "Todos os recursos incluídos",
-        "CRM completo e ilimitado",
-        "WhatsApp integrado",
-        "Relatórios em tempo real",
-        "Suporte prioritário",
-        "Sem taxa de setup",
-        "Atualizações gratuitas"
-      ],
-      ctaText: "Começar Teste Grátis",
-      highlighted: false
-    },
-    {
-      title: "Anual",
-      price: "12x R$ 69,00",
-      period: "ano",
-      description: "ou R$ 828,00 à vista",
-      features: [
-        "Todos os recursos do Mensal",
-        "2 meses grátis (economize 23%)",
-        "Prioridade no suporte",
-        "Onboarding personalizado",
-        "Consultoria de crescimento",
-        "Atualizações vitalícias",
-        "Garantia de 30 dias"
-      ],
-      ctaText: "Começar Agora",
-      highlighted: true,
-      badge: "MAIS POPULAR"
-    }
-  ];
-
-  const steps = [
-    {
-      number: "1",
-      title: "Cadastre-se Grátis",
-      description: "Crie sua conta em menos de 2 minutos"
-    },
-    {
-      number: "2",
-      title: "Configure sua Barbearia",
-      description: "Adicione barbeiros, serviços e horários"
-    },
-    {
-      number: "3",
-      title: "Comece a Receber Clientes",
-      description: "Sistema pronto para usar imediatamente"
-    }
-  ];
-
-  const faqs = [
-    {
-      question: "Preciso de conhecimento técnico para usar?",
-      answer: "Não! O BarberPLUS foi criado para ser extremamente simples. Se você consegue usar WhatsApp, consegue usar nossa plataforma. Além disso, oferecemos suporte completo e tutoriais em vídeo."
-    },
-    {
-      question: "Posso cancelar a qualquer momento?",
-      answer: "Sim, você pode cancelar quando quiser, sem multas ou taxas adicionais. Não há fidelidade e você mantém acesso até o final do período pago."
-    },
-    {
-      question: "Como funciona o período de teste?",
-      answer: "Você tem 14 dias para testar todas as funcionalidades gratuitamente, sem precisar cadastrar cartão de crédito. Se gostar, escolhe o plano ideal para você."
-    },
-    {
-      question: "Meus dados estão seguros?",
-      answer: "Absolutamente. Utilizamos criptografia de ponta e servidores em nuvem com 99.9% de disponibilidade. Seus dados são backupeados diariamente e você tem total controle sobre eles."
-    },
-    {
-      question: "Tem limite de agendamentos?",
-      answer: "Não! Você pode fazer quantos agendamentos quiser, cadastrar quantos barbeiros precisar e ter quantos clientes desejar. Sem limites ocultos."
-    },
-    {
-      question: "Posso migrar de outro sistema?",
-      answer: "Sim! Nossa equipe ajuda você a migrar seus dados de forma gratuita e sem perder nenhuma informação importante. O processo é rápido e seguro."
-    }
-  ];
+  const plans = [{
+    title: "Mensal",
+    price: "R$ 89,90",
+    period: "mês",
+    features: ["Todos os recursos incluídos", "CRM completo e ilimitado", "WhatsApp integrado", "Relatórios em tempo real", "Suporte prioritário", "Sem taxa de setup", "Atualizações gratuitas"],
+    ctaText: "Começar Teste Grátis",
+    highlighted: false
+  }, {
+    title: "Anual",
+    price: "12x R$ 69,00",
+    period: "ano",
+    description: "ou R$ 828,00 à vista",
+    features: ["Todos os recursos do Mensal", "2 meses grátis (economize 23%)", "Prioridade no suporte", "Onboarding personalizado", "Consultoria de crescimento", "Atualizações vitalícias", "Garantia de 30 dias"],
+    ctaText: "Começar Agora",
+    highlighted: true,
+    badge: "MAIS POPULAR"
+  }];
+  const steps = [{
+    number: "1",
+    title: "Cadastre-se Grátis",
+    description: "Crie sua conta em menos de 2 minutos"
+  }, {
+    number: "2",
+    title: "Configure sua Barbearia",
+    description: "Adicione barbeiros, serviços e horários"
+  }, {
+    number: "3",
+    title: "Comece a Receber Clientes",
+    description: "Sistema pronto para usar imediatamente"
+  }];
+  const faqs = [{
+    question: "Preciso de conhecimento técnico para usar?",
+    answer: "Não! O BarberPLUS foi criado para ser extremamente simples. Se você consegue usar WhatsApp, consegue usar nossa plataforma. Além disso, oferecemos suporte completo e tutoriais em vídeo."
+  }, {
+    question: "Posso cancelar a qualquer momento?",
+    answer: "Sim, você pode cancelar quando quiser, sem multas ou taxas adicionais. Não há fidelidade e você mantém acesso até o final do período pago."
+  }, {
+    question: "Como funciona o período de teste?",
+    answer: "Você tem 14 dias para testar todas as funcionalidades gratuitamente, sem precisar cadastrar cartão de crédito. Se gostar, escolhe o plano ideal para você."
+  }, {
+    question: "Meus dados estão seguros?",
+    answer: "Absolutamente. Utilizamos criptografia de ponta e servidores em nuvem com 99.9% de disponibilidade. Seus dados são backupeados diariamente e você tem total controle sobre eles."
+  }, {
+    question: "Tem limite de agendamentos?",
+    answer: "Não! Você pode fazer quantos agendamentos quiser, cadastrar quantos barbeiros precisar e ter quantos clientes desejar. Sem limites ocultos."
+  }, {
+    question: "Posso migrar de outro sistema?",
+    answer: "Sim! Nossa equipe ajuda você a migrar seus dados de forma gratuita e sem perder nenhuma informação importante. O processo é rápido e seguro."
+  }];
   return <div className="min-h-screen">
       <Navbar />
       
@@ -136,20 +103,13 @@ const Index = () => {
             Tudo em um único aplicativo. A partir de R$ 69/mês.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button 
-              size="lg" 
-              className="bg-accent hover:bg-accent/90 text-accent-foreground text-lg h-14 px-8 shadow-lg" 
-              onClick={() => navigate("/auth")}
-            >
+            <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground text-lg h-14 px-8 shadow-lg" onClick={() => navigate("/auth")}>
               Começar Teste Grátis
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
-            <Button 
-              size="lg" 
-              variant="outline" 
-              className="text-lg h-14 px-8 bg-background/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-sm" 
-              onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
-            >
+            <Button size="lg" variant="outline" className="text-lg h-14 px-8 bg-background/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-sm" onClick={() => document.getElementById('features')?.scrollIntoView({
+            behavior: 'smooth'
+          })}>
               Ver Funcionalidades
             </Button>
           </div>
@@ -184,9 +144,8 @@ const Index = () => {
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map(feature => {
-              const Icon = feature.icon;
-              return (
-                <Card key={feature.title} className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-border/50">
+            const Icon = feature.icon;
+            return <Card key={feature.title} className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-border/50">
                   <CardContent className="pt-6">
                     <div className="h-12 w-12 rounded-lg bg-accent/10 flex items-center justify-center mb-4">
                       <Icon className="h-6 w-6 text-accent" />
@@ -194,9 +153,8 @@ const Index = () => {
                     <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
                     <p className="text-muted-foreground">{feature.description}</p>
                   </CardContent>
-                </Card>
-              );
-            })}
+                </Card>;
+          })}
           </div>
         </div>
       </section>
@@ -237,8 +195,7 @@ const Index = () => {
           </div>
           
           <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {steps.map((step, index) => (
-              <div key={index} className="relative">
+            {steps.map((step, index) => <div key={index} className="relative">
                 <div className="text-center">
                   <div className="w-16 h-16 bg-accent text-accent-foreground rounded-full flex items-center justify-center text-2xl font-bold mx-auto mb-4 shadow-lg">
                     {step.number}
@@ -246,11 +203,8 @@ const Index = () => {
                   <h3 className="text-xl font-semibold mb-2">{step.title}</h3>
                   <p className="text-muted-foreground">{step.description}</p>
                 </div>
-                {index < steps.length - 1 && (
-                  <div className="hidden md:block absolute top-8 left-[60%] w-[80%] h-0.5 bg-accent/30" />
-                )}
-              </div>
-            ))}
+                {index < steps.length - 1 && <div className="hidden md:block absolute top-8 left-[60%] w-[80%] h-0.5 bg-accent/30" />}
+              </div>)}
           </div>
         </div>
       </section>
@@ -268,9 +222,7 @@ const Index = () => {
           </div>
 
           <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {plans.map((plan, index) => (
-              <PricingCard key={index} {...plan} />
-            ))}
+            {plans.map((plan, index) => <PricingCard key={index} {...plan} />)}
           </div>
 
           <div className="text-center mt-12">
@@ -291,16 +243,14 @@ const Index = () => {
 
           <div className="max-w-3xl mx-auto">
             <Accordion type="single" collapsible className="w-full">
-              {faqs.map((faq, index) => (
-                <AccordionItem key={index} value={`item-${index}`}>
+              {faqs.map((faq, index) => <AccordionItem key={index} value={`item-${index}`}>
                   <AccordionTrigger className="text-left">
                     {faq.question}
                   </AccordionTrigger>
                   <AccordionContent className="text-muted-foreground">
                     {faq.answer}
                   </AccordionContent>
-                </AccordionItem>
-              ))}
+                </AccordionItem>)}
             </Accordion>
           </div>
         </div>
@@ -323,20 +273,11 @@ const Index = () => {
                 e melhoraram a experiência dos clientes
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                <Button 
-                  size="lg" 
-                  className="bg-accent hover:bg-accent/90 text-accent-foreground text-lg h-14 px-10 shadow-lg" 
-                  onClick={() => navigate("/auth")}
-                >
+                <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground text-lg h-14 px-10 shadow-lg" onClick={() => navigate("/auth")}>
                   Criar Minha Conta Grátis
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
-                <Button 
-                  size="lg" 
-                  variant="outline" 
-                  className="text-lg h-14 px-8 border-white/20 text-white hover:bg-white/10" 
-                  onClick={() => navigate("/auth")}
-                >
+                <Button size="lg" variant="outline" onClick={() => navigate("/auth")} className="text-lg h-14 px-8 border-white/20 bg-zinc-100 text-zinc-800">
                   Já tenho conta
                 </Button>
               </div>
@@ -365,26 +306,23 @@ const Index = () => {
               <h4 className="font-semibold mb-4">Links Rápidos</h4>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <button 
-                    onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
-                    className="text-primary-foreground/80 hover:text-accent transition-colors"
-                  >
+                  <button onClick={() => document.getElementById('features')?.scrollIntoView({
+                  behavior: 'smooth'
+                })} className="text-primary-foreground/80 hover:text-accent transition-colors">
                     Funcionalidades
                   </button>
                 </li>
                 <li>
-                  <button 
-                    onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
-                    className="text-primary-foreground/80 hover:text-accent transition-colors"
-                  >
+                  <button onClick={() => document.getElementById('pricing')?.scrollIntoView({
+                  behavior: 'smooth'
+                })} className="text-primary-foreground/80 hover:text-accent transition-colors">
                     Planos e Preços
                   </button>
                 </li>
                 <li>
-                  <button 
-                    onClick={() => document.getElementById('faq')?.scrollIntoView({ behavior: 'smooth' })}
-                    className="text-primary-foreground/80 hover:text-accent transition-colors"
-                  >
+                  <button onClick={() => document.getElementById('faq')?.scrollIntoView({
+                  behavior: 'smooth'
+                })} className="text-primary-foreground/80 hover:text-accent transition-colors">
                     Perguntas Frequentes
                   </button>
                 </li>
@@ -396,20 +334,12 @@ const Index = () => {
               <h4 className="font-semibold mb-4">Suporte</h4>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <a 
-                    href="https://wa.me/5511915761294" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="text-primary-foreground/80 hover:text-accent transition-colors flex items-center gap-2"
-                  >
+                  <a href="https://wa.me/5511915761294" target="_blank" rel="noopener noreferrer" className="text-primary-foreground/80 hover:text-accent transition-colors flex items-center gap-2">
                     <span>WhatsApp: (11) 91576-1294</span>
                   </a>
                 </li>
                 <li>
-                  <button 
-                    onClick={() => navigate("/auth")}
-                    className="text-primary-foreground/80 hover:text-accent transition-colors"
-                  >
+                  <button onClick={() => navigate("/auth")} className="text-primary-foreground/80 hover:text-accent transition-colors">
                     Central de Ajuda
                   </button>
                 </li>
@@ -421,18 +351,12 @@ const Index = () => {
               <h4 className="font-semibold mb-4">Legal</h4>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <button 
-                    onClick={() => navigate("/privacy-policy")}
-                    className="text-primary-foreground/80 hover:text-accent transition-colors"
-                  >
+                  <button onClick={() => navigate("/privacy-policy")} className="text-primary-foreground/80 hover:text-accent transition-colors">
                     Política de Privacidade
                   </button>
                 </li>
                 <li>
-                  <button 
-                    onClick={() => navigate("/terms-of-service")}
-                    className="text-primary-foreground/80 hover:text-accent transition-colors"
-                  >
+                  <button onClick={() => navigate("/terms-of-service")} className="text-primary-foreground/80 hover:text-accent transition-colors">
                     Termos de Serviço
                   </button>
                 </li>
