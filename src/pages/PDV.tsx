@@ -422,51 +422,51 @@ const PDV = () => {
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <Card>
-            <CardHeader className="pb-2">
-              <CardDescription className="flex items-center gap-2">
+            <CardHeader className="pb-2 p-4 sm:p-6">
+              <CardDescription className="flex items-center gap-2 text-xs sm:text-sm">
                 <CalendarIcon className="h-4 w-4" />
                 Agendamentos Hoje
               </CardDescription>
-              <CardTitle className="text-3xl">{stats.todayAppointments}</CardTitle>
+              <CardTitle className="text-2xl sm:text-3xl">{stats.todayAppointments}</CardTitle>
             </CardHeader>
           </Card>
           
           <Card>
-            <CardHeader className="pb-2">
-              <CardDescription className="flex items-center gap-2">
+            <CardHeader className="pb-2 p-4 sm:p-6">
+              <CardDescription className="flex items-center gap-2 text-xs sm:text-sm">
                 <TrendingUp className="h-4 w-4" />
                 Faturamento Mensal
               </CardDescription>
-              <CardTitle className="text-3xl">
+              <CardTitle className="text-2xl sm:text-3xl">
                 R$ {stats.monthlyRevenue.toFixed(2)}
               </CardTitle>
             </CardHeader>
           </Card>
           
           <Card>
-            <CardHeader className="pb-2">
-              <CardDescription className="flex items-center gap-2">
+            <CardHeader className="pb-2 p-4 sm:p-6">
+              <CardDescription className="flex items-center gap-2 text-xs sm:text-sm">
                 <UsersIcon className="h-4 w-4" />
                 Clientes Ativos
               </CardDescription>
-              <CardTitle className="text-3xl">{stats.activeClients}</CardTitle>
+              <CardTitle className="text-2xl sm:text-3xl">{stats.activeClients}</CardTitle>
             </CardHeader>
           </Card>
           
           <Card>
-            <CardHeader className="pb-2">
-              <CardDescription className="flex items-center gap-2">
+            <CardHeader className="pb-2 p-4 sm:p-6">
+              <CardDescription className="flex items-center gap-2 text-xs sm:text-sm">
                 <Percent className="h-4 w-4" />
                 Taxa de Ocupação
               </CardDescription>
-              <CardTitle className="text-3xl">{stats.occupancyRate}%</CardTitle>
+              <CardTitle className="text-2xl sm:text-3xl">{stats.occupancyRate}%</CardTitle>
             </CardHeader>
           </Card>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Barber Status */}
           <Card className="lg:col-span-1">
             <CardHeader>

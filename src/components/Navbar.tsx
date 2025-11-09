@@ -1,10 +1,13 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Calendar, Monitor, Scissors, Users, LogOut, Settings, Layout, ClipboardList, MessageCircle } from "lucide-react";
+import { Calendar, Monitor, Scissors, Users, LogOut, Settings, Layout, ClipboardList, MessageCircle, Menu } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { useState } from "react";
 export const Navbar = () => {
   const location = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const {
     user,
     userRole,
@@ -81,11 +84,82 @@ export const Navbar = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            {/* Menu hamburguer mobile */}
+            <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+              <SheetTrigger asChild className="md:hidden">
+                <Button variant="ghost" size="sm">
+                  <Menu className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-[280px]">
+                <div className="flex flex-col gap-4 mt-8">
+                  {isInAdminPanel ? (
+                    <>
+                      <Link to="/pdv" onClick={() => setMobileMenuOpen(false)}>
+                        <Button variant={isActive("/pdv") ? "default" : "ghost"} size="sm" className="w-full justify-start">
+                          <Monitor className="h-4 w-4 mr-2" />
+                          PDV
+                        </Button>
+                      </Link>
+                      <Link to="/services-management" onClick={() => setMobileMenuOpen(false)}>
+                        <Button variant={isActive("/services-management") ? "default" : "ghost"} size="sm" className="w-full justify-start">
+                          <ClipboardList className="h-4 w-4 mr-2" />
+                          Serviços
+                        </Button>
+                      </Link>
+                      <Link to="/barbers-management" onClick={() => setMobileMenuOpen(false)}>
+                        <Button variant={isActive("/barbers-management") ? "default" : "ghost"} size="sm" className="w-full justify-start">
+                          <Users className="h-4 w-4 mr-2" />
+                          Barbeiros
+                        </Button>
+                      </Link>
+                      <Link to="/catalog" onClick={() => setMobileMenuOpen(false)}>
+                        <Button variant={isActive("/catalog") ? "default" : "ghost"} size="sm" className="w-full justify-start">
+                          <Layout className="h-4 w-4 mr-2" />
+                          Catálogo
+                        </Button>
+                      </Link>
+                      <Link to="/schedule-management" onClick={() => setMobileMenuOpen(false)}>
+                        <Button variant={isActive("/schedule-management") ? "default" : "ghost"} size="sm" className="w-full justify-start">
+                          <Calendar className="h-4 w-4 mr-2" />
+                          Agenda
+                        </Button>
+                      </Link>
+                      <Link to="/crm" onClick={() => setMobileMenuOpen(false)}>
+                        <Button variant={isActive("/crm") || isActive("/messages") ? "default" : "ghost"} size="sm" className="w-full justify-start">
+                          <MessageCircle className="h-4 w-4 mr-2" />
+                          CRM
+                        </Button>
+                      </Link>
+                    </>
+                  ) : (
+                    <>
+                      <Link to="/" onClick={() => setMobileMenuOpen(false)}>
+                        <Button variant={isActive("/") ? "default" : "ghost"} size="sm" className="w-full justify-start">
+                          Home
+                        </Button>
+                      </Link>
+                      <Link to="/services" onClick={() => setMobileMenuOpen(false)}>
+                        <Button variant={isActive("/services") ? "default" : "ghost"} size="sm" className="w-full justify-start">
+                          Serviços
+                        </Button>
+                      </Link>
+                      <Link to="/booking" onClick={() => setMobileMenuOpen(false)}>
+                        <Button variant={isActive("/booking") ? "default" : "ghost"} size="sm" className="w-full justify-start">
+                          Agendar
+                        </Button>
+                      </Link>
+                    </>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
+
             {user ? <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm">
                     <Users className="h-4 w-4 mr-2" />
-                    Conta
+                    <span className="hidden sm:inline">Conta</span>
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
@@ -109,7 +183,7 @@ export const Navbar = () => {
             
             {/* CTA "Agendar" - APENAS em landing pages */}
             {!isInAdminPanel && <Button 
-                className="bg-gradient-to-r from-accent to-accent/80 hover:from-accent/90 hover:to-accent/70 transition-all"
+                className="hidden sm:flex bg-gradient-to-r from-accent to-accent/80 hover:from-accent/90 hover:to-accent/70 transition-all"
                 onClick={() => window.open('https://wa.me/5511915761294', '_blank')}
               >
                 Chamar no WhatsApp

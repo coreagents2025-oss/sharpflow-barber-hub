@@ -86,34 +86,34 @@ const Index = () => {
       <Navbar />
       
       {/* Hero Section */}
-      <section className="relative h-[600px] flex items-center justify-center overflow-hidden">
+      <section className="relative min-h-[500px] md:h-[600px] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 z-0" style={{
         backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), url(${heroImage})`,
         backgroundSize: 'cover',
         backgroundPosition: 'center'
       }} />
         
-        <div className="container mx-auto px-4 relative z-10 text-center text-white">
-          <h1 className="text-5xl md:text-6xl font-bold mb-6 animate-fade-in">
+        <div className="container mx-auto px-4 sm:px-6 relative z-10 text-center text-white">
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold mb-6 animate-fade-in">
             Transforme sua Barbearia
             <span className="block text-accent mt-2">em um Negócio Digital</span>
           </h1>
-          <p className="text-xl md:text-2xl mb-8 max-w-3xl mx-auto text-gray-200">
+          <p className="text-lg sm:text-xl md:text-2xl mb-8 max-w-3xl mx-auto text-gray-200">
             Gestão completa, marketing inteligente e mais clientes. 
             Tudo em um único aplicativo. A partir de R$ 69/mês.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground text-lg h-14 px-8 shadow-lg" onClick={() => navigate("/auth")}>
+            <Button size="lg" className="w-full sm:w-auto bg-accent hover:bg-accent/90 text-accent-foreground text-lg h-14 px-8 shadow-lg" onClick={() => navigate("/auth")}>
               Começar Teste Grátis
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
-            <Button size="lg" variant="outline" className="text-lg h-14 px-8 bg-background/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-sm" onClick={() => document.getElementById('features')?.scrollIntoView({
+            <Button size="lg" variant="outline" className="w-full sm:w-auto text-lg h-14 px-8 bg-background/10 border-white/20 text-white hover:bg-white/20 backdrop-blur-sm" onClick={() => document.getElementById('features')?.scrollIntoView({
             behavior: 'smooth'
           })}>
               Ver Funcionalidades
             </Button>
           </div>
-          <div className="mt-8 flex items-center justify-center gap-6 text-sm text-gray-300">
+          <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 text-sm text-gray-300">
             <span className="flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-accent" />
               14 dias grátis
@@ -131,27 +131,27 @@ const Index = () => {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 bg-gradient-to-b from-background to-secondary/20">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">
+      <section id="features" className="py-16 sm:py-20 bg-gradient-to-b from-background to-secondary/20">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">
               Tudo que você precisa para crescer
             </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
               Funcionalidades profissionais para otimizar cada aspecto da sua barbearia
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             {features.map(feature => {
             const Icon = feature.icon;
             return <Card key={feature.title} className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-border/50">
-                  <CardContent className="pt-6">
+                  <CardContent className="p-4 sm:p-6">
                     <div className="h-12 w-12 rounded-lg bg-accent/10 flex items-center justify-center mb-4">
                       <Icon className="h-6 w-6 text-accent" />
                     </div>
-                    <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>
-                    <p className="text-muted-foreground">{feature.description}</p>
+                    <h3 className="text-lg sm:text-xl font-semibold mb-2">{feature.title}</h3>
+                    <p className="text-sm sm:text-base text-muted-foreground">{feature.description}</p>
                   </CardContent>
                 </Card>;
           })}
@@ -160,27 +160,27 @@ const Index = () => {
       </section>
 
       {/* Social Proof Section */}
-      <section className="py-20 bg-primary text-primary-foreground">
-        <div className="container mx-auto px-4">
+      <section className="py-16 sm:py-20 bg-primary text-primary-foreground">
+        <div className="container mx-auto px-4 sm:px-6">
           <div className="text-center mb-12">
             <p className="text-accent font-semibold mb-2">🔥 Mais de 100 barbearias já usam</p>
           </div>
-          <div className="grid md:grid-cols-4 gap-8 text-center">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 sm:gap-8 text-center">
             <div>
-              <div className="text-5xl font-bold text-accent mb-2">95%</div>
-              <p className="text-lg">Taxa de Satisfação</p>
+              <div className="text-3xl sm:text-4xl lg:text-5xl font-bold text-accent mb-2">95%</div>
+              <p className="text-sm sm:text-base lg:text-lg">Taxa de Satisfação</p>
             </div>
             <div>
-              <div className="text-5xl font-bold text-accent mb-2">+40%</div>
-              <p className="text-lg">Aumento em Agendamentos</p>
+              <div className="text-3xl sm:text-4xl lg:text-5xl font-bold text-accent mb-2">+40%</div>
+              <p className="text-sm sm:text-base lg:text-lg">Aumento em Agendamentos</p>
             </div>
             <div>
-              <div className="text-5xl font-bold text-accent mb-2">24/7</div>
-              <p className="text-lg">Disponibilidade Online</p>
+              <div className="text-3xl sm:text-4xl lg:text-5xl font-bold text-accent mb-2">24/7</div>
+              <p className="text-sm sm:text-base lg:text-lg">Disponibilidade Online</p>
             </div>
             <div>
-              <div className="text-5xl font-bold text-accent mb-2">99.9%</div>
-              <p className="text-lg">Uptime Garantido</p>
+              <div className="text-3xl sm:text-4xl lg:text-5xl font-bold text-accent mb-2">99.9%</div>
+              <p className="text-sm sm:text-base lg:text-lg">Uptime Garantido</p>
             </div>
           </div>
         </div>
@@ -210,18 +210,18 @@ const Index = () => {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="py-20 bg-gradient-to-b from-background to-secondary/20">
-        <div className="container mx-auto px-4">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold mb-4">
+      <section id="pricing" className="py-16 sm:py-20 bg-gradient-to-b from-background to-secondary/20">
+        <div className="container mx-auto px-4 sm:px-6">
+          <div className="text-center mb-12 sm:mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold mb-4">
               Planos que cabem no seu bolso
             </h2>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+            <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto">
               Escolha o plano ideal para sua barbearia. Teste grátis por 14 dias.
             </p>
           </div>
 
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 max-w-4xl mx-auto">
             {plans.map((plan, index) => <PricingCard key={index} {...plan} />)}
           </div>
 
@@ -288,8 +288,8 @@ const Index = () => {
 
       {/* Footer */}
       <footer className="bg-primary text-primary-foreground">
-        <div className="container mx-auto px-4 py-12">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
+        <div className="container mx-auto px-4 sm:px-6 py-12">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
             {/* Coluna 1: Logo e Descrição */}
             <div>
               <div className="flex items-center gap-2 mb-4">
