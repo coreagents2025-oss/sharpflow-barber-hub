@@ -53,31 +53,31 @@ const Dashboard = () => {
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
       <Navbar />
       
-      <main className="container mx-auto px-4 py-12">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">Dashboard</h1>
-          <p className="text-muted-foreground">
+      <main className="container mx-auto px-4 py-6 sm:py-8 lg:py-12">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-3xl sm:text-4xl font-bold mb-2">Dashboard</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">
             Visão geral do seu negócio em tempo real
           </p>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
           {stats.map((stat) => {
             const Icon = stat.icon;
             return (
               <Card key={stat.title} className="hover:shadow-lg transition-shadow">
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
+                <CardHeader className="flex flex-row items-center justify-between pb-2 space-y-0">
+                  <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">
                     {stat.title}
                   </CardTitle>
-                  <Icon className="h-4 w-4 text-accent" />
+                  <Icon className="h-4 w-4 text-accent flex-shrink-0" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{stat.value}</div>
+                  <div className="text-xl sm:text-2xl font-bold">{stat.value}</div>
                   <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
-                    <TrendingUp className="h-3 w-3" />
-                    {stat.change} em relação ao mês anterior
+                    <TrendingUp className="h-3 w-3 flex-shrink-0" />
+                    <span className="truncate">{stat.change} vs mês anterior</span>
                   </p>
                 </CardContent>
               </Card>
@@ -85,7 +85,7 @@ const Dashboard = () => {
           })}
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
           {/* Recent Appointments */}
           <Card>
             <CardHeader>
@@ -98,24 +98,26 @@ const Dashboard = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {recentAppointments.map((appointment) => (
                   <div 
                     key={appointment.id}
-                    className="flex items-center justify-between p-4 bg-secondary/50 rounded-lg hover:bg-secondary transition-colors"
+                    className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-3 sm:p-4 bg-secondary/50 rounded-lg hover:bg-secondary transition-colors"
                   >
-                    <div className="flex items-center gap-4">
-                      <div className="h-10 w-10 rounded-full bg-accent/10 flex items-center justify-center">
+                    <div className="flex items-center gap-3 sm:gap-4">
+                      <div className="h-10 w-10 rounded-full bg-accent/10 flex items-center justify-center flex-shrink-0">
                         <Scissors className="h-5 w-5 text-accent" />
                       </div>
-                      <div>
-                        <p className="font-semibold">{appointment.client}</p>
-                        <p className="text-sm text-muted-foreground">{appointment.service}</p>
+                      <div className="min-w-0">
+                        <p className="font-semibold truncate">{appointment.client}</p>
+                        <p className="text-sm text-muted-foreground truncate">{appointment.service}</p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-medium">{appointment.time}</p>
-                      <p className="text-sm text-muted-foreground">{appointment.barber}</p>
+                    <div className="flex justify-between sm:text-right sm:block pl-13 sm:pl-0">
+                      <div>
+                        <p className="font-medium">{appointment.time}</p>
+                        <p className="text-sm text-muted-foreground truncate">{appointment.barber}</p>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -135,7 +137,7 @@ const Dashboard = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {[
                   { name: "Corte + Barba", count: 45, percentage: 35 },
                   { name: "Corte Clássico", count: 38, percentage: 29 },
@@ -144,9 +146,9 @@ const Dashboard = () => {
                   { name: "Barbear Tradicional", count: 9, percentage: 7 },
                 ].map((service) => (
                   <div key={service.name} className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium">{service.name}</span>
-                      <span className="text-sm text-muted-foreground">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-medium text-sm sm:text-base truncate">{service.name}</span>
+                      <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
                         {service.count} agendamentos
                       </span>
                     </div>
