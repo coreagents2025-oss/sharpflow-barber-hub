@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -19,12 +20,19 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { AddNoteDialog } from './AddNoteDialog';
+import { CreateAppointmentDialog } from './CreateAppointmentDialog';
+import { useAuth } from '@/hooks/useAuth';
 
 interface LeadDetailsPanelProps {
   lead: Lead | null;
 }
 
 export function LeadDetailsPanel({ lead }: LeadDetailsPanelProps) {
+  const [isNoteDialogOpen, setIsNoteDialogOpen] = useState(false);
+  const [isAppointmentDialogOpen, setIsAppointmentDialogOpen] = useState(false);
+  const { user } = useAuth();
+
   // Função para normalizar telefone para WhatsApp Web
   const normalizePhoneForWhatsApp = (phone: string): string => {
     // Remove todos os caracteres não numéricos
@@ -219,11 +227,21 @@ export function LeadDetailsPanel({ lead }: LeadDetailsPanelProps) {
             <CardTitle className="text-base">Ações Rápidas</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            <Button variant="outline" className="w-full justify-start" size="sm">
+            <Button 
+              variant="outline" 
+              className="w-full justify-start" 
+              size="sm"
+              onClick={() => setIsNoteDialogOpen(true)}
+            >
               <StickyNote className="h-4 w-4 mr-2" />
               Adicionar Anotação
             </Button>
-            <Button variant="outline" className="w-full justify-start" size="sm">
+            <Button 
+              variant="outline" 
+              className="w-full justify-start" 
+              size="sm"
+              onClick={() => setIsAppointmentDialogOpen(true)}
+            >
               <Calendar className="h-4 w-4 mr-2" />
               Criar Agendamento
             </Button>
@@ -281,6 +299,24 @@ export function LeadDetailsPanel({ lead }: LeadDetailsPanelProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Dialogs */}
+      <AddNoteDialog
+        open={isNoteDialogOpen}
+        onOpenChange={setIsNoteDialogOpen}
+        leadId={lead.id}
+        leadName={lead.full_name}
+      />
+
+      <CreateAppointmentDialog
+        open={isAppointmentDialogOpen}
+        onOpenChange={setIsAppointmentDialogOpen}
+        leadId={lead.id}
+        leadName={lead.full_name}
+        leadPhone={lead.phone}
+        leadEmail={lead.email}
+        barbershopId={user?.user_metadata?.barbershop_id || null}
+      />
     </ScrollArea>
   );
 }
