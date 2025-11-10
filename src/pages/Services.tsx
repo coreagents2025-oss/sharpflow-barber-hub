@@ -72,17 +72,17 @@ const Services = () => {
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
       <Navbar />
       
-      <main className="container mx-auto px-4 py-12">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
+      <main className="container mx-auto px-4 sm:px-6 py-8 sm:py-12">
+        <div className="text-center mb-8 sm:mb-12">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4">
             Nossos Serviços
           </h1>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+          <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto px-4">
             Oferecemos uma experiência completa de cuidados masculinos com profissionais especializados
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {services.map((service) => (
             <Card 
               key={service.id} 
@@ -101,15 +101,15 @@ const Services = () => {
                 )}
               </div>
               
-              <CardHeader>
-                <CardTitle className="flex items-center justify-between">
-                  {service.name}
-                  <span className="text-accent font-bold">{service.price}</span>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-lg sm:text-xl">
+                  <span className="break-words">{service.name}</span>
+                  <span className="text-accent font-bold whitespace-nowrap">{service.price}</span>
                 </CardTitle>
-                <CardDescription>{service.description}</CardDescription>
+                <CardDescription className="text-sm">{service.description}</CardDescription>
               </CardHeader>
               
-              <CardContent>
+              <CardContent className="p-4 sm:p-6 pt-0">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Clock className="h-4 w-4" />
@@ -119,7 +119,7 @@ const Services = () => {
                 
                 <Button 
                   onClick={() => navigate("/booking")}
-                  className="w-full bg-primary hover:bg-primary/90 transition-all"
+                  className="w-full bg-primary hover:bg-primary/90 transition-all h-11 min-h-[44px]"
                 >
                   <Calendar className="h-4 w-4 mr-2" />
                   Agendar Agora
@@ -129,13 +129,13 @@ const Services = () => {
           ))}
         </div>
 
-        <div className="mt-16 p-8 bg-card rounded-lg border text-center">
-          <h2 className="text-2xl font-bold mb-4">Clube de Assinaturas</h2>
-          <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
+        <div className="mt-12 sm:mt-16 p-6 sm:p-8 bg-card rounded-lg border text-center">
+          <h2 className="text-xl sm:text-2xl font-bold mb-3 sm:mb-4">Clube de Assinaturas</h2>
+          <p className="text-muted-foreground text-sm sm:text-base mb-4 sm:mb-6 max-w-2xl mx-auto px-2">
             Ganhe até 20% de desconto com nosso plano de assinatura mensal. 
             Ideal para quem cuida da aparência regularmente!
           </p>
-          <Button className="bg-accent hover:bg-accent/90">
+          <Button className="bg-accent hover:bg-accent/90 h-11 min-h-[44px]">
             Conhecer Planos
           </Button>
         </div>

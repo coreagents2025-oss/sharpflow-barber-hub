@@ -64,12 +64,12 @@ const Booking = () => {
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
       <Navbar />
       
-      <main className="container mx-auto px-4 py-12">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4">
+      <main className="container mx-auto px-4 sm:px-6 py-8 sm:py-12">
+        <div className="text-center mb-8 sm:mb-12">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-3 sm:mb-4">
             Agende seu Horário
           </h1>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+          <p className="text-muted-foreground text-base sm:text-lg max-w-2xl mx-auto px-4">
             Escolha o melhor horário e profissional para você
           </p>
         </div>
@@ -86,9 +86,9 @@ const Booking = () => {
               </CardDescription>
             </CardHeader>
             
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid md:grid-cols-2 gap-6">
+            <CardContent className="p-4 sm:p-6">
+              <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                   <div className="space-y-2">
                     <Label htmlFor="name">Nome Completo</Label>
                     <Input
@@ -96,6 +96,7 @@ const Booking = () => {
                       placeholder="Digite seu nome"
                       value={clientName}
                       onChange={(e) => setClientName(e.target.value)}
+                      className="h-11"
                     />
                   </div>
                   
@@ -106,6 +107,7 @@ const Booking = () => {
                       placeholder="(00) 00000-0000"
                       value={clientPhone}
                       onChange={(e) => setClientPhone(e.target.value)}
+                      className="h-11"
                     />
                   </div>
                 </div>
@@ -142,7 +144,7 @@ const Booking = () => {
                   </Select>
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                   <div className="space-y-2">
                     <Label>Data</Label>
                     <Calendar
@@ -150,19 +152,19 @@ const Booking = () => {
                       selected={date}
                       onSelect={setDate}
                       disabled={(date) => date < new Date()}
-                      className="rounded-md border"
+                      className="rounded-md border w-full max-w-full pointer-events-auto"
                     />
                   </div>
                   
                   <div className="space-y-2">
                     <Label>Horário Disponível</Label>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                       {timeSlots.map((time) => (
                         <Button
                           key={time}
                           type="button"
                           variant={selectedTime === time ? "default" : "outline"}
-                          className="h-12"
+                          className="h-11 min-h-[44px] text-sm"
                           onClick={() => setSelectedTime(time)}
                         >
                           <Clock className="h-4 w-4 mr-1" />
@@ -175,7 +177,7 @@ const Booking = () => {
 
                 <Button 
                   type="submit" 
-                  className="w-full bg-accent hover:bg-accent/90 text-lg h-12"
+                  className="w-full bg-accent hover:bg-accent/90 text-base sm:text-lg h-12 min-h-[48px]"
                 >
                   Confirmar Agendamento
                 </Button>

@@ -260,34 +260,34 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId }: Booking
 
   return (
     <Sheet open={isOpen} onOpenChange={onClose}>
-      <SheetContent side="bottom" className="h-[90vh] rounded-t-3xl">
-        <SheetHeader>
-          <SheetTitle className="text-2xl">
+      <SheetContent side="bottom" className="h-[85vh] sm:h-[90vh] rounded-t-3xl">
+        <SheetHeader className="px-1">
+          <SheetTitle className="text-xl sm:text-2xl">
             {service ? `Agendar ${service.name}` : 'Agendamento'}
           </SheetTitle>
           {service && (
-            <p className="text-muted-foreground">
+            <p className="text-muted-foreground text-sm sm:text-base">
               R$ {Number(service.price).toFixed(2)} • {service.duration_minutes} min
             </p>
           )}
         </SheetHeader>
 
-        <ScrollArea className="h-[calc(90vh-120px)] mt-6">
-          <div className="space-y-6 pb-28">
+        <ScrollArea className="h-[calc(85vh-120px)] sm:h-[calc(90vh-120px)] mt-4 sm:mt-6">
+          <div className="space-y-4 sm:space-y-6 pb-28 px-1">
             {/* Client Info */}
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <div>
-                <Label htmlFor="name">Nome</Label>
+                <Label htmlFor="name" className="text-sm">Nome</Label>
                 <Input
                   id="name"
                   value={clientName}
                   onChange={(e) => setClientName(e.target.value)}
                   placeholder="Seu nome"
-                  className="mt-1"
+                  className="mt-1 h-11"
                 />
               </div>
               <div>
-                <Label htmlFor="phone">Telefone</Label>
+                <Label htmlFor="phone" className="text-sm">Telefone</Label>
                 <Input
                   id="phone"
                   type="tel"
@@ -308,19 +308,19 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId }: Booking
                   }}
                   placeholder="(00) 00000-0000"
                   maxLength={15}
-                  className="mt-1"
+                  className="mt-1 h-11"
                 />
               </div>
               
               <div>
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email" className="text-sm">Email</Label>
                 <Input
                   id="email"
                   type="email"
                   value={clientEmail}
                   onChange={(e) => setClientEmail(e.target.value)}
                   placeholder="seu@email.com"
-                  className="mt-1"
+                  className="mt-1 h-11"
                 />
               </div>
             </div>
@@ -341,8 +341,8 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId }: Booking
             {/* Time Selection */}
             {selectedDate && (
               <div className="space-y-3">
-                <Label>Escolha o Horário</Label>
-                <div className="grid grid-cols-3 gap-2">
+                <Label className="text-sm">Escolha o Horário</Label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {availableTimes.map((time) => {
                     const isOccupied = occupiedTimes.includes(time);
                     
@@ -353,6 +353,7 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId }: Booking
                         onClick={() => !isOccupied && setSelectedTime(time)}
                         disabled={isOccupied}
                         className={cn(
+                          'h-11 min-h-[44px] text-sm',
                           selectedTime === time && 'bg-accent hover:bg-accent/90',
                           isOccupied && 'opacity-50 cursor-not-allowed line-through'
                         )}
@@ -369,7 +370,7 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId }: Booking
 
             {/* Barber Selection - Agora por último */}
             <div className="space-y-3">
-              <Label>Escolha o Barbeiro</Label>
+              <Label className="text-sm">Escolha o Barbeiro</Label>
               {!selectedDate || !selectedTime ? (
                 <div className="text-center py-6 px-4 bg-muted/50 rounded-lg border border-dashed">
                   <p className="text-sm text-muted-foreground">
@@ -429,11 +430,11 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId }: Booking
           </div>
         </ScrollArea>
 
-        <div className="absolute bottom-0 left-0 right-0 p-4 bg-background border-t">
+        <div className="absolute bottom-0 left-0 right-0 p-3 sm:p-4 bg-background border-t">
           <Button
             onClick={handleSubmit}
             disabled={!isFormValid || isSubmitting}
-            className="w-full bg-accent hover:bg-accent/90 text-accent-foreground"
+            className="w-full bg-accent hover:bg-accent/90 text-accent-foreground h-12 min-h-[48px] text-base"
             size="lg"
           >
             {isSubmitting ? 'Confirmando...' : 'Confirmar Agendamento'}

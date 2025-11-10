@@ -36,10 +36,10 @@ export const ServiceCard = ({ service, showPopularBadge = true, onBookNow }: Ser
         </div>
       )}
       
-      <div className="p-4 space-y-3">
-        <div className="flex items-start justify-between gap-2">
-          <h3 className="font-semibold text-lg leading-tight">{service.name}</h3>
-          <span className="text-lg font-bold text-accent whitespace-nowrap">
+      <div className="p-3 sm:p-4 space-y-3">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+          <h3 className="font-semibold text-base sm:text-lg leading-tight break-words">{service.name}</h3>
+          <span className="text-base sm:text-lg font-bold text-accent whitespace-nowrap">
             R$ {Number(service.price).toFixed(2)}
           </span>
         </div>
@@ -50,7 +50,7 @@ export const ServiceCard = ({ service, showPopularBadge = true, onBookNow }: Ser
           </p>
         )}
         
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-2">
           <div className="flex items-center gap-1 text-sm text-muted-foreground">
             <Clock className="h-4 w-4" />
             <span>{service.duration_minutes} min</span>
@@ -58,7 +58,7 @@ export const ServiceCard = ({ service, showPopularBadge = true, onBookNow }: Ser
           
           <Button 
             onClick={onBookNow}
-            className="bg-accent hover:bg-accent/90 text-accent-foreground"
+            className="bg-accent hover:bg-accent/90 text-accent-foreground w-full sm:w-auto h-11 min-h-[44px] text-sm"
           >
             Agendar Agora
           </Button>

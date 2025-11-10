@@ -61,49 +61,49 @@ const Auth = () => {
       setLoading(false);
     }
   };
-  return <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background flex items-center justify-center p-4">
+  return <div className="min-h-screen bg-gradient-to-br from-background via-secondary/20 to-background flex items-center justify-center p-4 sm:p-6">
       <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <Link to="/" className="inline-flex items-center gap-2 mb-4">
-            <Scissors className="h-8 w-8 text-accent" />
-            <span className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">BarberPLUS</span>
+        <div className="text-center mb-6 sm:mb-8">
+          <Link to="/" className="inline-flex items-center gap-2 mb-3 sm:mb-4">
+            <Scissors className="h-7 w-7 sm:h-8 sm:w-8 text-accent" />
+            <span className="text-2xl sm:text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">BarberPLUS</span>
           </Link>
-          <p className="text-muted-foreground">Gestão profissional para barbearias</p>
+          <p className="text-muted-foreground text-sm sm:text-base">Gestão profissional para barbearias</p>
         </div>
 
         <Tabs defaultValue="login" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 mb-6">
-            <TabsTrigger value="login">Entrar</TabsTrigger>
-            <TabsTrigger value="signup">Cadastrar</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-2 mb-4 sm:mb-6 h-11">
+            <TabsTrigger value="login" className="text-sm sm:text-base">Entrar</TabsTrigger>
+            <TabsTrigger value="signup" className="text-sm sm:text-base">Cadastrar</TabsTrigger>
           </TabsList>
 
           <TabsContent value="login">
             <Card>
-              <CardHeader>
-                <CardTitle>Bem-vindo de volta</CardTitle>
-                <CardDescription>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-xl sm:text-2xl">Bem-vindo de volta</CardTitle>
+                <CardDescription className="text-sm">
                   Entre com suas credenciais para acessar o sistema
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4 sm:p-6 pt-0">
                 <form onSubmit={handleLogin} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="login-email">Email</Label>
+                    <Label htmlFor="login-email" className="text-sm">Email</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input id="login-email" type="email" placeholder="seu@email.com" className="pl-9" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} required />
+                      <Input id="login-email" type="email" placeholder="seu@email.com" className="pl-9 h-11" value={loginEmail} onChange={e => setLoginEmail(e.target.value)} required />
                     </div>
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="login-password">Senha</Label>
+                    <Label htmlFor="login-password" className="text-sm">Senha</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input id="login-password" type="password" placeholder="••••••••" className="pl-9" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} required />
+                      <Input id="login-password" type="password" placeholder="••••••••" className="pl-9 h-11" value={loginPassword} onChange={e => setLoginPassword(e.target.value)} required />
                     </div>
                   </div>
 
-                  <Button type="submit" className="w-full bg-accent hover:bg-accent/90" disabled={loading}>
+                  <Button type="submit" className="w-full bg-accent hover:bg-accent/90 h-11 min-h-[44px]" disabled={loading}>
                     {loading ? 'Entrando...' : 'Entrar'}
                   </Button>
                 </form>
@@ -113,39 +113,39 @@ const Auth = () => {
 
           <TabsContent value="signup">
             <Card>
-              <CardHeader>
-                <CardTitle>Criar conta</CardTitle>
-                <CardDescription>
+              <CardHeader className="p-4 sm:p-6">
+                <CardTitle className="text-xl sm:text-2xl">Criar conta</CardTitle>
+                <CardDescription className="text-sm">
                   Preencha os dados abaixo para começar
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4 sm:p-6 pt-0">
                 <form onSubmit={handleSignup} className="space-y-4">
                   <div className="space-y-2">
-                    <Label htmlFor="signup-name">Nome Completo</Label>
+                    <Label htmlFor="signup-name" className="text-sm">Nome Completo</Label>
                     <div className="relative">
                       <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input id="signup-name" type="text" placeholder="João Silva" className="pl-9" value={signupName} onChange={e => setSignupName(e.target.value)} required />
+                      <Input id="signup-name" type="text" placeholder="João Silva" className="pl-9 h-11" value={signupName} onChange={e => setSignupName(e.target.value)} required />
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
+                    <Label htmlFor="signup-email" className="text-sm">Email</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input id="signup-email" type="email" placeholder="seu@email.com" className="pl-9" value={signupEmail} onChange={e => setSignupEmail(e.target.value)} required />
+                      <Input id="signup-email" type="email" placeholder="seu@email.com" className="pl-9 h-11" value={signupEmail} onChange={e => setSignupEmail(e.target.value)} required />
                     </div>
                   </div>
                   
                   <div className="space-y-2">
-                    <Label htmlFor="signup-password">Senha</Label>
+                    <Label htmlFor="signup-password" className="text-sm">Senha</Label>
                     <div className="relative">
                       <Lock className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                      <Input id="signup-password" type="password" placeholder="••••••••" className="pl-9" value={signupPassword} onChange={e => setSignupPassword(e.target.value)} required minLength={6} />
+                      <Input id="signup-password" type="password" placeholder="••••••••" className="pl-9 h-11" value={signupPassword} onChange={e => setSignupPassword(e.target.value)} required minLength={6} />
                     </div>
                   </div>
 
-                  <Button type="submit" className="w-full bg-accent hover:bg-accent/90" disabled={loading}>
+                  <Button type="submit" className="w-full bg-accent hover:bg-accent/90 h-11 min-h-[44px]" disabled={loading}>
                     {loading ? 'Criando conta...' : 'Criar minha barbearia'}
                   </Button>
                 </form>
