@@ -106,6 +106,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return () => subscription.unsubscribe();
   }, []);
 
+  // Redirecionamento automático baseado no role
+  useEffect(() => {
+    if (!roleLoading && !loading) {
+      if (user && userRole) {
+        const currentPath = window.location.pathname;
+        
+        // Se está na página de auth e está logado, redireciona
+        if (currentPath === '/auth') {
+          if (userRole === 'admin' || userRole === 'barber') {
+            navigate('/pdv', { replace: true });
+          } else {
+            navigate('/', { replace: true });
+          }
+        }
+      }
+    }
+  }, [user, userRole, loading, roleLoading, navigate]);
+
   const signIn = async (email: string, password: string) => {
     try {
       const { error } = await supabase.auth.signInWithPassword({
@@ -116,7 +134,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (error) throw error;
       
       toast.success('Login realizado com sucesso!');
-      navigate('/pdv');
+      // Redirecionamento será feito pelo useEffect no AuthProvider
     } catch (error: any) {
       toast.error(error.message || 'Erro ao fazer login');
       throw error;

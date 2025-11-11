@@ -4,10 +4,20 @@ import { Navbar } from "@/components/Navbar";
 import { PricingCard } from "@/components/PricingCard";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { useEffect } from "react";
 import { Calendar, TrendingUp, Users, Clock, Star, Shield, Zap, CheckCircle2, ArrowRight, Scissors } from "lucide-react";
 import heroImage from "@/assets/hero-barbershop.jpg";
 const Index = () => {
   const navigate = useNavigate();
+  const { user, userRole, loading } = useAuth();
+  
+  // Redirecionar admin/barber para o painel
+  useEffect(() => {
+    if (!loading && user && (userRole === 'admin' || userRole === 'barber')) {
+      navigate('/pdv', { replace: true });
+    }
+  }, [user, userRole, loading, navigate]);
   const features = [{
     icon: Calendar,
     title: "Agendamento 24/7",
