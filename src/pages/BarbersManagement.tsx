@@ -217,7 +217,7 @@ const BarbersManagement = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {barbers.map((barber) => (
               <Card key={barber.id} className="overflow-hidden">
                 <CardHeader className="pb-4">
@@ -265,11 +265,12 @@ const BarbersManagement = () => {
                       )}
                     </Badge>
                     
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <Button
                         size="sm"
                         variant="outline"
                         onClick={() => handleEdit(barber)}
+                        className="touch-target"
                       >
                         <Pencil className="h-4 w-4" />
                       </Button>
@@ -278,6 +279,7 @@ const BarbersManagement = () => {
                         size="sm"
                         variant={barber.is_available ? 'secondary' : 'default'}
                         onClick={() => toggleAvailability(barber)}
+                        className="flex-1 touch-target"
                       >
                         {barber.is_available ? 'Desativar' : 'Ativar'}
                       </Button>
@@ -291,7 +293,7 @@ const BarbersManagement = () => {
 
         {/* Add/Edit Dialog */}
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="max-w-[95vw] sm:max-w-[500px]">
             <DialogHeader>
               <DialogTitle>{editingBarber ? 'Editar Barbeiro' : 'Adicionar Barbeiro'}</DialogTitle>
               <DialogDescription>

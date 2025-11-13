@@ -224,7 +224,7 @@ const ScheduleManagement = () => {
           <p className="text-muted-foreground">Configure horários, barbeiros e disponibilidade</p>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Calendar & Date Selection */}
           <Card className="lg:col-span-1">
             <CardHeader>
@@ -236,12 +236,12 @@ const ScheduleManagement = () => {
                 Escolha o dia para configurar
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-3 sm:p-6">
               <Calendar
                 mode="single"
                 selected={selectedDate}
                 onSelect={(date) => date && setSelectedDate(date)}
-                className="rounded-md border"
+                className="rounded-md border w-full max-w-full pointer-events-auto"
                 disabled={(date) => {
                   const today = new Date();
                   today.setHours(0, 0, 0, 0);
@@ -354,8 +354,8 @@ const ScheduleManagement = () => {
                 Bloqueie horários específicos se necessário
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-2 max-h-96 overflow-y-auto">
+            <CardContent className="p-3 sm:p-6">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 max-h-96 overflow-y-auto">
                 {timeSlots.map((time) => {
                   const isBlocked = blockedSlots.includes(time);
                   const isWithinHours = time >= workingHours.start && time <= workingHours.end;
@@ -367,7 +367,7 @@ const ScheduleManagement = () => {
                       size="sm"
                       onClick={() => toggleTimeSlot(time)}
                       disabled={!isWithinHours}
-                      className="relative"
+                      className="relative touch-target text-xs sm:text-sm"
                     >
                       {time}
                       {isBlocked && <X className="h-3 w-3 ml-1" />}

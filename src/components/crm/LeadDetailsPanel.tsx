@@ -157,8 +157,8 @@ export function LeadDetailsPanel({ lead }: LeadDetailsPanelProps) {
           <CardHeader>
             <CardTitle className="text-base">Métricas do Cliente</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
-            <div className="grid grid-cols-2 gap-4">
+          <CardContent className="space-y-3 p-4 sm:p-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div>
                 <p className="text-xs text-muted-foreground mb-1">Total Gasto</p>
                 <p className="text-xl font-bold text-primary">
@@ -173,7 +173,7 @@ export function LeadDetailsPanel({ lead }: LeadDetailsPanelProps) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               <div className="flex items-center gap-2">
                 <div className="p-2 rounded-lg bg-green-500/10">
                   <CheckCircle className="h-4 w-4 text-green-600" />
@@ -226,10 +226,10 @@ export function LeadDetailsPanel({ lead }: LeadDetailsPanelProps) {
           <CardHeader>
             <CardTitle className="text-base">Ações Rápidas</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-2">
+          <CardContent className="space-y-2 p-4 sm:p-6">
             <Button 
               variant="outline" 
-              className="w-full justify-start" 
+              className="w-full justify-start touch-target" 
               size="sm"
               onClick={() => setIsNoteDialogOpen(true)}
             >
@@ -238,17 +238,17 @@ export function LeadDetailsPanel({ lead }: LeadDetailsPanelProps) {
             </Button>
             <Button 
               variant="outline" 
-              className="w-full justify-start" 
+              className="w-full justify-start touch-target" 
               size="sm"
               onClick={() => setIsAppointmentDialogOpen(true)}
             >
               <Calendar className="h-4 w-4 mr-2" />
               Criar Agendamento
             </Button>
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Button 
                 variant="outline" 
-                className="flex-1 justify-start" 
+                className="flex-1 justify-start touch-target" 
                 size="sm"
                 asChild
               >
@@ -272,15 +272,16 @@ export function LeadDetailsPanel({ lead }: LeadDetailsPanelProps) {
                 size="sm"
                 onClick={handleCopyWhatsAppLink}
                 title="Copiar link do WhatsApp"
+                className="touch-target"
               >
                 📋
               </Button>
             </div>
-            <Button variant="outline" className="w-full justify-start" size="sm">
+            <Button variant="outline" className="w-full justify-start touch-target" size="sm">
               <Tag className="h-4 w-4 mr-2" />
               Gerenciar Tags
             </Button>
-            <Button variant="outline" className="w-full justify-start text-destructive" size="sm">
+            <Button variant="outline" className="w-full justify-start text-destructive touch-target" size="sm">
               <Archive className="h-4 w-4 mr-2" />
               Arquivar Lead
             </Button>

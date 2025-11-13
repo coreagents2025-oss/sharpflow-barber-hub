@@ -461,26 +461,31 @@ const Settings = () => {
         </div>
 
         <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5">
-            <TabsTrigger value="profile" className="flex items-center gap-2">
-              <User className="h-4 w-4" />
-              Perfil
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+            <TabsTrigger value="profile" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+              <User className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Perfil</span>
+              <span className="sm:hidden">👤</span>
             </TabsTrigger>
-            <TabsTrigger value="barbershop" className="flex items-center gap-2">
-              <Building2 className="h-4 w-4" />
-              Barbearia
+            <TabsTrigger value="barbershop" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+              <Building2 className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Barbearia</span>
+              <span className="sm:hidden">🏢</span>
             </TabsTrigger>
-            <TabsTrigger value="domain" className="flex items-center gap-2">
-              <Globe className="h-4 w-4" />
-              Domínio & Emails
+            <TabsTrigger value="domain" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+              <Globe className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Domínio</span>
+              <span className="sm:hidden">🌐</span>
             </TabsTrigger>
-            <TabsTrigger value="notifications" className="flex items-center gap-2">
-              <Bell className="h-4 w-4" />
-              Notificações
+            <TabsTrigger value="notifications" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+              <Bell className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Notificações</span>
+              <span className="sm:hidden">🔔</span>
             </TabsTrigger>
-            <TabsTrigger value="security" className="flex items-center gap-2">
-              <Shield className="h-4 w-4" />
-              Segurança
+            <TabsTrigger value="security" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
+              <Shield className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Segurança</span>
+              <span className="sm:hidden">🔒</span>
             </TabsTrigger>
           </TabsList>
 

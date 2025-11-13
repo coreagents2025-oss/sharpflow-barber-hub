@@ -208,7 +208,7 @@ const ServicesManagement = () => {
                 Novo Serviço
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-[95vw] sm:max-w-2xl">
               <DialogHeader>
                 <DialogTitle>
                   {editingService ? 'Editar Serviço' : 'Novo Serviço'}
@@ -330,7 +330,7 @@ const ServicesManagement = () => {
           </Dialog>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {services.map((service) => (
             <Card key={service.id} className={!service.is_active ? 'opacity-60' : ''}>
               <CardHeader>
@@ -366,12 +366,12 @@ const ServicesManagement = () => {
                     <span>{service.duration_minutes} min</span>
                   </div>
                   
-                  <div className="flex gap-2 pt-2">
+                  <div className="flex flex-wrap gap-2 pt-2">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleEdit(service)}
-                      className="flex-1"
+                      className="flex-1 min-w-[100px] touch-target"
                     >
                       <Edit className="h-4 w-4 mr-1" />
                       Editar
@@ -381,7 +381,7 @@ const ServicesManagement = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => toggleActive(service)}
-                      className="flex-1"
+                      className="flex-1 min-w-[100px] touch-target"
                     >
                       {service.is_active ? 'Desativar' : 'Ativar'}
                     </Button>
@@ -390,7 +390,7 @@ const ServicesManagement = () => {
                       variant="outline"
                       size="sm"
                       onClick={() => handleDelete(service.id)}
-                      className="text-destructive hover:text-destructive"
+                      className="text-destructive hover:text-destructive touch-target"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>

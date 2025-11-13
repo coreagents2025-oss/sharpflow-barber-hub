@@ -147,13 +147,15 @@ const Booking = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                   <div className="space-y-2">
                     <Label>Data</Label>
-                    <Calendar
-                      mode="single"
-                      selected={date}
-                      onSelect={setDate}
-                      disabled={(date) => date < new Date()}
-                      className="rounded-md border w-full max-w-full pointer-events-auto"
-                    />
+                    <div className="w-full max-w-sm mx-auto">
+                      <Calendar
+                        mode="single"
+                        selected={date}
+                        onSelect={setDate}
+                        disabled={(date) => date < new Date()}
+                        className="rounded-md border w-full pointer-events-auto"
+                      />
+                    </div>
                   </div>
                   
                   <div className="space-y-2">
