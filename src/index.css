@@ -113,4 +113,32 @@ All colors MUST be HSL.
     min-height: 44px;
     min-width: 44px;
   }
+
+  /* Scrollbar customizada para listas horizontais */
+  .scrollbar-thin::-webkit-scrollbar {
+    height: 4px;
+  }
+  
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  
+  .scrollbar-thumb-gray-300::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted));
+    border-radius: 2px;
+  }
+  
+  .dark .scrollbar-thumb-gray-600::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.3);
+  }
+  
+  /* Para Firefox */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted)) transparent;
+  }
+  
+  .dark .scrollbar-thin {
+    scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+  }
 }
