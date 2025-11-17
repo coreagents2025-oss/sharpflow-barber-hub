@@ -625,39 +625,42 @@ const PDV = () => {
                     {filteredAppointments.length} agendamento(s)
                   </CardDescription>
                 </div>
-                <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0 -mx-4 px-4 sm:mx-0 sm:px-0">
-                  <Button 
-                    variant={filterStatus === 'all' ? 'default' : 'outline'} 
-                    size="sm"
-                    onClick={() => setFilterStatus('all')}
-                    className="touch-target whitespace-nowrap"
-                  >
-                    Todos
-                  </Button>
-                  <Button 
-                    variant={filterStatus === 'scheduled' ? 'default' : 'outline'} 
-                    size="sm"
-                    onClick={() => setFilterStatus('scheduled')}
-                    className="touch-target whitespace-nowrap"
-                  >
-                    Pendentes
-                  </Button>
-                  <Button 
-                    variant={filterStatus === 'in_progress' ? 'default' : 'outline'} 
-                    size="sm"
-                    onClick={() => setFilterStatus('in_progress')}
-                    className="touch-target whitespace-nowrap"
-                  >
-                    Atendendo
-                  </Button>
-                  <Button 
-                    variant={filterStatus === 'completed' ? 'default' : 'outline'} 
-                    size="sm"
-                    onClick={() => setFilterStatus('completed')}
-                    className="touch-target whitespace-nowrap"
-                  >
-                    Finalizados
-                  </Button>
+                <div className="relative">
+                  <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 snap-x snap-mandatory">
+                    <Button 
+                      variant={filterStatus === 'all' ? 'default' : 'outline'} 
+                      size="sm"
+                      onClick={() => setFilterStatus('all')}
+                      className="touch-target whitespace-nowrap flex-shrink-0 snap-start min-w-[80px] text-xs sm:text-sm"
+                    >
+                      Todos
+                    </Button>
+                    <Button 
+                      variant={filterStatus === 'scheduled' ? 'default' : 'outline'} 
+                      size="sm"
+                      onClick={() => setFilterStatus('scheduled')}
+                      className="touch-target whitespace-nowrap flex-shrink-0 snap-start min-w-[90px] text-xs sm:text-sm"
+                    >
+                      Pendentes
+                    </Button>
+                    <Button 
+                      variant={filterStatus === 'in_progress' ? 'default' : 'outline'} 
+                      size="sm"
+                      onClick={() => setFilterStatus('in_progress')}
+                      className="touch-target whitespace-nowrap flex-shrink-0 snap-start min-w-[100px] text-xs sm:text-sm"
+                    >
+                      Atendendo
+                    </Button>
+                    <Button 
+                      variant={filterStatus === 'completed' ? 'default' : 'outline'} 
+                      size="sm"
+                      onClick={() => setFilterStatus('completed')}
+                      className="touch-target whitespace-nowrap flex-shrink-0 snap-start min-w-[100px] text-xs sm:text-sm"
+                    >
+                      Finalizados
+                    </Button>
+                  </div>
+                  <div className="absolute -right-2 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none sm:hidden" />
                 </div>
               </div>
             </CardHeader>
@@ -674,83 +677,95 @@ const PDV = () => {
                       key={apt.id}
                       className="p-3 sm:p-4 rounded-lg border bg-card"
                     >
-                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium flex flex-wrap items-center gap-2 mb-2">
-                            <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                            <span className="truncate">{apt.client_name || 'Cliente'}</span>
+                      <div className="flex flex-col gap-3">
+                        {/* Header: Nome e Telefone */}
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <User className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
+                              <span className="font-medium text-xs sm:text-sm truncate">{apt.client_name || 'Cliente'}</span>
+                            </div>
                             {apt.client_phone && (
-                              <span className="text-sm text-muted-foreground whitespace-nowrap">
-                                • {apt.client_phone}
+                              <span className="text-[10px] sm:text-xs text-muted-foreground truncate block">
+                                {apt.client_phone}
                               </span>
                             )}
                           </div>
                           
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-muted-foreground">
-                            <div className="flex items-center gap-1">
-                              <Scissors className="h-3 w-3 flex-shrink-0" />
-                              <span className="truncate">{apt.services?.name || 'Serviço'}</span>
+                          {/* Horário e Status - Inline Mobile */}
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            <div className="font-bold text-sm sm:text-base text-accent whitespace-nowrap">
+                              {new Date(apt.scheduled_at).toLocaleTimeString('pt-BR', { 
+                                hour: '2-digit', 
+                                minute: '2-digit' 
+                              })}
                             </div>
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-3 w-3 flex-shrink-0" />
-                              {new Date(apt.scheduled_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <User className="h-3 w-3 flex-shrink-0" />
-                              <span className="truncate">{apt.barbers?.name || 'N/A'}</span>
-                            </div>
-                            <Badge className={getStatusColor(apt.status)}>
+                            <Badge className={`${getStatusColor(apt.status)} text-[10px] sm:text-xs`}>
                               {getStatusLabel(apt.status)}
                             </Badge>
                           </div>
                         </div>
+
+                        {/* Info: Serviço e Barbeiro */}
+                        <div className="grid grid-cols-1 gap-1 text-[10px] sm:text-xs text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Scissors className="h-3 w-3 flex-shrink-0" />
+                            <span className="truncate">{apt.services?.name || 'Serviço'}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <User className="h-3 w-3 flex-shrink-0" />
+                            <span className="truncate">Barbeiro: {apt.barbers?.name || 'N/A'}</span>
+                          </div>
+                        </div>
                         
                         {/* Botões de Ação */}
-                        <div className="flex sm:flex-col gap-2 flex-wrap w-full sm:w-auto">
-                          {apt.status === 'scheduled' && (
-                            <>
+                        {(apt.status === 'scheduled' || apt.status === 'in_progress') && (
+                          <div className="flex gap-2 flex-wrap pt-2 border-t">
+                            {apt.status === 'scheduled' && (
+                              <>
+                                <Button 
+                                  size="sm" 
+                                  variant="default"
+                                  onClick={() => handleConfirmPresence(apt.id)}
+                                  className="touch-target flex-1 sm:flex-none whitespace-nowrap text-xs"
+                                >
+                                  <UserCheck className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                                  Presente
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline"
+                                  onClick={() => handleNoShow(apt.id)}
+                                  className="touch-target flex-1 sm:flex-none whitespace-nowrap text-xs"
+                                >
+                                  <UserX className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                                  Faltou
+                                </Button>
+                              </>
+                            )}
+                            {apt.status === 'in_progress' && (
                               <Button 
-                                size="sm" 
+                                size="sm"
                                 variant="default"
-                                onClick={() => handleConfirmPresence(apt.id)}
-                                className="touch-target flex-1 sm:flex-none whitespace-nowrap"
+                                onClick={() => handleOpenPaymentModal({
+                                  id: apt.id,
+                                  unified_client_id: apt.unified_client_id,
+                                  client_type: apt.client_type,
+                                  barbershop_id: apt.barbershop_id,
+                                  services: {
+                                    name: apt.services?.name || 'Serviço',
+                                    price: apt.services?.price || 50,
+                                  },
+                                  client_name: apt.client_name,
+                                })}
+                                className="touch-target w-full whitespace-nowrap text-xs"
                               >
-                                <UserCheck className="h-4 w-4 mr-1" />
-                                Presente
+                                <CreditCard className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                                Finalizar
                               </Button>
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                onClick={() => handleNoShow(apt.id)}
-                                className="touch-target flex-1 sm:flex-none whitespace-nowrap"
-                              >
-                                <UserX className="h-4 w-4 mr-1" />
-                                Faltou
-                              </Button>
-                            </>
-                          )}
-                          {apt.status === 'in_progress' && (
-                            <Button 
-                              size="sm"
-                              variant="default"
-                              onClick={() => handleOpenPaymentModal({
-                                id: apt.id,
-                                unified_client_id: apt.unified_client_id,
-                                client_type: apt.client_type,
-                                barbershop_id: apt.barbershop_id,
-                                services: {
-                                  name: apt.services?.name || 'Serviço',
-                                  price: apt.services?.price || 50,
-                                },
-                                client_name: apt.client_name,
-                              })}
-                              className="touch-target w-full sm:w-auto whitespace-nowrap"
-                            >
-                              <CreditCard className="h-4 w-4 mr-1" />
-                              Finalizar
-                            </Button>
-                          )}
-                        </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))
@@ -761,12 +776,14 @@ const PDV = () => {
 
           {/* Histórico de Pagamentos */}
           <Card className="lg:col-span-1">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
-                <DollarSign className="h-5 w-5 text-accent flex-shrink-0" />
-                <span>Pagamentos Hoje</span>
-              </CardTitle>
-              <CardDescription className="text-sm sm:text-base">
+            <CardHeader className="pb-3 p-3 sm:p-6">
+              <div className="flex items-start justify-between gap-2">
+                <CardTitle className="flex items-center gap-2 text-sm sm:text-base lg:text-lg">
+                  <DollarSign className="h-4 w-4 sm:h-5 sm:w-5 text-accent flex-shrink-0" />
+                  <span className="leading-tight">Pagamentos<br className="sm:hidden" /> Hoje</span>
+                </CardTitle>
+              </div>
+              <CardDescription className="text-xs sm:text-sm font-semibold text-accent mt-2">
                 Total: R$ {dailyTotal.toFixed(2)}
               </CardDescription>
             </CardHeader>
@@ -780,21 +797,42 @@ const PDV = () => {
                 dailyPayments.map((payment) => (
                   <div
                     key={payment.id}
-                    className="p-2.5 sm:p-3 rounded-lg border bg-card"
+                    className="p-2 sm:p-3 rounded-lg border bg-card"
                   >
-                    <div className="flex justify-between items-start gap-2 mb-1">
-                      <span className="font-medium text-sm sm:text-base whitespace-nowrap">
-                        R$ {Number(payment.amount).toFixed(2)}
-                      </span>
-                      <Badge variant="outline" className="text-xs capitalize whitespace-nowrap flex-shrink-0">
-                        {payment.payment_method === 'cash' && 'Dinheiro'}
-                        {payment.payment_method === 'pix' && 'Pix'}
-                        {payment.payment_method === 'debit' && 'Débito'}
-                        {payment.payment_method === 'credit' && 'Crédito'}
-                      </Badge>
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {new Date(payment.created_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                    <div className="flex items-start justify-between gap-2">
+                      {/* Info do Cliente/Serviço */}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-xs sm:text-sm truncate">
+                          {payment.appointments?.client_name || 'Cliente'}
+                        </p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
+                          {payment.appointments?.services?.name || 'Serviço'}
+                        </p>
+                        <div className="flex items-center gap-1 mt-1">
+                          <Badge 
+                            variant="secondary" 
+                            className="text-[9px] sm:text-xs px-1 py-0 h-auto"
+                          >
+                            {payment.payment_method === 'cash' && '💵 Dinheiro'}
+                            {payment.payment_method === 'credit' && '💳 Crédito'}
+                            {payment.payment_method === 'debit' && '💳 Débito'}
+                            {payment.payment_method === 'pix' && '📱 PIX'}
+                          </Badge>
+                        </div>
+                      </div>
+                      
+                      {/* Valor e Horário */}
+                      <div className="flex-shrink-0 text-right">
+                        <p className="font-bold text-sm sm:text-base text-accent">
+                          R$ {Number(payment.amount).toFixed(2)}
+                        </p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground whitespace-nowrap">
+                          {new Date(payment.created_at).toLocaleTimeString('pt-BR', { 
+                            hour: '2-digit', 
+                            minute: '2-digit' 
+                          })}
+                        </p>
+                      </div>
                     </div>
                   </div>
                 ))
