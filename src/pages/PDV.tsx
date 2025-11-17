@@ -618,18 +618,19 @@ const PDV = () => {
           {/* All Today's Appointments */}
           <Card className="lg:col-span-2">
             <CardHeader>
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
                 <div>
                   <CardTitle>Todos os Agendamentos de Hoje</CardTitle>
                   <CardDescription>
                     {filteredAppointments.length} agendamento(s)
                   </CardDescription>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0 -mx-4 px-4 sm:mx-0 sm:px-0">
                   <Button 
                     variant={filterStatus === 'all' ? 'default' : 'outline'} 
                     size="sm"
                     onClick={() => setFilterStatus('all')}
+                    className="touch-target whitespace-nowrap"
                   >
                     Todos
                   </Button>
@@ -637,6 +638,7 @@ const PDV = () => {
                     variant={filterStatus === 'scheduled' ? 'default' : 'outline'} 
                     size="sm"
                     onClick={() => setFilterStatus('scheduled')}
+                    className="touch-target whitespace-nowrap"
                   >
                     Pendentes
                   </Button>
@@ -644,6 +646,7 @@ const PDV = () => {
                     variant={filterStatus === 'in_progress' ? 'default' : 'outline'} 
                     size="sm"
                     onClick={() => setFilterStatus('in_progress')}
+                    className="touch-target whitespace-nowrap"
                   >
                     Atendendo
                   </Button>
@@ -651,6 +654,7 @@ const PDV = () => {
                     variant={filterStatus === 'completed' ? 'default' : 'outline'} 
                     size="sm"
                     onClick={() => setFilterStatus('completed')}
+                    className="touch-target whitespace-nowrap"
                   >
                     Finalizados
                   </Button>
@@ -668,32 +672,32 @@ const PDV = () => {
                   filteredAppointments.map((apt) => (
                     <div
                       key={apt.id}
-                      className="p-4 rounded-lg border bg-card"
+                      className="p-3 sm:p-4 rounded-lg border bg-card"
                     >
-                      <div className="flex justify-between items-start gap-4">
-                        <div className="flex-1">
-                          <div className="font-medium flex items-center gap-2 mb-2">
-                            <User className="h-4 w-4 text-muted-foreground" />
-                            {apt.client_name || 'Cliente'}
+                      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium flex flex-wrap items-center gap-2 mb-2">
+                            <User className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                            <span className="truncate">{apt.client_name || 'Cliente'}</span>
                             {apt.client_phone && (
-                              <span className="text-sm text-muted-foreground">
+                              <span className="text-sm text-muted-foreground whitespace-nowrap">
                                 • {apt.client_phone}
                               </span>
                             )}
                           </div>
                           
-                          <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground">
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm text-muted-foreground">
                             <div className="flex items-center gap-1">
-                              <Scissors className="h-3 w-3" />
-                              {apt.services?.name || 'Serviço'}
+                              <Scissors className="h-3 w-3 flex-shrink-0" />
+                              <span className="truncate">{apt.services?.name || 'Serviço'}</span>
                             </div>
                             <div className="flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
+                              <Clock className="h-3 w-3 flex-shrink-0" />
                               {new Date(apt.scheduled_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                             </div>
                             <div className="flex items-center gap-1">
-                              <User className="h-3 w-3" />
-                              {apt.barbers?.name || 'N/A'}
+                              <User className="h-3 w-3 flex-shrink-0" />
+                              <span className="truncate">{apt.barbers?.name || 'N/A'}</span>
                             </div>
                             <Badge className={getStatusColor(apt.status)}>
                               {getStatusLabel(apt.status)}
@@ -702,21 +706,23 @@ const PDV = () => {
                         </div>
                         
                         {/* Botões de Ação */}
-                        <div className="flex flex-col gap-2">
+                        <div className="flex sm:flex-col gap-2 flex-wrap w-full sm:w-auto">
                           {apt.status === 'scheduled' && (
                             <>
                               <Button 
                                 size="sm" 
-                                variant="outline"
+                                variant="default"
                                 onClick={() => handleConfirmPresence(apt.id)}
+                                className="touch-target flex-1 sm:flex-none whitespace-nowrap"
                               >
                                 <UserCheck className="h-4 w-4 mr-1" />
-                                Confirmar Presença
+                                Presente
                               </Button>
                               <Button 
                                 size="sm" 
                                 variant="outline"
                                 onClick={() => handleNoShow(apt.id)}
+                                className="touch-target flex-1 sm:flex-none whitespace-nowrap"
                               >
                                 <UserX className="h-4 w-4 mr-1" />
                                 Faltou
@@ -726,6 +732,7 @@ const PDV = () => {
                           {apt.status === 'in_progress' && (
                             <Button 
                               size="sm"
+                              variant="default"
                               onClick={() => handleOpenPaymentModal({
                                 id: apt.id,
                                 unified_client_id: apt.unified_client_id,
@@ -737,9 +744,10 @@ const PDV = () => {
                                 },
                                 client_name: apt.client_name,
                               })}
+                              className="touch-target w-full sm:w-auto whitespace-nowrap"
                             >
                               <CreditCard className="h-4 w-4 mr-1" />
-                              Finalizar e Pagar
+                              Finalizar
                             </Button>
                           )}
                         </div>
@@ -754,31 +762,31 @@ const PDV = () => {
           {/* Histórico de Pagamentos */}
           <Card className="lg:col-span-1">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5 text-accent" />
-                Pagamentos Hoje
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+                <DollarSign className="h-5 w-5 text-accent flex-shrink-0" />
+                <span>Pagamentos Hoje</span>
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm sm:text-base">
                 Total: R$ {dailyTotal.toFixed(2)}
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-2">
               {dailyPayments.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <AlertCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                  <p>Nenhum pagamento hoje</p>
+                  <p className="text-sm">Nenhum pagamento hoje</p>
                 </div>
               ) : (
                 dailyPayments.map((payment) => (
                   <div
                     key={payment.id}
-                    className="p-3 rounded-lg border bg-card"
+                    className="p-2.5 sm:p-3 rounded-lg border bg-card"
                   >
-                    <div className="flex justify-between items-start mb-1">
-                      <span className="font-medium text-sm">
+                    <div className="flex justify-between items-start gap-2 mb-1">
+                      <span className="font-medium text-sm sm:text-base whitespace-nowrap">
                         R$ {Number(payment.amount).toFixed(2)}
                       </span>
-                      <Badge variant="outline" className="text-xs capitalize">
+                      <Badge variant="outline" className="text-xs capitalize whitespace-nowrap flex-shrink-0">
                         {payment.payment_method === 'cash' && 'Dinheiro'}
                         {payment.payment_method === 'pix' && 'Pix'}
                         {payment.payment_method === 'debit' && 'Débito'}
