@@ -614,7 +614,7 @@ const PDV = () => {
           </Card>
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-6 mt-6">
+        <div className="grid lg:grid-cols-3 gap-4 sm:gap-6 mt-6">
           {/* All Today's Appointments */}
           <Card className="lg:col-span-2">
             <CardHeader>
@@ -660,7 +660,7 @@ const PDV = () => {
                       Finalizados
                     </Button>
                   </div>
-                  <div className="absolute -right-2 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none sm:hidden" />
+                  <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none sm:hidden" />
                 </div>
               </div>
             </CardHeader>
@@ -775,7 +775,7 @@ const PDV = () => {
           </Card>
 
           {/* Histórico de Pagamentos */}
-          <Card className="lg:col-span-1">
+          <Card className="lg:col-span-1 min-w-0">
             <CardHeader className="pb-3 p-3 sm:p-6">
               <div className="flex items-start justify-between gap-2">
                 <CardTitle className="flex items-center gap-2 text-sm sm:text-base lg:text-lg">
@@ -787,7 +787,7 @@ const PDV = () => {
                 Total: R$ {dailyTotal.toFixed(2)}
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-2">
+            <CardContent className="space-y-2 px-3 pb-3 sm:px-6 sm:pb-6">
               {dailyPayments.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <AlertCircle className="h-12 w-12 mx-auto mb-2 opacity-50" />
@@ -799,7 +799,7 @@ const PDV = () => {
                     key={payment.id}
                     className="p-2 sm:p-3 rounded-lg border bg-card"
                   >
-                    <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start justify-between gap-2 min-w-0">
                       {/* Info do Cliente/Serviço */}
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-xs sm:text-sm truncate">
@@ -826,7 +826,7 @@ const PDV = () => {
                         <p className="font-bold text-sm sm:text-base text-accent">
                           R$ {Number(payment.amount).toFixed(2)}
                         </p>
-                        <p className="text-[10px] sm:text-xs text-muted-foreground whitespace-nowrap">
+                        <p className="text-[10px] sm:text-xs text-muted-foreground whitespace-nowrap sm:whitespace-normal">
                           {new Date(payment.created_at).toLocaleTimeString('pt-BR', { 
                             hour: '2-digit', 
                             minute: '2-digit' 
