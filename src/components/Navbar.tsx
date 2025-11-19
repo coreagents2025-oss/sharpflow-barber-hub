@@ -1,6 +1,6 @@
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Calendar, Monitor, Scissors, Users, LogOut, Settings, Layout, ClipboardList, MessageCircle, Menu } from "lucide-react";
+import { Calendar, Monitor, Scissors, Users, LogOut, Settings, Layout, ClipboardList, MessageCircle, Menu, DollarSign } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -66,6 +66,12 @@ export const Navbar = () => {
                   <Button variant={isActive("/crm") || isActive("/messages") ? "default" : "ghost"} size="sm" className="transition-all">
                     <MessageCircle className="h-4 w-4 mr-2" />
                     CRM
+                  </Button>
+                </Link>
+                <Link to="/financial">
+                  <Button variant={isActive("/financial") ? "default" : "ghost"} size="sm" className="transition-all">
+                    <DollarSign className="h-4 w-4 mr-2" />
+                    Financeiro
                   </Button>
                 </Link>
               </> :

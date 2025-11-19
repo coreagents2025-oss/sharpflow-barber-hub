@@ -70,6 +70,22 @@ export const PaymentModal = ({ isOpen, onClose, appointment, onSuccess }: Paymen
 
       if (appointmentError) throw appointmentError;
 
+      // 3. Registrar no fluxo de caixa
+      const { data: user } = await supabase.auth.getUser();
+      
+      await supabase.from('cash_flow').insert({
+        barbershop_id: appointment.barbershop_id,
+        type: 'income',
+        category: 'service',
+        amount: totalAmount,
+        description: `Pagamento - ${appointment.service.name} - ${appointment.client.full_name}`,
+        reference_id: appointment.id,
+        reference_type: 'appointment',
+        payment_method: paymentMethod,
+        transaction_date: new Date().toISOString().split('T')[0],
+        created_by: user.user?.id
+      });
+
       toast.success('Pagamento registrado com sucesso!');
       onSuccess();
       onClose();
