@@ -1737,6 +1737,7 @@ export type Database = {
     }
     Functions: {
       auto_complete_old_appointments: { Args: never; Returns: undefined }
+      auto_mark_expired_appointments: { Args: never; Returns: undefined }
       calculate_barber_commission: {
         Args: { _barber_id: string; _end_date: string; _start_date: string }
         Returns: {
