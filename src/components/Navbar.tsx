@@ -137,6 +137,12 @@ export const Navbar = () => {
                           CRM
                         </Button>
                       </Link>
+                      <Link to="/financial" onClick={() => setMobileMenuOpen(false)}>
+                        <Button variant={isActive("/financial") ? "default" : "ghost"} size="sm" className="w-full justify-start touch-target text-sm">
+                          <DollarSign className="h-4 w-4 mr-3" />
+                          Financeiro
+                        </Button>
+                      </Link>
                     </>
                   ) : (
                     <>
