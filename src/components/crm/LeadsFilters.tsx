@@ -7,8 +7,8 @@ import { Badge } from '@/components/ui/badge';
 interface LeadsFiltersProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  statusFilter: LeadStatus | 'all' | 'needs_contact' | 'at_risk' | 'inactive';
-  onStatusFilterChange: (status: LeadStatus | 'all' | 'needs_contact' | 'at_risk' | 'inactive') => void;
+  statusFilter: LeadStatus | 'all' | 'needs_contact' | 'at_risk' | 'inactive' | 'archived';
+  onStatusFilterChange: (status: LeadStatus | 'all' | 'needs_contact' | 'at_risk' | 'inactive' | 'archived') => void;
 }
 
 export function LeadsFilters({
@@ -17,7 +17,7 @@ export function LeadsFilters({
   statusFilter,
   onStatusFilterChange,
 }: LeadsFiltersProps) {
-  const statuses: Array<{ value: LeadStatus | 'all' | 'needs_contact' | 'at_risk' | 'inactive'; label: string; variant?: 'default' | 'outline' | 'destructive' | 'secondary' }> = [
+  const statuses: Array<{ value: LeadStatus | 'all' | 'needs_contact' | 'at_risk' | 'inactive' | 'archived'; label: string; variant?: 'default' | 'outline' | 'destructive' | 'secondary' }> = [
     { value: 'all', label: 'Todos' },
     { value: 'new', label: 'Novos' },
     { value: 'contacted', label: 'Contatados' },
@@ -27,6 +27,7 @@ export function LeadsFilters({
     { value: 'needs_contact', label: '⚠️ Precisa Contato', variant: 'destructive' },
     { value: 'at_risk', label: '⚠️ Risco de Perda', variant: 'destructive' },
     { value: 'inactive', label: '⚠️ Inativos', variant: 'secondary' },
+    { value: 'archived', label: '📦 Arquivados', variant: 'secondary' },
   ];
 
   return (

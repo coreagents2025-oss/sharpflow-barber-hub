@@ -909,8 +909,41 @@ export type Database = {
           },
         ]
       }
+      lead_tags: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          lead_id: string
+          tag: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lead_id: string
+          tag: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          lead_id?: string
+          tag?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_tags_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
+          archived_at: string | null
           barbershop_id: string
           created_at: string | null
           email: string | null
@@ -923,6 +956,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          archived_at?: string | null
           barbershop_id: string
           created_at?: string | null
           email?: string | null
@@ -935,6 +969,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          archived_at?: string | null
           barbershop_id?: string
           created_at?: string | null
           email?: string | null
