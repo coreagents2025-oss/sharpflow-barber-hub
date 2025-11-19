@@ -91,43 +91,43 @@ export const Navbar = () => {
                   <Menu className="h-5 w-5" />
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-[280px] max-h-[80vh] overflow-y-auto">
-                <div className="flex flex-col gap-4 mt-8">
+              <SheetContent side="left" className="w-[85vw] max-w-[320px] h-full flex flex-col pb-safe">
+                <div className="flex flex-col gap-3 mt-8 overflow-y-auto flex-1 pr-2">
                   {isInAdminPanel ? (
                     <>
                       <Link to="/pdv" onClick={() => setMobileMenuOpen(false)}>
-                        <Button variant={isActive("/pdv") ? "default" : "ghost"} size="sm" className="w-full justify-start">
-                          <Monitor className="h-4 w-4 mr-2" />
+                        <Button variant={isActive("/pdv") ? "default" : "ghost"} size="sm" className="w-full justify-start touch-target text-sm">
+                          <Monitor className="h-4 w-4 mr-3" />
                           PDV
                         </Button>
                       </Link>
                       <Link to="/services-management" onClick={() => setMobileMenuOpen(false)}>
-                        <Button variant={isActive("/services-management") ? "default" : "ghost"} size="sm" className="w-full justify-start">
-                          <ClipboardList className="h-4 w-4 mr-2" />
+                        <Button variant={isActive("/services-management") ? "default" : "ghost"} size="sm" className="w-full justify-start touch-target text-sm">
+                          <ClipboardList className="h-4 w-4 mr-3" />
                           Serviços
                         </Button>
                       </Link>
                       <Link to="/barbers-management" onClick={() => setMobileMenuOpen(false)}>
-                        <Button variant={isActive("/barbers-management") ? "default" : "ghost"} size="sm" className="w-full justify-start">
-                          <Users className="h-4 w-4 mr-2" />
+                        <Button variant={isActive("/barbers-management") ? "default" : "ghost"} size="sm" className="w-full justify-start touch-target text-sm">
+                          <Users className="h-4 w-4 mr-3" />
                           Barbeiros
                         </Button>
                       </Link>
                       <Link to="/catalog" onClick={() => setMobileMenuOpen(false)}>
-                        <Button variant={isActive("/catalog") ? "default" : "ghost"} size="sm" className="w-full justify-start">
-                          <Layout className="h-4 w-4 mr-2" />
+                        <Button variant={isActive("/catalog") ? "default" : "ghost"} size="sm" className="w-full justify-start touch-target text-sm">
+                          <Layout className="h-4 w-4 mr-3" />
                           Catálogo
                         </Button>
                       </Link>
                       <Link to="/schedule-management" onClick={() => setMobileMenuOpen(false)}>
-                        <Button variant={isActive("/schedule-management") ? "default" : "ghost"} size="sm" className="w-full justify-start">
-                          <Calendar className="h-4 w-4 mr-2" />
+                        <Button variant={isActive("/schedule-management") ? "default" : "ghost"} size="sm" className="w-full justify-start touch-target text-sm">
+                          <Calendar className="h-4 w-4 mr-3" />
                           Agenda
                         </Button>
                       </Link>
                       <Link to="/crm" onClick={() => setMobileMenuOpen(false)}>
-                        <Button variant={isActive("/crm") || isActive("/messages") ? "default" : "ghost"} size="sm" className="w-full justify-start">
-                          <MessageCircle className="h-4 w-4 mr-2" />
+                        <Button variant={isActive("/crm") || isActive("/messages") ? "default" : "ghost"} size="sm" className="w-full justify-start touch-target text-sm">
+                          <MessageCircle className="h-4 w-4 mr-3" />
                           CRM
                         </Button>
                       </Link>
@@ -135,17 +135,17 @@ export const Navbar = () => {
                   ) : (
                     <>
                       <Link to="/" onClick={() => setMobileMenuOpen(false)}>
-                        <Button variant={isActive("/") ? "default" : "ghost"} size="sm" className="w-full justify-start">
+                        <Button variant={isActive("/") ? "default" : "ghost"} size="sm" className="w-full justify-start touch-target text-sm">
                           Home
                         </Button>
                       </Link>
                       <Link to="/services" onClick={() => setMobileMenuOpen(false)}>
-                        <Button variant={isActive("/services") ? "default" : "ghost"} size="sm" className="w-full justify-start">
+                        <Button variant={isActive("/services") ? "default" : "ghost"} size="sm" className="w-full justify-start touch-target text-sm">
                           Serviços
                         </Button>
                       </Link>
                       <Link to="/booking" onClick={() => setMobileMenuOpen(false)}>
-                        <Button variant={isActive("/booking") ? "default" : "ghost"} size="sm" className="w-full justify-start">
+                        <Button variant={isActive("/booking") ? "default" : "ghost"} size="sm" className="w-full justify-start touch-target text-sm">
                           Agendar
                         </Button>
                       </Link>

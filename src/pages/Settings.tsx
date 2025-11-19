@@ -454,50 +454,50 @@ const Settings = () => {
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
       <Navbar />
       
-      <main className="container mx-auto px-4 py-12">
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold mb-2">Configurações</h1>
-          <p className="text-muted-foreground">Gerencie sua conta e preferências</p>
+      <main className="container mx-auto px-3 sm:px-4 lg:px-6 py-8 sm:py-12 max-w-7xl">
+        <div className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2">Configurações</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">Gerencie sua conta e preferências</p>
         </div>
 
-        <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-            <TabsTrigger value="profile" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-              <User className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Perfil</span>
-              <span className="sm:hidden">👤</span>
-            </TabsTrigger>
-            <TabsTrigger value="barbershop" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-              <Building2 className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Barbearia</span>
-              <span className="sm:hidden">🏢</span>
-            </TabsTrigger>
-            <TabsTrigger value="domain" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-              <Globe className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Domínio</span>
-              <span className="sm:hidden">🌐</span>
-            </TabsTrigger>
-            <TabsTrigger value="notifications" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-              <Bell className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Notificações</span>
-              <span className="sm:hidden">🔔</span>
-            </TabsTrigger>
-            <TabsTrigger value="security" className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm">
-              <Shield className="h-3 w-3 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">Segurança</span>
-              <span className="sm:hidden">🔒</span>
-            </TabsTrigger>
-          </TabsList>
+        <Tabs defaultValue="profile" className="space-y-4 sm:space-y-6">
+          <div className="relative">
+            <div className="w-full overflow-x-auto pb-2 sm:pb-0 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
+              <TabsList className="flex sm:grid sm:grid-cols-3 lg:grid-cols-5 gap-2 w-full sm:w-auto">
+                <TabsTrigger value="profile" className="flex items-center gap-2 text-xs sm:text-sm flex-shrink-0 snap-start min-w-[100px] sm:min-w-0 touch-target">
+                  <User className="h-4 w-4" />
+                  <span>Perfil</span>
+                </TabsTrigger>
+                <TabsTrigger value="barbershop" className="flex items-center gap-2 text-xs sm:text-sm flex-shrink-0 snap-start min-w-[120px] sm:min-w-0 touch-target">
+                  <Building2 className="h-4 w-4" />
+                  <span>Barbearia</span>
+                </TabsTrigger>
+                <TabsTrigger value="domain" className="flex items-center gap-2 text-xs sm:text-sm flex-shrink-0 snap-start min-w-[110px] sm:min-w-0 touch-target">
+                  <Globe className="h-4 w-4" />
+                  <span>Domínio</span>
+                </TabsTrigger>
+                <TabsTrigger value="notifications" className="flex items-center gap-2 text-xs sm:text-sm flex-shrink-0 snap-start min-w-[130px] sm:min-w-0 touch-target">
+                  <Bell className="h-4 w-4" />
+                  <span>Notificações</span>
+                </TabsTrigger>
+                <TabsTrigger value="security" className="flex items-center gap-2 text-xs sm:text-sm flex-shrink-0 snap-start min-w-[120px] sm:min-w-0 touch-target">
+                  <Shield className="h-4 w-4" />
+                  <span>Segurança</span>
+                </TabsTrigger>
+              </TabsList>
+            </div>
+            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none sm:hidden" />
+          </div>
 
           <TabsContent value="profile">
-            <Card>
-              <CardHeader>
-                <CardTitle>Informações do Perfil</CardTitle>
-                <CardDescription>
+            <Card className="border-0 sm:border shadow-sm">
+              <CardHeader className="px-4 sm:px-6 py-4 sm:py-6">
+                <CardTitle className="text-lg sm:text-xl">Informações do Perfil</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
                   Atualize suas informações pessoais
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="px-4 sm:px-6 space-y-3 sm:space-y-4">
                 {dataLoading ? (
                   <div className="space-y-4">
                     <div className="h-10 bg-muted animate-pulse rounded" />
@@ -506,30 +506,32 @@ const Settings = () => {
                   </div>
                 ) : (
                   <>
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Nome Completo</Label>
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <Label htmlFor="name" className="text-xs sm:text-sm">Nome Completo</Label>
                       <Input 
                         id="name" 
                         placeholder="Seu nome"
                         value={profileData.full_name}
                         onChange={(e) => setProfileData({ ...profileData, full_name: e.target.value })}
                         disabled={loading}
+                        className="h-10 sm:h-11 text-sm"
                       />
                     </div>
                     
-                    <div className="space-y-2">
-                      <Label htmlFor="email">E-mail</Label>
-                      <Input id="email" type="email" value={user?.email || ''} disabled />
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <Label htmlFor="email" className="text-xs sm:text-sm">E-mail</Label>
+                      <Input id="email" type="email" value={user?.email || ''} disabled className="h-10 sm:h-11 text-sm" />
                     </div>
                     
-                    <div className="space-y-2">
-                      <Label htmlFor="phone">Telefone</Label>
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <Label htmlFor="phone" className="text-xs sm:text-sm">Telefone</Label>
                       <Input 
                         id="phone" 
                         placeholder="(00) 00000-0000"
                         value={profileData.phone}
                         onChange={(e) => setProfileData({ ...profileData, phone: e.target.value })}
                         disabled={loading}
+                        className="h-10 sm:h-11 text-sm"
                       />
                     </div>
                     
@@ -543,14 +545,14 @@ const Settings = () => {
           </TabsContent>
 
           <TabsContent value="barbershop">
-            <Card>
-              <CardHeader>
-                <CardTitle>Informações da Barbearia</CardTitle>
-                <CardDescription>
+            <Card className="border-0 sm:border shadow-sm">
+              <CardHeader className="px-4 sm:px-6 py-4 sm:py-6">
+                <CardTitle className="text-lg sm:text-xl">Informações da Barbearia</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
                   Configure os dados da sua barbearia
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="px-4 sm:px-6 space-y-3 sm:space-y-4">
                 {!barbershopId ? (
                   <p className="text-muted-foreground">
                     Você não está vinculado a nenhuma barbearia.
@@ -566,42 +568,45 @@ const Settings = () => {
                   </div>
                 ) : (
                   <>
-                    <div className="space-y-2">
-                      <Label htmlFor="barbershop-name">Nome da Barbearia</Label>
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <Label htmlFor="barbershop-name" className="text-xs sm:text-sm">Nome da Barbearia</Label>
                       <Input 
                         id="barbershop-name" 
                         placeholder="Nome da sua barbearia"
                         value={barbershopData.name}
                         onChange={(e) => setBarbershopData({ ...barbershopData, name: e.target.value })}
                         disabled={loading}
+                        className="h-10 sm:h-11 text-sm"
                       />
                     </div>
                     
-                    <div className="space-y-2">
-                      <Label htmlFor="address">Endereço</Label>
+                    <div className="space-y-1.5 sm:space-y-2">
+                      <Label htmlFor="address" className="text-xs sm:text-sm">Endereço</Label>
                       <Input 
                         id="address" 
                         placeholder="Endereço completo"
                         value={barbershopData.address}
                         onChange={(e) => setBarbershopData({ ...barbershopData, address: e.target.value })}
                         disabled={loading}
+                        className="h-10 sm:h-11 text-sm"
                       />
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="barbershop-phone">Telefone</Label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                      <div className="space-y-1.5 sm:space-y-2">
+                        <Label htmlFor="barbershop-phone" className="text-xs sm:text-sm">Telefone</Label>
                         <Input 
                           id="barbershop-phone" 
                           placeholder="(00) 0000-0000"
                           value={barbershopData.phone}
                           onChange={(e) => setBarbershopData({ ...barbershopData, phone: e.target.value })}
                           disabled={loading}
+                          className="h-10 sm:h-11 text-sm"
                         />
                       </div>
                       
-                      <div className="space-y-2">
-                        <Label htmlFor="barbershop-email">E-mail</Label>
+                      <div className="space-y-1.5 sm:space-y-2">
+                        <Label htmlFor="barbershop-email" className="text-xs sm:text-sm">E-mail</Label>
                         <Input 
                           id="barbershop-email" 
                           type="email" 
@@ -609,6 +614,7 @@ const Settings = () => {
                           value={barbershopData.email}
                           onChange={(e) => setBarbershopData({ ...barbershopData, email: e.target.value })}
                           disabled={loading}
+                          className="h-10 sm:h-11 text-sm"
                         />
                       </div>
                     </div>
@@ -664,13 +670,20 @@ const Settings = () => {
           </TabsContent>
 
           <TabsContent value="domain">
-            <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Link Público do Catálogo</CardTitle>
-                  <CardDescription>Configure o endereço público da sua barbearia</CardDescription>
+            <div className="space-y-4 sm:space-y-6">
+              <Card className="border-0 sm:border shadow-sm">
+                <CardHeader className="px-4 sm:px-6 py-4 sm:py-6">
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                    <Globe className="h-5 w-5 text-accent flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="text-lg sm:text-xl">Link Público do Catálogo</CardTitle>
+                      <CardDescription className="text-xs sm:text-sm mt-1">
+                        Configure o endereço público da sua barbearia
+                      </CardDescription>
+                    </div>
+                  </div>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="px-4 sm:px-6 space-y-3 sm:space-y-4">
                   {dataLoading ? (
                     <div className="space-y-4">
                       <div className="h-10 bg-muted animate-pulse rounded" />
@@ -678,19 +691,20 @@ const Settings = () => {
                     </div>
                   ) : (
                     <>
-                      <div className="space-y-2">
-                        <Label htmlFor="slug">Identificador (Slug)</Label>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm text-muted-foreground whitespace-nowrap">barberplus.shop/</span>
+                      <div className="space-y-1.5 sm:space-y-2">
+                        <Label htmlFor="slug" className="text-xs sm:text-sm">Identificador (Slug)</Label>
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+                          <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">barberplus.shop/</span>
                           <Input 
                             id="slug"
                             placeholder="minha-barbearia"
                             value={domainData.slug}
                             onChange={(e) => setDomainData({ ...domainData, slug: e.target.value.toLowerCase() })}
                             disabled={loading}
+                            className="h-10 sm:h-11 text-sm flex-1"
                           />
                         </div>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground break-all">
                           Seu catálogo estará disponível em:{' '}
                           <strong className="text-foreground">
                             {domainData.custom_domain 
@@ -702,9 +716,10 @@ const Settings = () => {
                       </div>
 
 
-                      <div className="flex gap-2 pt-2">
+                      <div className="flex flex-col sm:flex-row gap-2 pt-2">
                         <Button 
                           variant="outline"
+                          size="sm"
                           onClick={() => {
                             const url = domainData.custom_domain
                               ? `https://${domainData.custom_domain}`
@@ -712,11 +727,17 @@ const Settings = () => {
                             window.open(url, '_blank');
                           }}
                           disabled={!domainData.slug && !domainData.custom_domain}
+                          className="touch-target whitespace-nowrap text-xs sm:text-sm"
                         >
-                          <Eye className="h-4 w-4 mr-2" />
+                          <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1.5" />
                           Visualizar Catálogo
                         </Button>
-                        <Button onClick={handleSaveDomain} disabled={loading} className="bg-accent hover:bg-accent/90">
+                        <Button 
+                          onClick={handleSaveDomain} 
+                          disabled={loading} 
+                          size="sm"
+                          className="bg-accent hover:bg-accent/90 touch-target text-xs sm:text-sm"
+                        >
                           {loading ? 'Salvando...' : 'Salvar Link'}
                         </Button>
                       </div>
@@ -725,12 +746,12 @@ const Settings = () => {
                 </CardContent>
               </Card>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle>Configurações de Email</CardTitle>
-                  <CardDescription>Configure emails para notificações de agendamento</CardDescription>
+              <Card className="border-0 sm:border shadow-sm">
+                <CardHeader className="px-4 sm:px-6 py-4 sm:py-6">
+                  <CardTitle className="text-lg sm:text-xl">Configurações de Email</CardTitle>
+                  <CardDescription className="text-xs sm:text-sm">Configure emails para notificações de agendamento</CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-4">
+                <CardContent className="px-4 sm:px-6 space-y-3 sm:space-y-4">
                   {dataLoading ? (
                     <div className="space-y-4">
                       <div className="h-10 bg-muted animate-pulse rounded" />
@@ -789,17 +810,17 @@ const Settings = () => {
           </TabsContent>
 
           <TabsContent value="notifications">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+            <Card className="border-0 sm:border shadow-sm">
+              <CardHeader className="px-4 sm:px-6 py-4 sm:py-6">
+                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
                   <MessageCircle className="h-5 w-5" />
                   Notificações via WhatsApp
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-xs sm:text-sm">
                   Configure o envio automático de confirmações de agendamento via WhatsApp
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="px-4 sm:px-6 space-y-3 sm:space-y-4">
                 {!barbershopId ? (
                   <p className="text-muted-foreground">
                     Você não está vinculado a nenhuma barbearia.
@@ -1149,48 +1170,51 @@ const Settings = () => {
           </TabsContent>
 
           <TabsContent value="security">
-            <Card>
-              <CardHeader>
-                <CardTitle>Segurança da Conta</CardTitle>
-                <CardDescription>
+            <Card className="border-0 sm:border shadow-sm">
+              <CardHeader className="px-4 sm:px-6 py-4 sm:py-6">
+                <CardTitle className="text-lg sm:text-xl">Segurança da Conta</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
                   Gerencie a segurança da sua conta
                 </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="current-password">Senha Atual</Label>
+              <CardContent className="px-4 sm:px-6 space-y-3 sm:space-y-4">
+                <div className="space-y-1.5 sm:space-y-2">
+                  <Label htmlFor="current-password" className="text-xs sm:text-sm">Senha Atual</Label>
                   <Input 
                     id="current-password" 
                     type="password"
                     value={passwordData.currentPassword}
                     onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
                     disabled={loading}
+                    className="h-10 sm:h-11 text-sm"
                   />
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="new-password">Nova Senha</Label>
+                <div className="space-y-1.5 sm:space-y-2">
+                  <Label htmlFor="new-password" className="text-xs sm:text-sm">Nova Senha</Label>
                   <Input 
                     id="new-password" 
                     type="password"
                     value={passwordData.newPassword}
                     onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
                     disabled={loading}
+                    className="h-10 sm:h-11 text-sm"
                   />
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="confirm-password">Confirmar Nova Senha</Label>
+                <div className="space-y-1.5 sm:space-y-2">
+                  <Label htmlFor="confirm-password" className="text-xs sm:text-sm">Confirmar Nova Senha</Label>
                   <Input 
                     id="confirm-password" 
                     type="password"
                     value={passwordData.confirmPassword}
                     onChange={(e) => setPasswordData({ ...passwordData, confirmPassword: e.target.value })}
                     disabled={loading}
+                    className="h-10 sm:h-11 text-sm"
                   />
                 </div>
                 
-                <Button onClick={handleChangePassword} disabled={loading} className="bg-accent hover:bg-accent/90">
+                <Button onClick={handleChangePassword} disabled={loading} className="bg-accent hover:bg-accent/90 w-full sm:w-auto touch-target">
                   {loading ? 'Alterando...' : 'Alterar Senha'}
                 </Button>
               </CardContent>
