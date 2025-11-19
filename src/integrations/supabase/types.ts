@@ -164,6 +164,74 @@ export type Database = {
           },
         ]
       }
+      barber_commission_config: {
+        Row: {
+          apply_to_completed_only: boolean | null
+          barber_id: string
+          barbershop_id: string
+          commission_type: string
+          commission_value: number
+          created_at: string | null
+          id: string
+          is_active: boolean | null
+          minimum_services: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          apply_to_completed_only?: boolean | null
+          barber_id: string
+          barbershop_id: string
+          commission_type?: string
+          commission_value?: number
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          minimum_services?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          apply_to_completed_only?: boolean | null
+          barber_id?: string
+          barbershop_id?: string
+          commission_type?: string
+          commission_value?: number
+          created_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          minimum_services?: number | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "barber_commission_config_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "barber_commission_config_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "public_barbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "barber_commission_config_barbershop_id_fkey"
+            columns: ["barbershop_id"]
+            isOneToOne: false
+            referencedRelation: "barbershops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "barber_commission_config_barbershop_id_fkey"
+            columns: ["barbershop_id"]
+            isOneToOne: false
+            referencedRelation: "public_barbershops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       barbers: {
         Row: {
           barbershop_id: string
@@ -359,6 +427,69 @@ export type Database = {
         }
         Relationships: []
       }
+      cash_flow: {
+        Row: {
+          amount: number
+          barbershop_id: string
+          category: string
+          created_at: string | null
+          created_by: string | null
+          description: string
+          id: string
+          metadata: Json | null
+          payment_method: string | null
+          reference_id: string | null
+          reference_type: string | null
+          transaction_date: string
+          type: string
+        }
+        Insert: {
+          amount: number
+          barbershop_id: string
+          category: string
+          created_at?: string | null
+          created_by?: string | null
+          description: string
+          id?: string
+          metadata?: Json | null
+          payment_method?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          transaction_date?: string
+          type: string
+        }
+        Update: {
+          amount?: number
+          barbershop_id?: string
+          category?: string
+          created_at?: string | null
+          created_by?: string | null
+          description?: string
+          id?: string
+          metadata?: Json | null
+          payment_method?: string | null
+          reference_id?: string | null
+          reference_type?: string | null
+          transaction_date?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_flow_barbershop_id_fkey"
+            columns: ["barbershop_id"]
+            isOneToOne: false
+            referencedRelation: "barbershops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "cash_flow_barbershop_id_fkey"
+            columns: ["barbershop_id"]
+            isOneToOne: false
+            referencedRelation: "public_barbershops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       catalog_settings: {
         Row: {
           barbershop_id: string
@@ -509,6 +640,95 @@ export type Database = {
             columns: ["plan_id"]
             isOneToOne: false
             referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      commission_records: {
+        Row: {
+          barber_id: string
+          barbershop_id: string
+          commission_amount: number
+          created_at: string | null
+          created_by: string | null
+          final_amount: number
+          id: string
+          manual_adjustments: number | null
+          metadata: Json | null
+          notes: string | null
+          payment_date: string | null
+          period_end: string
+          period_start: string
+          status: string | null
+          total_amount: number
+          total_services: number
+          updated_at: string | null
+        }
+        Insert: {
+          barber_id: string
+          barbershop_id: string
+          commission_amount?: number
+          created_at?: string | null
+          created_by?: string | null
+          final_amount?: number
+          id?: string
+          manual_adjustments?: number | null
+          metadata?: Json | null
+          notes?: string | null
+          payment_date?: string | null
+          period_end: string
+          period_start: string
+          status?: string | null
+          total_amount?: number
+          total_services?: number
+          updated_at?: string | null
+        }
+        Update: {
+          barber_id?: string
+          barbershop_id?: string
+          commission_amount?: number
+          created_at?: string | null
+          created_by?: string | null
+          final_amount?: number
+          id?: string
+          manual_adjustments?: number | null
+          metadata?: Json | null
+          notes?: string | null
+          payment_date?: string | null
+          period_end?: string
+          period_start?: string
+          status?: string | null
+          total_amount?: number
+          total_services?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_records_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_records_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "public_barbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_records_barbershop_id_fkey"
+            columns: ["barbershop_id"]
+            isOneToOne: false
+            referencedRelation: "barbershops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_records_barbershop_id_fkey"
+            columns: ["barbershop_id"]
+            isOneToOne: false
+            referencedRelation: "public_barbershops"
             referencedColumns: ["id"]
           },
         ]
@@ -1513,6 +1733,14 @@ export type Database = {
       }
     }
     Functions: {
+      calculate_barber_commission: {
+        Args: { _barber_id: string; _end_date: string; _start_date: string }
+        Returns: {
+          commission_amount: number
+          total_amount: number
+          total_services: number
+        }[]
+      }
       check_time_slot_available: {
         Args: {
           _barber_id: string
