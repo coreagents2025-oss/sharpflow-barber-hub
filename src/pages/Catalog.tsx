@@ -149,16 +149,18 @@ const Catalog = () => {
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
       <Navbar />
       
-      <main className="container mx-auto px-4 py-12">
-        <div className="flex justify-between items-center mb-8">
-          <div>
-            <h1 className="text-4xl font-bold mb-2">Editor do Catálogo</h1>
-            <p className="text-muted-foreground">Configure a aparência do seu catálogo público</p>
+      <main className="container mx-auto px-3 sm:px-4 lg:px-6 py-8 sm:py-12">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4 mb-6 sm:mb-8">
+          <div className="flex-1 min-w-0">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-1 sm:mb-2">Editor do Catálogo</h1>
+            <p className="text-sm sm:text-base text-muted-foreground">Configure a aparência do seu catálogo público</p>
           </div>
           
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto sm:flex-shrink-0">
             <Button
               variant="outline"
+              size="sm"
+              className="touch-target w-full sm:w-auto"
               onClick={() => {
                 const url = getCatalogUrl();
                 if (url) {
@@ -172,16 +174,19 @@ const Catalog = () => {
               disabled={!barbershopSlug}
             >
               <Eye className="h-4 w-4 mr-2" />
-              Visualizar Catálogo
+              <span className="whitespace-nowrap">Visualizar Catálogo</span>
             </Button>
             
             <Button 
               onClick={handleSave} 
               disabled={saving || uploading}
-              className="bg-accent hover:bg-accent/90"
+              size="sm"
+              className="bg-accent hover:bg-accent/90 touch-target w-full sm:w-auto"
             >
               <Save className="h-4 w-4 mr-2" />
-              {uploading ? 'Enviando...' : saving ? 'Salvando...' : 'Salvar Configurações'}
+              <span className="whitespace-nowrap">
+                {uploading ? 'Enviando...' : saving ? 'Salvando...' : 'Salvar Configurações'}
+              </span>
             </Button>
           </div>
         </div>
