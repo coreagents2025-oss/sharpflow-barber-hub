@@ -114,6 +114,10 @@ All colors MUST be HSL.
     min-width: 44px;
   }
 
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 1rem);
+  }
+
   /* Scrollbar customizada para listas horizontais */
   .scrollbar-thin::-webkit-scrollbar {
     height: 4px;
