@@ -104,7 +104,15 @@ const Catalog = () => {
       // Upload logo if selected
       if (logoFile) {
         const uploadedUrl = await uploadImage(logoFile, 'barbershop-logos');
-        if (uploadedUrl) logoUrl = uploadedUrl;
+        if (uploadedUrl) {
+          logoUrl = uploadedUrl;
+          
+          // Sincronizar logo também na tabela barbershops
+          await supabase
+            .from('barbershops')
+            .update({ logo_url: uploadedUrl })
+            .eq('id', barbershopId);
+        }
       }
 
       // Upload hero image if selected
@@ -251,6 +259,13 @@ const Catalog = () => {
                   </p>
                 </div>
               )}
+              
+              <div className="mt-4 pt-4 border-t">
+                <p className="text-xs text-muted-foreground">
+                  💡 <strong>Dica:</strong> O nome e logo que aparecem no catálogo público são configurados em{' '}
+                  <strong>Configurações → Barbearia</strong>.
+                </p>
+              </div>
             </CardContent>
           </Card>
         
@@ -365,22 +380,6 @@ const Catalog = () => {
                   checked={settings.show_popular_badge}
                   onCheckedChange={(checked) => setSettings({ ...settings, show_popular_badge: checked })}
                 />
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Preview do Catálogo</CardTitle>
-              <CardDescription>
-                Visualização em tempo real das suas configurações
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="border-2 border-dashed rounded-lg p-8 text-center">
-                <p className="text-muted-foreground">
-                  Clique em "Visualizar Catálogo" para ver como ficará para seus clientes
-                </p>
               </div>
             </CardContent>
           </Card>
