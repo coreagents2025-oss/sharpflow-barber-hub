@@ -35,6 +35,8 @@ interface BarberStatus {
   status: 'free' | 'occupied' | 'break';
   currentClient?: string;
   nextAppointment?: string;
+  currentAppointmentId?: string;
+  appointmentStartTime?: string;
 }
 
 const PDV = () => {
@@ -204,6 +206,8 @@ const PDV = () => {
     
     try {
       const now = new Date();
+      const threeHoursAgo = new Date(now.getTime() - 3 * 60 * 60 * 1000);
+      
       const { data: barbers } = await supabase
         .from('barbers')
         .select('id, name, is_available')
@@ -215,16 +219,23 @@ const PDV = () => {
       const statuses = await Promise.all(
         barbers.map(async (barber: any) => {
           // Buscar appointment em andamento usando view unificada
+          // FILTRAR agendamentos in_progress antigos (mais de 3 horas)
           const { data: current } = await supabase
             .from('appointments_with_client')
-            .select('id, unified_client_id, client_name')
+            .select('id, unified_client_id, client_name, scheduled_at')
             .eq('barber_id', barber.id)
             .eq('status', 'in_progress')
+            .gte('scheduled_at', threeHoursAgo.toISOString())
             .maybeSingle();
           
           let currentClientName: string | undefined;
+          let currentAppointmentId: string | undefined;
+          let appointmentStartTime: string | undefined;
+          
           if (current) {
             currentClientName = current.client_name || 'Cliente';
+            currentAppointmentId = current.id;
+            appointmentStartTime = current.scheduled_at;
           }
           
           // Buscar próximo agendamento
@@ -243,6 +254,8 @@ const PDV = () => {
             name: barber.name || 'Barbeiro sem nome',
             status: current ? 'occupied' : (barber.is_available ? 'free' : 'break'),
             currentClient: currentClientName,
+            currentAppointmentId,
+            appointmentStartTime,
             nextAppointment: next ? new Date(next.scheduled_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : undefined,
           } as BarberStatus;
         })
@@ -287,6 +300,41 @@ const PDV = () => {
     } catch (error: any) {
       console.error('Error fetching popular services:', error);
     }
+  };
+
+  const handleResetBarberStatus = async (appointmentId: string, barberName: string) => {
+    if (!confirm(`Deseja forçar a conclusão do atendimento em andamento de ${barberName}? Esta ação não pode ser desfeita.`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .update({
+          status: 'completed',
+          notes: 'Atendimento finalizado manualmente pelo sistema (resetado via PDV)',
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', appointmentId);
+
+      if (error) throw error;
+
+      toast.success('Status do barbeiro resetado com sucesso');
+      fetchBarberStatuses();
+      fetchTodayAppointments();
+    } catch (error: any) {
+      toast.error('Erro ao resetar status: ' + error.message);
+    }
+  };
+
+  const getAppointmentDuration = (scheduledAt: string) => {
+    const start = new Date(scheduledAt);
+    const now = new Date();
+    const diffMs = now.getTime() - start.getTime();
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+    
+    return { hours: diffHours, minutes: diffMinutes, isLong: diffHours >= 2 };
   };
 
   const getStatusColor = (status: string) => {
@@ -482,38 +530,65 @@ const PDV = () => {
                   <p>Nenhum barbeiro cadastrado</p>
                 </div>
               ) : (
-                barberStatuses.map((barber) => (
-                <div
-                  key={barber.id}
-                  className="p-4 rounded-lg border bg-card"
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-3">
-                      <div className={`h-3 w-3 rounded-full ${getBarberStatusColor(barber.status)} animate-pulse`} />
-                      <span className="font-medium">{barber.name}</span>
-                    </div>
-                    <Badge variant="outline" className="capitalize">
-                      {barber.status === 'free' && 'Livre'}
-                      {barber.status === 'occupied' && 'Ocupado'}
-                      {barber.status === 'break' && 'Pausa'}
-                    </Badge>
-                  </div>
+                barberStatuses.map((barber) => {
+                  const duration = barber.appointmentStartTime ? getAppointmentDuration(barber.appointmentStartTime) : null;
+                  const isLongAppointment = duration?.isLong;
                   
-                  {barber.currentClient && (
-                    <div className="text-sm text-muted-foreground mt-2">
-                      <Scissors className="h-3 w-3 inline mr-1" />
-                      Atendendo: {barber.currentClient}
+                  return (
+                    <div
+                      key={barber.id}
+                      className="p-4 rounded-lg border bg-card"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-3">
+                          <div className={`h-3 w-3 rounded-full ${getBarberStatusColor(barber.status)} animate-pulse`} />
+                          <span className="font-medium">{barber.name}</span>
+                        </div>
+                        <Badge variant="outline" className="capitalize">
+                          {barber.status === 'free' && 'Livre'}
+                          {barber.status === 'occupied' && 'Ocupado'}
+                          {barber.status === 'break' && 'Pausa'}
+                        </Badge>
+                      </div>
+                      
+                      {barber.currentClient && (
+                        <>
+                          <div className="text-sm text-muted-foreground mt-2">
+                            <Scissors className="h-3 w-3 inline mr-1" />
+                            Atendendo: {barber.currentClient}
+                          </div>
+                          {isLongAppointment && duration && (
+                            <div className="flex items-center gap-2 mt-2">
+                              <Badge variant="destructive" className="text-xs">
+                                <AlertCircle className="h-3 w-3 mr-1" />
+                                Atendimento longo: {duration.hours}h {duration.minutes}min
+                              </Badge>
+                            </div>
+                          )}
+                        </>
+                      )}
+                      
+                      {barber.nextAppointment && (
+                        <div className="text-sm text-muted-foreground mt-1">
+                          <Clock className="h-3 w-3 inline mr-1" />
+                          Próximo: {barber.nextAppointment}
+                        </div>
+                      )}
+
+                      {isLongAppointment && barber.currentAppointmentId && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full mt-3 text-xs"
+                          onClick={() => handleResetBarberStatus(barber.currentAppointmentId!, barber.name)}
+                        >
+                          <AlertCircle className="h-3 w-3 mr-1" />
+                          Resetar Status
+                        </Button>
+                      )}
                     </div>
-                  )}
-                  
-                  {barber.nextAppointment && (
-                    <div className="text-sm text-muted-foreground mt-1">
-                      <Clock className="h-3 w-3 inline mr-1" />
-                      Próximo: {barber.nextAppointment}
-                    </div>
-                  )}
-                </div>
-              ))
+                  );
+                })
               )}
             </CardContent>
           </Card>
@@ -672,103 +747,123 @@ const PDV = () => {
                     <p>Nenhum agendamento nesta categoria</p>
                   </div>
                 ) : (
-                  filteredAppointments.map((apt) => (
-                    <div
-                      key={apt.id}
-                      className="p-3 sm:p-4 rounded-lg border bg-card"
-                    >
-                      <div className="flex flex-col gap-3">
-                        {/* Header: Nome e Telefone */}
-                        <div className="flex items-start justify-between gap-2">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <User className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
-                              <span className="font-medium text-xs sm:text-sm truncate">{apt.client_name || 'Cliente'}</span>
+                  filteredAppointments.map((apt) => {
+                    const duration = apt.status === 'in_progress' ? getAppointmentDuration(apt.scheduled_at) : null;
+                    
+                    return (
+                      <div
+                        key={apt.id}
+                        className="p-3 sm:p-4 rounded-lg border bg-card"
+                      >
+                        <div className="flex flex-col gap-3">
+                          {/* Header: Nome e Telefone */}
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-1">
+                                <User className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
+                                <span className="font-medium text-xs sm:text-sm truncate">{apt.client_name || 'Cliente'}</span>
+                              </div>
+                              {apt.client_phone && (
+                                <span className="text-[10px] sm:text-xs text-muted-foreground truncate block">
+                                  {apt.client_phone}
+                                </span>
+                              )}
                             </div>
-                            {apt.client_phone && (
-                              <span className="text-[10px] sm:text-xs text-muted-foreground truncate block">
-                                {apt.client_phone}
-                              </span>
-                            )}
+                            
+                            {/* Horário e Status - Inline Mobile */}
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <div className="font-bold text-sm sm:text-base text-accent whitespace-nowrap">
+                                {new Date(apt.scheduled_at).toLocaleTimeString('pt-BR', { 
+                                  hour: '2-digit', 
+                                  minute: '2-digit' 
+                                })}
+                              </div>
+                              <Badge className={`${getStatusColor(apt.status)} text-[10px] sm:text-xs`}>
+                                {getStatusLabel(apt.status)}
+                              </Badge>
+                            </div>
+                          </div>
+
+                          {/* Alerta de atendimento longo */}
+                          {duration?.isLong && (
+                            <div className="flex items-center gap-2">
+                              <Badge variant="destructive" className="text-[10px] sm:text-xs">
+                                <AlertCircle className="h-3 w-3 mr-1" />
+                                Em andamento há {duration.hours}h {duration.minutes}min
+                              </Badge>
+                            </div>
+                          )}
+
+                          {/* Info: Serviço e Barbeiro */}
+                          <div className="grid grid-cols-1 gap-1 text-[10px] sm:text-xs text-muted-foreground">
+                            <div className="flex items-center gap-1">
+                              <Scissors className="h-3 w-3 flex-shrink-0" />
+                              <span className="truncate">{apt.services?.name || 'Serviço'}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <User className="h-3 w-3 flex-shrink-0" />
+                              <span className="truncate">Barbeiro: {apt.barbers?.name || 'N/A'}</span>
+                            </div>
                           </div>
                           
-                          {/* Horário e Status - Inline Mobile */}
-                          <div className="flex items-center gap-2 flex-shrink-0">
-                            <div className="font-bold text-sm sm:text-base text-accent whitespace-nowrap">
-                              {new Date(apt.scheduled_at).toLocaleTimeString('pt-BR', { 
-                                hour: '2-digit', 
-                                minute: '2-digit' 
-                              })}
-                            </div>
-                            <Badge className={`${getStatusColor(apt.status)} text-[10px] sm:text-xs`}>
-                              {getStatusLabel(apt.status)}
-                            </Badge>
-                          </div>
-                        </div>
-
-                        {/* Info: Serviço e Barbeiro */}
-                        <div className="grid grid-cols-1 gap-1 text-[10px] sm:text-xs text-muted-foreground">
-                          <div className="flex items-center gap-1">
-                            <Scissors className="h-3 w-3 flex-shrink-0" />
-                            <span className="truncate">{apt.services?.name || 'Serviço'}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <User className="h-3 w-3 flex-shrink-0" />
-                            <span className="truncate">Barbeiro: {apt.barbers?.name || 'N/A'}</span>
-                          </div>
-                        </div>
-                        
-                        {/* Botões de Ação */}
-                        {(apt.status === 'scheduled' || apt.status === 'in_progress') && (
-                          <div className="flex gap-2 flex-wrap pt-2 border-t">
-                            {apt.status === 'scheduled' && (
-                              <>
+                          {/* Botões de Ação */}
+                          {(apt.status === 'scheduled' || apt.status === 'in_progress') && (
+                            <div className="flex gap-2 flex-wrap pt-2 border-t">
+                              {apt.status === 'scheduled' && (
+                                <>
+                                  <Button 
+                                    size="sm" 
+                                    variant="default"
+                                    onClick={() => handleConfirmPresence(apt.id)}
+                                    className="touch-target flex-1 sm:flex-none whitespace-nowrap text-xs"
+                                  >
+                                    <UserCheck className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                                    Presente
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    onClick={() => handleNoShow(apt.id)}
+                                    className="touch-target flex-1 sm:flex-none whitespace-nowrap text-xs"
+                                  >
+                                    <UserX className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                                    Faltou
+                                  </Button>
+                                </>
+                              )}
+                              {apt.status === 'in_progress' && (
                                 <Button 
-                                  size="sm" 
+                                  size="sm"
                                   variant="default"
-                                  onClick={() => handleConfirmPresence(apt.id)}
-                                  className="touch-target flex-1 sm:flex-none whitespace-nowrap text-xs"
+                                  onClick={() => handleOpenPaymentModal({
+                                    id: apt.id,
+                                    unified_client_id: apt.unified_client_id,
+                                    client_type: apt.client_type,
+                                    barbershop_id: apt.barbershop_id,
+                                    services: {
+                                      name: apt.services?.name || 'Serviço',
+                                      price: apt.services?.price || 50,
+                                    },
+                                    client_name: apt.client_name,
+                                  })}
+                                  className="touch-target w-full whitespace-nowrap text-xs"
                                 >
-                                  <UserCheck className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                                  Presente
+                                  <CreditCard className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                                  Finalizar
                                 </Button>
-                                <Button 
-                                  size="sm" 
-                                  variant="outline"
-                                  onClick={() => handleNoShow(apt.id)}
-                                  className="touch-target flex-1 sm:flex-none whitespace-nowrap text-xs"
-                                >
-                                  <UserX className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                                  Faltou
-                                </Button>
-                              </>
-                            )}
-                            {apt.status === 'in_progress' && (
-                              <Button 
-                                size="sm"
-                                variant="default"
-                                onClick={() => handleOpenPaymentModal({
-                                  id: apt.id,
-                                  unified_client_id: apt.unified_client_id,
-                                  client_type: apt.client_type,
-                                  barbershop_id: apt.barbershop_id,
-                                  services: {
-                                    name: apt.services?.name || 'Serviço',
-                                    price: apt.services?.price || 50,
-                                  },
-                                  client_name: apt.client_name,
-                                })}
-                                className="touch-target w-full whitespace-nowrap text-xs"
-                              >
-                                <CreditCard className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                                Finalizar
-                              </Button>
-                            )}
-                          </div>
-                        )}
+                              )}
+                            </div>
+                          )}
+                          
+                          {apt.notes && (
+                            <div className="text-[10px] sm:text-xs text-muted-foreground italic pt-2 border-t">
+                              {apt.notes}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </CardContent>
