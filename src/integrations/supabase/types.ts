@@ -1180,6 +1180,7 @@ export type Database = {
           image_url: string | null
           is_active: boolean | null
           is_popular: boolean | null
+          max_duration_minutes: number | null
           name: string
           price: number
           updated_at: string
@@ -1194,6 +1195,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean | null
           is_popular?: boolean | null
+          max_duration_minutes?: number | null
           name: string
           price: number
           updated_at?: string
@@ -1208,6 +1210,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean | null
           is_popular?: boolean | null
+          max_duration_minutes?: number | null
           name?: string
           price?: number
           updated_at?: string
@@ -1733,6 +1736,7 @@ export type Database = {
       }
     }
     Functions: {
+      auto_complete_old_appointments: { Args: never; Returns: undefined }
       calculate_barber_commission: {
         Args: { _barber_id: string; _end_date: string; _start_date: string }
         Returns: {
