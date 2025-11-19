@@ -1626,6 +1626,34 @@ export type Database = {
           },
         ]
       }
+      payment_cash_flow_audit: {
+        Row: {
+          appointment_id: string | null
+          cash_flow_amount: number | null
+          cash_flow_date: string | null
+          cash_flow_id: string | null
+          payment_amount: number | null
+          payment_date: string | null
+          payment_id: string | null
+          status: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "payments_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments_with_client"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       public_barbers: {
         Row: {
           barbershop_id: string | null
