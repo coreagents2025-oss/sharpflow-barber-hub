@@ -22,7 +22,10 @@ import { Separator } from '@/components/ui/separator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { AddNoteDialog } from './AddNoteDialog';
 import { CreateAppointmentDialog } from './CreateAppointmentDialog';
+import { ManageTagsDialog } from './ManageTagsDialog';
 import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 interface LeadDetailsPanelProps {
   lead: Lead | null;
@@ -31,6 +34,8 @@ interface LeadDetailsPanelProps {
 export function LeadDetailsPanel({ lead }: LeadDetailsPanelProps) {
   const [isNoteDialogOpen, setIsNoteDialogOpen] = useState(false);
   const [isAppointmentDialogOpen, setIsAppointmentDialogOpen] = useState(false);
+  const [isTagsDialogOpen, setIsTagsDialogOpen] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const { user } = useAuth();
 
@@ -78,7 +83,7 @@ export function LeadDetailsPanel({ lead }: LeadDetailsPanelProps) {
 
   const handleCopyWhatsAppLink = async () => {
     if (!lead?.phone) {
-      alert('⚠️ Este lead não possui um número de telefone cadastrado.');
+      toast.error('Este lead não possui um número de telefone cadastrado.');
       return;
     }
 
@@ -86,7 +91,7 @@ export function LeadDetailsPanel({ lead }: LeadDetailsPanelProps) {
     
     try {
       await navigator.clipboard.writeText(url);
-      alert('✅ Link do WhatsApp copiado! Cole no navegador para abrir.');
+      toast.success('Link do WhatsApp copiado!');
     } catch (error) {
       // Fallback se clipboard não funcionar
       const textarea = document.createElement('textarea');
@@ -95,8 +100,38 @@ export function LeadDetailsPanel({ lead }: LeadDetailsPanelProps) {
       textarea.select();
       document.execCommand('copy');
       document.body.removeChild(textarea);
-      alert('✅ Link do WhatsApp copiado! Cole no navegador para abrir.');
+      toast.success('Link do WhatsApp copiado!');
     }
+  };
+
+  const handleArchiveLead = async () => {
+    if (!lead?.id) return;
+
+    const isArchived = !!lead.archived_at;
+    const action = isArchived ? 'desarquivar' : 'arquivar';
+    
+    if (!confirm(`Tem certeza que deseja ${action} este lead?`)) {
+      return;
+    }
+
+    setIsArchiving(true);
+
+    const { error } = await supabase
+      .from('leads')
+      .update({
+        archived_at: isArchived ? null : new Date().toISOString(),
+      })
+      .eq('id', lead.id);
+
+    setIsArchiving(false);
+
+    if (error) {
+      toast.error(`Erro ao ${action} lead`);
+      return;
+    }
+
+    toast.success(`Lead ${isArchived ? 'desarquivado' : 'arquivado'} com sucesso`);
+    handleStatusChange();
   };
 
   if (!lead) {
@@ -326,7 +361,14 @@ export function LeadDetailsPanel({ lead }: LeadDetailsPanelProps) {
         leadName={lead.full_name}
         leadPhone={lead.phone}
         leadEmail={lead.email}
-        barbershopId={user?.user_metadata?.barbershop_id || null}
+        barbershopId={lead.barbershop_id}
+      />
+
+      <ManageTagsDialog
+        open={isTagsDialogOpen}
+        onOpenChange={setIsTagsDialogOpen}
+        leadId={lead.id}
+        leadName={lead.full_name}
       />
     </ScrollArea>
   );

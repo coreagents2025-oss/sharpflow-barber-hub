@@ -16,6 +16,7 @@ export interface Lead {
   last_interaction_at: string;
   created_at: string;
   updated_at: string;
+  archived_at: string | null;
   // Dados agregados
   appointments: Array<{
     id: string;
@@ -182,6 +183,7 @@ export const useLeads = (barbershopId: string | null) => {
             last_interaction_at: lead.last_interaction_at,
             created_at: lead.created_at,
             updated_at: lead.updated_at,
+            archived_at: lead.archived_at || null,
             appointments: leadAppointments,
             total_appointments: leadAppointments.length,
             completed_appointments: completedAppointments.length,

@@ -16,7 +16,7 @@ const CRM = () => {
   const { leads, loading, metrics } = useLeads(barbershopId);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<LeadStatus | 'all' | 'needs_contact' | 'at_risk' | 'inactive'>('all');
+  const [statusFilter, setStatusFilter] = useState<LeadStatus | 'all' | 'needs_contact' | 'at_risk' | 'inactive' | 'archived'>('all');
   const isMobile = useIsMobile();
 
   // Filtrar leads
@@ -26,6 +26,16 @@ const CRM = () => {
       const matchesSearch = 
         lead.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         lead.phone.includes(searchQuery);
+
+      // Por padrão, excluir arquivados (a menos que o filtro seja 'archived')
+      if (statusFilter !== 'archived' && lead.archived_at) {
+        return false;
+      }
+
+      // Se filtro for 'archived', mostrar apenas arquivados
+      if (statusFilter === 'archived') {
+        return matchesSearch && !!lead.archived_at;
+      }
 
       // Calcular dias desde última interação
       const daysSinceLastInteraction = lead.last_interaction_at 
