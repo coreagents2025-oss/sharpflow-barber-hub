@@ -35,6 +35,7 @@ interface BarberStatus {
   status: 'free' | 'occupied' | 'break';
   currentClient?: string;
   nextAppointment?: string;
+  nextAppointments?: Array<{ time: string; client: string }>; // Lista dos próximos 2-3 agendamentos
   currentAppointmentId?: string;
   appointmentStartTime?: string;
 }
@@ -238,16 +239,35 @@ const PDV = () => {
             appointmentStartTime = current.scheduled_at;
           }
           
-          // Buscar próximo agendamento
+          // Buscar próximo agendamento (apenas do DIA DE HOJE)
+          const startOfToday = new Date();
+          startOfToday.setHours(0, 0, 0, 0);
+          const endOfToday = new Date();
+          endOfToday.setHours(23, 59, 59, 999);
+
           const { data: next } = await supabase
             .from('appointments')
             .select('scheduled_at')
             .eq('barber_id', barber.id)
+            .eq('barbershop_id', authBarbershopId) // ✅ Filtrar por barbearia
             .eq('status', 'scheduled')
             .gte('scheduled_at', now.toISOString())
+            .lte('scheduled_at', endOfToday.toISOString()) // ✅ Apenas hoje
             .order('scheduled_at', { ascending: true })
             .limit(1)
             .maybeSingle();
+
+          // Buscar próximos 3 agendamentos usando view unificada
+          const { data: nextAppointments } = await supabase
+            .from('appointments_with_client')
+            .select('scheduled_at, client_name')
+            .eq('barber_id', barber.id)
+            .eq('barbershop_id', authBarbershopId)
+            .eq('status', 'scheduled')
+            .gte('scheduled_at', now.toISOString())
+            .lte('scheduled_at', endOfToday.toISOString())
+            .order('scheduled_at', { ascending: true })
+            .limit(3);
           
           return {
             id: barber.id,
@@ -257,6 +277,10 @@ const PDV = () => {
             currentAppointmentId,
             appointmentStartTime,
             nextAppointment: next ? new Date(next.scheduled_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : undefined,
+            nextAppointments: nextAppointments?.map(apt => ({
+              time: new Date(apt.scheduled_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+              client: apt.client_name || 'Cliente'
+            })),
           } as BarberStatus;
         })
       );
@@ -568,10 +592,27 @@ const PDV = () => {
                         </>
                       )}
                       
-                      {barber.nextAppointment && (
-                        <div className="text-sm text-muted-foreground mt-1">
-                          <Clock className="h-3 w-3 inline mr-1" />
-                          Próximo: {barber.nextAppointment}
+                      {/* Lista de próximos agendamentos */}
+                      {barber.nextAppointments && barber.nextAppointments.length > 0 ? (
+                        <div className="mt-3 space-y-1.5 border-t pt-2">
+                          <div className="text-xs font-medium text-muted-foreground mb-1.5">
+                            Próximos agendamentos hoje:
+                          </div>
+                          {barber.nextAppointments.map((apt, idx) => (
+                            <div key={idx} className="text-sm flex items-center justify-between text-muted-foreground bg-muted/30 px-2 py-1 rounded">
+                              <span className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {apt.time}
+                              </span>
+                              <span className="text-xs truncate ml-2 max-w-[120px]" title={apt.client}>
+                                {apt.client}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : !barber.currentClient && (
+                        <div className="mt-2 text-xs text-muted-foreground italic">
+                          Sem agendamentos hoje
                         </div>
                       )}
 
