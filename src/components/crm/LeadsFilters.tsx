@@ -7,8 +7,8 @@ import { Badge } from '@/components/ui/badge';
 interface LeadsFiltersProps {
   searchQuery: string;
   onSearchChange: (query: string) => void;
-  statusFilter: LeadStatus | 'all';
-  onStatusFilterChange: (status: LeadStatus | 'all') => void;
+  statusFilter: LeadStatus | 'all' | 'needs_contact' | 'at_risk' | 'inactive';
+  onStatusFilterChange: (status: LeadStatus | 'all' | 'needs_contact' | 'at_risk' | 'inactive') => void;
 }
 
 export function LeadsFilters({
@@ -17,13 +17,16 @@ export function LeadsFilters({
   statusFilter,
   onStatusFilterChange,
 }: LeadsFiltersProps) {
-  const statuses: Array<{ value: LeadStatus | 'all'; label: string }> = [
+  const statuses: Array<{ value: LeadStatus | 'all' | 'needs_contact' | 'at_risk' | 'inactive'; label: string; variant?: 'default' | 'outline' | 'destructive' | 'secondary' }> = [
     { value: 'all', label: 'Todos' },
     { value: 'new', label: 'Novos' },
     { value: 'contacted', label: 'Contatados' },
     { value: 'active', label: 'Ativos' },
     { value: 'converted', label: 'Convertidos' },
     { value: 'lost', label: 'Perdidos' },
+    { value: 'needs_contact', label: '⚠️ Precisa Contato', variant: 'destructive' },
+    { value: 'at_risk', label: '⚠️ Risco de Perda', variant: 'destructive' },
+    { value: 'inactive', label: '⚠️ Inativos', variant: 'secondary' },
   ];
 
   return (
@@ -47,7 +50,7 @@ export function LeadsFilters({
           {statuses.map((status) => (
             <Button
               key={status.value}
-              variant={statusFilter === status.value ? 'default' : 'outline'}
+              variant={statusFilter === status.value ? 'default' : (status.variant || 'outline')}
               size="sm"
               onClick={() => onStatusFilterChange(status.value)}
               className="text-xs"

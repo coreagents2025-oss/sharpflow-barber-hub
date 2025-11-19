@@ -16,7 +16,7 @@ const CRM = () => {
   const { leads, loading, metrics } = useLeads(barbershopId);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<LeadStatus | 'all'>('all');
+  const [statusFilter, setStatusFilter] = useState<LeadStatus | 'all' | 'needs_contact' | 'at_risk' | 'inactive'>('all');
   const isMobile = useIsMobile();
 
   // Filtrar leads
@@ -27,8 +27,29 @@ const CRM = () => {
         lead.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         lead.phone.includes(searchQuery);
 
+      // Calcular dias desde última interação
+      const daysSinceLastInteraction = lead.last_interaction_at 
+        ? Math.floor((Date.now() - new Date(lead.last_interaction_at).getTime()) / (1000 * 60 * 60 * 24))
+        : 999;
+
       // Filtro de status
-      const matchesStatus = statusFilter === 'all' || lead.status === statusFilter;
+      let matchesStatus = false;
+      
+      if (statusFilter === 'all') {
+        matchesStatus = true;
+      } else if (statusFilter === 'needs_contact') {
+        // Leads novos há mais de 7 dias sem contato
+        matchesStatus = lead.status === 'new' && daysSinceLastInteraction > 7;
+      } else if (statusFilter === 'at_risk') {
+        // Leads ativos há mais de 60 dias sem agendamento
+        matchesStatus = lead.status === 'active' && daysSinceLastInteraction > 60;
+      } else if (statusFilter === 'inactive') {
+        // Leads sem agendamento nos últimos 90 dias
+        matchesStatus = daysSinceLastInteraction > 90 && lead.total_appointments > 0;
+      } else {
+        // Filtros normais de status
+        matchesStatus = lead.status === statusFilter;
+      }
 
       return matchesSearch && matchesStatus;
     });

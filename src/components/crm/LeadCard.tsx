@@ -19,6 +19,16 @@ export function LeadCard({ lead, isSelected, onClick }: LeadCardProps) {
     .join('')
     .toUpperCase();
 
+  // Calcular se precisa de atenção
+  const daysSinceLastInteraction = lead.last_interaction_at 
+    ? Math.floor((Date.now() - new Date(lead.last_interaction_at).getTime()) / (1000 * 60 * 60 * 24))
+    : 999;
+
+  const needsAttention = 
+    (lead.status === 'contacted' && daysSinceLastInteraction > 7) ||
+    (lead.status === 'active' && daysSinceLastInteraction > 30) ||
+    (lead.status === 'new' && daysSinceLastInteraction > 3);
+
   return (
     <Card
       className={`p-4 cursor-pointer transition-all hover:shadow-md ${
@@ -37,7 +47,14 @@ export function LeadCard({ lead, isSelected, onClick }: LeadCardProps) {
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2 mb-1">
             <h3 className="font-semibold text-sm truncate">{lead.full_name}</h3>
-            <LeadStatusBadge status={lead.status} />
+            <div className="flex items-center gap-1">
+              {needsAttention && (
+                <Badge variant="destructive" className="h-5 text-xs px-1.5">
+                  Atenção
+                </Badge>
+              )}
+              <LeadStatusBadge status={lead.status} />
+            </div>
           </div>
 
           <p className="text-xs text-muted-foreground mb-2">{lead.phone}</p>
