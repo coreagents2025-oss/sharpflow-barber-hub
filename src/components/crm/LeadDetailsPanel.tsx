@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LeadStatusBadge } from './LeadStatusBadge';
+import { LeadStatusSelector } from './LeadStatusSelector';
 import { Lead } from '@/hooks/useLeads';
 import { 
   Calendar, 
@@ -31,7 +31,13 @@ interface LeadDetailsPanelProps {
 export function LeadDetailsPanel({ lead }: LeadDetailsPanelProps) {
   const [isNoteDialogOpen, setIsNoteDialogOpen] = useState(false);
   const [isAppointmentDialogOpen, setIsAppointmentDialogOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
   const { user } = useAuth();
+
+  const handleStatusChange = () => {
+    setRefreshKey(prev => prev + 1);
+    window.location.reload(); // Força atualização da lista
+  };
 
   // Função para normalizar telefone para WhatsApp Web
   const normalizePhoneForWhatsApp = (phone: string): string => {
@@ -134,7 +140,11 @@ export function LeadDetailsPanel({ lead }: LeadDetailsPanelProps) {
           <div className="flex-1">
             <h2 className="text-2xl font-bold mb-1">{lead.full_name}</h2>
             <div className="flex items-center gap-2 mb-2">
-              <LeadStatusBadge status={lead.status} />
+              <LeadStatusSelector 
+                leadId={lead.id}
+                currentStatus={lead.status}
+                onStatusChange={handleStatusChange}
+              />
               {lead.lifetime_value > 500 && (
                 <Badge className="bg-gradient-to-r from-amber-500 to-amber-600">
                   Cliente Premium
