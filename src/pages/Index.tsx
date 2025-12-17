@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Navbar } from "@/components/Navbar";
 import { PricingCard } from "@/components/PricingCard";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { FloatingWhatsAppButton } from "@/components/FloatingWhatsAppButton";
 import { useNavigate } from "react-router-dom";
 import { Calendar, TrendingUp, Users, Clock, Star, Shield, Zap, CheckCircle2, ArrowRight, Scissors } from "lucide-react";
 import heroImage from "@/assets/hero-barbershop.jpg";
@@ -370,6 +371,8 @@ const Index = () => {
           </div>
         </div>
       </footer>
+
+      <FloatingWhatsAppButton />
     </div>;
 };
 export default Index;

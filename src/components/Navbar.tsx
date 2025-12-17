@@ -151,16 +151,6 @@ export const Navbar = () => {
                           Home
                         </Button>
                       </Link>
-                      <Link to="/services" onClick={() => setMobileMenuOpen(false)}>
-                        <Button variant={isActive("/services") ? "default" : "ghost"} size="sm" className="w-full justify-start touch-target text-sm">
-                          Serviços
-                        </Button>
-                      </Link>
-                      <Link to="/booking" onClick={() => setMobileMenuOpen(false)}>
-                        <Button variant={isActive("/booking") ? "default" : "ghost"} size="sm" className="w-full justify-start touch-target text-sm">
-                          Agendar
-                        </Button>
-                      </Link>
                     </>
                   )}
                 </div>
