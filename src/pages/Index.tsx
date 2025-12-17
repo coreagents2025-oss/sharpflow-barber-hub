@@ -334,8 +334,8 @@ const Index = () => {
               <h4 className="font-semibold mb-4">Suporte</h4>
               <ul className="space-y-2 text-sm">
                 <li>
-                  <a href="https://wa.me/5541983457701" target="_blank" rel="noopener noreferrer" className="text-primary-foreground/80 hover:text-accent transition-colors flex items-center gap-2">
-                    <span>WhatsApp: (41) 9834-5701</span>
+                  <a href="https://wa.me/5541983455701" target="_blank" rel="noopener noreferrer" className="text-primary-foreground/80 hover:text-accent transition-colors flex items-center gap-2">
+                    <span>WhatsApp: (41) 98345-5701</span>
                   </a>
                 </li>
                 <li>
