@@ -196,7 +196,7 @@ export const Navbar = () => {
             {/* CTA "Agendar" - APENAS em landing pages */}
             {!isInAdminPanel && <Button 
                 className="hidden sm:flex bg-gradient-to-r from-accent to-accent/80 hover:from-accent/90 hover:to-accent/70 transition-all"
-                onClick={() => window.open('https://wa.me/5511915761294', '_blank')}
+                onClick={() => window.open('https://wa.me/5541983457701', '_blank')}
               >
                 Chamar no WhatsApp
               </Button>}
