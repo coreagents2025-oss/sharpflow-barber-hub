@@ -1,12 +1,12 @@
 import { MessageCircle } from "lucide-react";
 
-const WHATSAPP_NUMBER = "5541983455701";
+const WHATSAPP_PHONE = "554198345701";
 const DEFAULT_MESSAGE = "Olá! Gostaria de mais informações sobre os serviços da barbearia.";
 
 export const FloatingWhatsAppButton = () => {
   const handleClick = () => {
     const encodedMessage = encodeURIComponent(DEFAULT_MESSAGE);
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`, '_blank');
+    window.open(`https://api.whatsapp.com/send/?phone=${WHATSAPP_PHONE}&text=${encodedMessage}`, '_blank');
   };
 
   return (
