@@ -7,7 +7,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { supabase } from '@/integrations/supabase/client';
 import { useBooking } from '@/hooks/useBooking';
 import { toast } from 'sonner';
-import { Calendar as CalendarIcon, Clock, AlertCircle } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, AlertCircle, X } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -52,11 +52,8 @@ export function CreateAppointmentDialog({
   const [selectedTime, setSelectedTime] = useState('');
   const [isLoadingServices, setIsLoadingServices] = useState(false);
   const [isLoadingBarbers, setIsLoadingBarbers] = useState(false);
-  const [availableTimes] = useState([
-    '09:00', '09:30', '10:00', '10:30', '11:00', '11:30',
-    '14:00', '14:30', '15:00', '15:30', '16:00', '16:30',
-    '17:00', '17:30', '18:00', '18:30', '19:00'
-  ]);
+  const [availableTimes, setAvailableTimes] = useState<string[]>([]);
+  const [occupiedTimes, setOccupiedTimes] = useState<string[]>([]);
 
   const { createBooking, isSubmitting } = useBooking(barbershopId);
 
@@ -66,6 +63,20 @@ export function CreateAppointmentDialog({
       fetchBarbers();
     }
   }, [open, barbershopId]);
+
+  // Gerar horários disponíveis quando data for selecionada
+  useEffect(() => {
+    if (selectedDate && barbershopId) {
+      generateAvailableTimes();
+    }
+  }, [selectedDate, barbershopId]);
+
+  // Buscar horários ocupados quando barbeiro for selecionado
+  useEffect(() => {
+    if (selectedDate && selectedBarber) {
+      fetchOccupiedTimes();
+    }
+  }, [selectedDate, selectedBarber, selectedService]);
 
   const fetchServices = async () => {
     if (!barbershopId) {
@@ -116,6 +127,113 @@ export function CreateAppointmentDialog({
     }
 
     setBarbers(data || []);
+  };
+
+  const generateAvailableTimes = async () => {
+    if (!selectedDate || !barbershopId) return;
+
+    const dateStr = selectedDate.toISOString().split('T')[0];
+    
+    // Buscar configuração do dia para pegar horários de funcionamento
+    const { data: schedule } = await supabase
+      .from('daily_schedules')
+      .select('working_hours_start, working_hours_end, blocked_slots')
+      .eq('barbershop_id', barbershopId)
+      .eq('date', dateStr)
+      .maybeSingle();
+
+    const times: string[] = [];
+    let startHour = 9;
+    let endHour = 19;
+
+    // Se tem schedule configurado, usar horários do banco
+    if (schedule) {
+      if (schedule.working_hours_start) {
+        startHour = parseInt(schedule.working_hours_start.split(':')[0]);
+      }
+      if (schedule.working_hours_end) {
+        endHour = parseInt(schedule.working_hours_end.split(':')[0]);
+      }
+    }
+
+    // Gerar horários (a cada 30 minutos)
+    for (let hour = startHour; hour < endHour; hour++) {
+      const time1 = `${hour.toString().padStart(2, '0')}:00`;
+      const time2 = `${hour.toString().padStart(2, '0')}:30`;
+      
+      // Verificar se não está nos bloqueados
+      if (!schedule?.blocked_slots?.includes(time1)) {
+        times.push(time1);
+      }
+      if (!schedule?.blocked_slots?.includes(time2)) {
+        times.push(time2);
+      }
+    }
+
+    setAvailableTimes(times);
+  };
+
+  const fetchOccupiedTimes = async () => {
+    if (!selectedBarber || !selectedDate || !barbershopId) return;
+
+    const dateStr = selectedDate.toISOString().split('T')[0];
+    
+    // Buscar appointments COM informações do serviço para calcular duração
+    // Excluir status que liberam o horário: cancelled, no_show, completed
+    const { data: appointments } = await supabase
+      .from('appointments')
+      .select(`
+        scheduled_at,
+        status,
+        services (
+          duration_minutes
+        )
+      `)
+      .eq('barber_id', selectedBarber)
+      .gte('scheduled_at', `${dateStr}T00:00:00`)
+      .lt('scheduled_at', `${dateStr}T23:59:59`)
+      .not('status', 'in', '(cancelled,no_show,completed)');
+
+    // Calcular TODOS os slots ocupados baseado na duração COMPLETA do serviço
+    const occupiedSlots: string[] = [];
+    
+    appointments?.forEach(apt => {
+      const startTime = new Date(apt.scheduled_at);
+      const duration = (apt.services as any)?.duration_minutes || 30;
+      const slots = Math.ceil(duration / 30); // Quantos slots de 30min
+      
+      for (let i = 0; i < slots; i++) {
+        const slotTime = new Date(startTime);
+        slotTime.setMinutes(startTime.getMinutes() + (i * 30));
+        
+        const timeStr = `${slotTime.getHours().toString().padStart(2, '0')}:${slotTime.getMinutes().toString().padStart(2, '0')}`;
+        occupiedSlots.push(timeStr);
+      }
+    });
+    
+    // Também bloquear slots que seriam afetados pelo NOVO serviço selecionado
+    const selectedServiceData = services.find(s => s.id === selectedService);
+    if (selectedServiceData && selectedServiceData.duration_minutes > 30) {
+      const newServiceSlots = Math.ceil(selectedServiceData.duration_minutes / 30);
+      const additionalBlockedSlots: string[] = [];
+      
+      appointments?.forEach(apt => {
+        const startTime = new Date(apt.scheduled_at);
+        
+        // Bloquear slots ANTES do agendamento existente que conflitariam
+        for (let i = 1; i < newServiceSlots; i++) {
+          const slotTime = new Date(startTime);
+          slotTime.setMinutes(startTime.getMinutes() - (i * 30));
+          
+          const timeStr = `${slotTime.getHours().toString().padStart(2, '0')}:${slotTime.getMinutes().toString().padStart(2, '0')}`;
+          additionalBlockedSlots.push(timeStr);
+        }
+      });
+      
+      occupiedSlots.push(...additionalBlockedSlots);
+    }
+    
+    setOccupiedTimes([...new Set(occupiedSlots)]); // Remove duplicatas
   };
 
   const handleSubmit = async () => {
@@ -244,24 +362,37 @@ export function CreateAppointmentDialog({
           {/* Horário */}
           {selectedDate && (
             <div className="space-y-2">
-              <Label>Horário *</Label>
+              <Label>Horário * {selectedBarber && <span className="text-muted-foreground text-xs">(baseado na agenda do barbeiro)</span>}</Label>
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                {availableTimes.map((time) => (
-                  <Button
-                    key={time}
-                    type="button"
-                    variant={selectedTime === time ? 'default' : 'outline'}
-                    className={cn(
-                      'h-10 text-sm',
-                      selectedTime === time && 'bg-accent hover:bg-accent/90'
-                    )}
-                    onClick={() => setSelectedTime(time)}
-                  >
-                    <Clock className="h-3 w-3 mr-1" />
-                    {time}
-                  </Button>
-                ))}
+                {availableTimes.map((time) => {
+                  const isOccupied = selectedBarber && occupiedTimes.includes(time);
+                  
+                  return (
+                    <Button
+                      key={time}
+                      type="button"
+                      variant={selectedTime === time ? 'default' : 'outline'}
+                      className={cn(
+                        'h-10 text-sm',
+                        selectedTime === time && 'bg-accent hover:bg-accent/90',
+                        isOccupied && 'opacity-50 cursor-not-allowed line-through'
+                      )}
+                      onClick={() => !isOccupied && setSelectedTime(time)}
+                      disabled={!!isOccupied}
+                      title={isOccupied ? 'Horário ocupado' : undefined}
+                    >
+                      <Clock className="h-3 w-3 mr-1" />
+                      {time}
+                      {isOccupied && <X className="h-3 w-3 ml-1" />}
+                    </Button>
+                  );
+                })}
               </div>
+              {!selectedBarber && (
+                <p className="text-xs text-muted-foreground">
+                  Selecione um barbeiro para ver os horários ocupados
+                </p>
+              )}
             </div>
           )}
         </div>

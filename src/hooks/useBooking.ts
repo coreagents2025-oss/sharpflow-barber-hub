@@ -146,22 +146,22 @@ export const useBooking = (barbershopId: string | null) => {
       const endTime = new Date(scheduledAt);
       endTime.setMinutes(endTime.getMinutes() + durationMinutes);
 
-      // Verificar se HÁ OVERLAP com agendamentos existentes
+      // Verificar se HÁ OVERLAP com agendamentos existentes (excluindo cancelled, no_show, completed)
       const { data: existingAppointments } = await supabase
         .from('appointments')
-        .select('scheduled_at, services(duration_minutes)')
+        .select('scheduled_at, status, services(duration_minutes)')
         .eq('barber_id', data.barberId)
         .gte('scheduled_at', scheduledAt.toISOString())
         .lt('scheduled_at', endTime.toISOString())
-        .neq('status', 'cancelled');
+        .not('status', 'in', '(cancelled,no_show,completed)');
 
       // Também verificar agendamentos que COMEÇAM ANTES mas TERMINAM DURANTE
       const { data: overlappingBefore } = await supabase
         .from('appointments')
-        .select('scheduled_at, services(duration_minutes)')
+        .select('scheduled_at, status, services(duration_minutes)')
         .eq('barber_id', data.barberId)
         .lt('scheduled_at', scheduledAt.toISOString())
-        .neq('status', 'cancelled');
+        .not('status', 'in', '(cancelled,no_show,completed)');
 
       // Validar overlaps
       let hasOverlap = existingAppointments && existingAppointments.length > 0;
@@ -274,7 +274,9 @@ export const useBooking = (barbershopId: string | null) => {
       console.error('Error creating booking:', error);
       
       // Mensagens específicas por tipo de erro
-      if (error.code === '23505') { // Unique violation
+      if (error.message?.includes('CONFLITO_AGENDAMENTO')) {
+        toast.error('Este horário já está ocupado. Por favor, escolha outro horário ou barbeiro.');
+      } else if (error.code === '23505') { // Unique violation
         toast.error('Já existe um agendamento neste horário.');
       } else if (error.message?.includes('RLS') || error.message?.includes('policy')) {
         toast.error('Erro de permissão. Entre em contato com a barbearia.');

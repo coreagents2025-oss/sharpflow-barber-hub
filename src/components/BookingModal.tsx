@@ -172,10 +172,12 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId }: Booking
     const dateStr = selectedDate.toISOString().split('T')[0];
     
     // Buscar appointments COM informações do serviço para calcular duração
+    // Excluir status que liberam o horário: cancelled, no_show, completed
     const { data: appointments } = await supabase
       .from('appointments')
       .select(`
         scheduled_at,
+        status,
         services (
           duration_minutes
         )
@@ -183,9 +185,9 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId }: Booking
       .eq('barber_id', selectedBarber)
       .gte('scheduled_at', `${dateStr}T00:00:00`)
       .lt('scheduled_at', `${dateStr}T23:59:59`)
-      .neq('status', 'cancelled');
+      .not('status', 'in', '(cancelled,no_show,completed)');
 
-    // Calcular TODOS os slots ocupados baseado na duração
+    // Calcular TODOS os slots ocupados baseado na duração COMPLETA do serviço
     const occupiedSlots: string[] = [];
     
     appointments?.forEach(apt => {
@@ -202,7 +204,29 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId }: Booking
       }
     });
     
-    setOccupiedTimes(occupiedSlots);
+    // Também bloquear slots que seriam afetados pelo NOVO serviço selecionado
+    // Se o serviço tem 60min, preciso bloquear slots 30min antes também
+    if (service && service.duration_minutes > 30) {
+      const newServiceSlots = Math.ceil(service.duration_minutes / 30);
+      const additionalBlockedSlots: string[] = [];
+      
+      appointments?.forEach(apt => {
+        const startTime = new Date(apt.scheduled_at);
+        
+        // Bloquear slots ANTES do agendamento existente que conflitariam
+        for (let i = 1; i < newServiceSlots; i++) {
+          const slotTime = new Date(startTime);
+          slotTime.setMinutes(startTime.getMinutes() - (i * 30));
+          
+          const timeStr = `${slotTime.getHours().toString().padStart(2, '0')}:${slotTime.getMinutes().toString().padStart(2, '0')}`;
+          additionalBlockedSlots.push(timeStr);
+        }
+      });
+      
+      occupiedSlots.push(...additionalBlockedSlots);
+    }
+    
+    setOccupiedTimes([...new Set(occupiedSlots)]); // Remove duplicatas
   };
 
   const checkAllBarbersAvailability = async () => {
