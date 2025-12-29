@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { LeadStatusSelector } from './LeadStatusSelector';
 import { Lead } from '@/hooks/useLeads';
+import { useLeadSubscription } from '@/hooks/useLeadSubscription';
 import { 
   Calendar, 
   DollarSign, 
@@ -23,6 +24,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { AddNoteDialog } from './AddNoteDialog';
 import { CreateAppointmentDialog } from './CreateAppointmentDialog';
 import { ManageTagsDialog } from './ManageTagsDialog';
+import { SellSubscriptionDialog } from '@/components/subscriptions/SellSubscriptionDialog';
+import { SubscriptionPanel } from '@/components/subscriptions/SubscriptionPanel';
+import { SubscriptionBadge } from '@/components/subscriptions/SubscriptionBadge';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -35,9 +39,21 @@ export function LeadDetailsPanel({ lead }: LeadDetailsPanelProps) {
   const [isNoteDialogOpen, setIsNoteDialogOpen] = useState(false);
   const [isAppointmentDialogOpen, setIsAppointmentDialogOpen] = useState(false);
   const [isTagsDialogOpen, setIsTagsDialogOpen] = useState(false);
+  const [isSellSubscriptionOpen, setIsSellSubscriptionOpen] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const { user } = useAuth();
+
+  const {
+    subscription,
+    loading: subscriptionLoading,
+    availablePlans,
+    hasActiveSubscription,
+    creditsRemaining,
+    createSubscription,
+    renewSubscription,
+    cancelSubscription,
+  } = useLeadSubscription(lead?.id, lead?.barbershop_id);
 
   const handleStatusChange = () => {
     setRefreshKey(prev => prev + 1);
@@ -174,12 +190,19 @@ export function LeadDetailsPanel({ lead }: LeadDetailsPanelProps) {
 
           <div className="flex-1">
             <h2 className="text-2xl font-bold mb-1">{lead.full_name}</h2>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
               <LeadStatusSelector 
                 leadId={lead.id}
                 currentStatus={lead.status}
                 onStatusChange={handleStatusChange}
               />
+              {hasActiveSubscription && (
+                <SubscriptionBadge 
+                  creditsRemaining={creditsRemaining}
+                  totalCredits={subscription?.service?.credits_per_month}
+                  expiresAt={subscription?.expires_at}
+                />
+              )}
               {lead.lifetime_value > 500 && (
                 <Badge className="bg-gradient-to-r from-amber-500 to-amber-600">
                   Cliente Premium
@@ -265,6 +288,14 @@ export function LeadDetailsPanel({ lead }: LeadDetailsPanelProps) {
             )}
           </CardContent>
         </Card>
+
+        {/* Painel de Assinatura */}
+        <SubscriptionPanel
+          subscription={subscription}
+          onRenew={renewSubscription}
+          onCancel={cancelSubscription}
+          onSell={() => setIsSellSubscriptionOpen(true)}
+        />
 
         {/* Ações Rápidas */}
         <Card>
@@ -369,6 +400,14 @@ export function LeadDetailsPanel({ lead }: LeadDetailsPanelProps) {
         onOpenChange={setIsTagsDialogOpen}
         leadId={lead.id}
         leadName={lead.full_name}
+      />
+
+      <SellSubscriptionDialog
+        open={isSellSubscriptionOpen}
+        onOpenChange={setIsSellSubscriptionOpen}
+        leadName={lead.full_name}
+        plans={availablePlans}
+        onConfirm={createSubscription}
       />
     </ScrollArea>
   );

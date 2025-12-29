@@ -23,6 +23,9 @@ interface Service {
   image_url: string | null;
   is_active: boolean;
   is_popular: boolean;
+  is_subscription_plan: boolean;
+  credits_per_month: number;
+  subscription_duration_days: number;
 }
 
 const ServicesManagement = () => {
@@ -42,6 +45,9 @@ const ServicesManagement = () => {
     image_url: '',
     is_active: true,
     is_popular: false,
+    is_subscription_plan: false,
+    credits_per_month: '',
+    subscription_duration_days: '30',
   });
 
   useEffect(() => {
@@ -99,6 +105,9 @@ const ServicesManagement = () => {
         image_url: imageUrl || null,
         is_active: formData.is_active,
         is_popular: formData.is_popular,
+        is_subscription_plan: formData.is_subscription_plan,
+        credits_per_month: formData.is_subscription_plan ? parseInt(formData.credits_per_month) || 0 : 0,
+        subscription_duration_days: formData.is_subscription_plan ? parseInt(formData.subscription_duration_days) || 30 : 30,
         barbershop_id: barbershopId,
       };
 
@@ -154,6 +163,9 @@ const ServicesManagement = () => {
       image_url: service.image_url || '',
       is_active: service.is_active,
       is_popular: service.is_popular,
+      is_subscription_plan: service.is_subscription_plan || false,
+      credits_per_month: (service.credits_per_month || 0).toString(),
+      subscription_duration_days: (service.subscription_duration_days || 30).toString(),
     });
     setDialogOpen(true);
   };
@@ -167,6 +179,9 @@ const ServicesManagement = () => {
       image_url: '',
       is_active: true,
       is_popular: false,
+      is_subscription_plan: false,
+      credits_per_month: '',
+      subscription_duration_days: '30',
     });
     setEditingService(null);
     setImageFile(null);
@@ -298,7 +313,7 @@ const ServicesManagement = () => {
                   )}
                 </div>
 
-                <div className="flex gap-6">
+                <div className="flex flex-wrap gap-4">
                   <div className="flex items-center space-x-2">
                     <Switch
                       id="active"
@@ -316,7 +331,46 @@ const ServicesManagement = () => {
                     />
                     <Label htmlFor="popular">Popular</Label>
                   </div>
+
+                  <div className="flex items-center space-x-2">
+                    <Switch
+                      id="subscription"
+                      checked={formData.is_subscription_plan}
+                      onCheckedChange={(checked) => setFormData({ ...formData, is_subscription_plan: checked })}
+                    />
+                    <Label htmlFor="subscription">Plano de Assinatura</Label>
+                  </div>
                 </div>
+
+                {formData.is_subscription_plan && (
+                  <div className="grid md:grid-cols-2 gap-4 p-4 border rounded-lg bg-muted/30">
+                    <div className="space-y-2">
+                      <Label htmlFor="credits">Créditos por Período</Label>
+                      <Input
+                        id="credits"
+                        type="number"
+                        min="1"
+                        value={formData.credits_per_month}
+                        onChange={(e) => setFormData({ ...formData, credits_per_month: e.target.value })}
+                        placeholder="Ex: 4 cortes"
+                        required={formData.is_subscription_plan}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="duration">Duração (dias)</Label>
+                      <Input
+                        id="duration_days"
+                        type="number"
+                        min="1"
+                        value={formData.subscription_duration_days}
+                        onChange={(e) => setFormData({ ...formData, subscription_duration_days: e.target.value })}
+                        placeholder="Ex: 30 dias"
+                        required={formData.is_subscription_plan}
+                      />
+                    </div>
+                  </div>
+                )}
 
                 <Button 
                   type="submit" 
@@ -336,10 +390,15 @@ const ServicesManagement = () => {
               <CardHeader>
                 <div className="flex justify-between items-start">
                   <div>
-                    <CardTitle className="flex items-center gap-2">
+                    <CardTitle className="flex items-center gap-2 flex-wrap">
                       {service.name}
                       {service.is_popular && (
                         <Badge className="bg-accent">Popular</Badge>
+                      )}
+                      {service.is_subscription_plan && (
+                        <Badge variant="outline" className="border-primary text-primary">
+                          Assinatura
+                        </Badge>
                       )}
                     </CardTitle>
                     <CardDescription className="mt-2">
@@ -365,6 +424,13 @@ const ServicesManagement = () => {
                     <span className="text-muted-foreground">Duração:</span>
                     <span>{service.duration_minutes} min</span>
                   </div>
+
+                  {service.is_subscription_plan && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Créditos:</span>
+                      <span>{service.credits_per_month} / {service.subscription_duration_days} dias</span>
+                    </div>
+                  )}
                   
                   <div className="flex flex-wrap gap-2 pt-2">
                     <Button
