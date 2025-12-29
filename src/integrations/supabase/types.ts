@@ -586,36 +586,42 @@ export type Database = {
       client_subscriptions: {
         Row: {
           barbershop_id: string
-          client_id: string
+          client_id: string | null
           created_at: string
           credits_remaining: number
           expires_at: string | null
           id: string
+          lead_id: string | null
           plan_id: string
+          service_id: string | null
           started_at: string
           status: string
           updated_at: string
         }
         Insert: {
           barbershop_id: string
-          client_id: string
+          client_id?: string | null
           created_at?: string
           credits_remaining?: number
           expires_at?: string | null
           id?: string
+          lead_id?: string | null
           plan_id: string
+          service_id?: string | null
           started_at?: string
           status?: string
           updated_at?: string
         }
         Update: {
           barbershop_id?: string
-          client_id?: string
+          client_id?: string | null
           created_at?: string
           credits_remaining?: number
           expires_at?: string | null
           id?: string
+          lead_id?: string | null
           plan_id?: string
+          service_id?: string | null
           started_at?: string
           status?: string
           updated_at?: string
@@ -636,10 +642,24 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "client_subscriptions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "client_subscriptions_plan_id_fkey"
             columns: ["plan_id"]
             isOneToOne: false
             referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_subscriptions_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
             referencedColumns: ["id"]
           },
         ]
@@ -1209,45 +1229,54 @@ export type Database = {
           barbershop_id: string
           category_id: string | null
           created_at: string
+          credits_per_month: number | null
           description: string | null
           duration_minutes: number
           id: string
           image_url: string | null
           is_active: boolean | null
           is_popular: boolean | null
+          is_subscription_plan: boolean | null
           max_duration_minutes: number | null
           name: string
           price: number
+          subscription_duration_days: number | null
           updated_at: string
         }
         Insert: {
           barbershop_id: string
           category_id?: string | null
           created_at?: string
+          credits_per_month?: number | null
           description?: string | null
           duration_minutes: number
           id?: string
           image_url?: string | null
           is_active?: boolean | null
           is_popular?: boolean | null
+          is_subscription_plan?: boolean | null
           max_duration_minutes?: number | null
           name: string
           price: number
+          subscription_duration_days?: number | null
           updated_at?: string
         }
         Update: {
           barbershop_id?: string
           category_id?: string | null
           created_at?: string
+          credits_per_month?: number | null
           description?: string | null
           duration_minutes?: number
           id?: string
           image_url?: string | null
           is_active?: boolean | null
           is_popular?: boolean | null
+          is_subscription_plan?: boolean | null
           max_duration_minutes?: number | null
           name?: string
           price?: number
+          subscription_duration_days?: number | null
           updated_at?: string
         }
         Relationships: [
@@ -1270,6 +1299,55 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "service_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_credit_usage: {
+        Row: {
+          appointment_id: string | null
+          created_by: string | null
+          id: string
+          notes: string | null
+          subscription_id: string
+          used_at: string
+        }
+        Insert: {
+          appointment_id?: string | null
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          subscription_id: string
+          used_at?: string
+        }
+        Update: {
+          appointment_id?: string | null
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          subscription_id?: string
+          used_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_credit_usage_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_credit_usage_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments_with_client"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_credit_usage_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "client_subscriptions"
             referencedColumns: ["id"]
           },
         ]
