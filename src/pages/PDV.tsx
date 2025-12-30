@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { Clock, User, Scissors, CheckCircle2, AlertCircle, Bell, TrendingUp, Users as UsersIcon, Calendar as CalendarIcon, Percent, DollarSign, UserCheck, UserX, CreditCard } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { PaymentModal } from '@/components/PaymentModal';
+import { SubscriptionBadgeInline } from '@/components/subscriptions/SubscriptionBadgeInline';
 
 interface Appointment {
   id: string;
@@ -800,9 +801,13 @@ const PDV = () => {
                           {/* Header: Nome e Telefone */}
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2 mb-1">
+                              <div className="flex items-center gap-2 mb-1 flex-wrap">
                                 <User className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
                                 <span className="font-medium text-xs sm:text-sm truncate">{apt.client_name || 'Cliente'}</span>
+                                {/* Badge de Assinante - será renderizado via componente separado */}
+                                <SubscriptionBadgeInline 
+                                  leadId={apt.client_type === 'lead' ? apt.unified_client_id : undefined} 
+                                />
                               </div>
                               {apt.client_phone && (
                                 <span className="text-[10px] sm:text-xs text-muted-foreground truncate block">
