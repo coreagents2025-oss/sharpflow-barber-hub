@@ -112,6 +112,7 @@ const PublicCatalog = () => {
       .select('*')
       .eq('barbershop_id', barbershopId)
       .eq('is_active', true)
+      .eq('is_subscription_plan', false)
       .order('is_popular', { ascending: false })
       .order('name');
 
