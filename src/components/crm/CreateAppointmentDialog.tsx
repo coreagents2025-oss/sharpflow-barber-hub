@@ -91,6 +91,7 @@ export function CreateAppointmentDialog({
       .select('id, name, price, duration_minutes')
       .eq('barbershop_id', barbershopId)
       .eq('is_active', true)
+      .eq('is_subscription_plan', false)
       .order('name');
 
     setIsLoadingServices(false);
