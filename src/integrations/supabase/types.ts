@@ -1117,6 +1117,39 @@ export type Database = {
           },
         ]
       }
+      platform_metrics: {
+        Row: {
+          bookings: number
+          created_at: string | null
+          id: string
+          metric_date: string
+          page_views: number
+          revenue: number
+          signups: number
+          updated_at: string | null
+        }
+        Insert: {
+          bookings?: number
+          created_at?: string | null
+          id?: string
+          metric_date?: string
+          page_views?: number
+          revenue?: number
+          signups?: number
+          updated_at?: string | null
+        }
+        Update: {
+          bookings?: number
+          created_at?: string | null
+          id?: string
+          metric_date?: string
+          page_views?: number
+          revenue?: number
+          signups?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -1910,6 +1943,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_super_admin: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
       app_role: "admin" | "barber" | "client" | "super_admin"
