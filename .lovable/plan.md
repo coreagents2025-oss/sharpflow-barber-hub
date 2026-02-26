@@ -1,121 +1,138 @@
 
 
-## Plano: PWA Completa para BarberPLUS (Android + iOS)
+## Plano: Painel Super Admin (Gestao da Plataforma)
 
-### Situacao Atual
-- Nenhum manifest, service worker ou configuracao PWA existe no projeto
-- Favicon aponta para URL externa (Google Storage)
-- Logo da marca esta em URL externa: `storage.googleapis.com/...Black and White Modern Barbershop Logo`
-- Projeto usa Vite sem plugin PWA
-- Cores da marca: preto (#171717) e dourado/accent (#E8930C)
+### Problema
+
+Hoje o sistema tem apenas roles de **barbershop** (admin, barber, client). Nao existe um usuario de **plataforma** capaz de:
+- Ver e gerenciar todas as barbearias cadastradas
+- Metrificar a landing page (visitas, conversoes, cadastros)
+- Dar suporte a clientes e donos de barbearia
+- Ver dados agregados de toda a plataforma
+
+### Solucao
+
+Criar um role `super_admin` e um painel administrativo completo separado do painel de barbearia.
 
 ---
 
-### Arquivos a Criar/Modificar
+### 1. Banco de Dados
 
-#### 1. Instalar dependencia: `vite-plugin-pwa`
-Adicionar `vite-plugin-pwa` e `workbox-window` ao projeto.
-
-#### 2. `public/manifest.webmanifest` (CRIAR)
-```json
-{
-  "name": "BarberPLUS - Gestao Completa para Barbearias",
-  "short_name": "BarberPLUS",
-  "start_url": "/?source=pwa",
-  "scope": "/",
-  "display": "standalone",
-  "background_color": "#171717",
-  "theme_color": "#171717",
-  "categories": ["business", "productivity"],
-  "prefer_related_applications": false,
-  "id": "/?app-id=barberplus-pwa",
-  "icons": [
-    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
-    { "src": "/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
-    { "src": "/icons/apple-touch-icon-180.png", "sizes": "180x180", "type": "image/png" }
-  ]
-}
+**Adicionar valor ao enum `app_role`:**
+```text
+ALTER TYPE app_role ADD VALUE 'super_admin';
 ```
 
-#### 3. Icones PNG (CRIAR em `public/icons/`)
-Como nao temos acesso a ferramentas de geracao de imagem neste modo, criaremos icones SVG inline convertidos para PNG usando canvas no build, OU usaremos a imagem da logo que ja esta no projeto como referencia.
+**Criar tabela `platform_metrics` para armazenar metricas da landing page:**
+- page_views, signups, bookings por dia
+- Agregacoes automaticas via triggers ou cron
 
-**Abordagem pratica**: Criar um script/componente que gera os icones a partir de um SVG da marca (a tesoura + texto "BarberPLUS"), ou usar icones PNG placeholder com a cor da marca que o usuario pode substituir depois.
+**Criar tabela `support_tickets` (opcional - fase 2):**
+- Para gerenciar tickets de suporte dos clientes
 
-Os arquivos necessarios:
-- `public/icons/icon-192.png`
-- `public/icons/icon-512.png`
-- `public/icons/maskable-192.png`
-- `public/icons/maskable-512.png`
-- `public/icons/apple-touch-icon-180.png`
+**Criar funcao `is_super_admin()`:**
+- Security definer function para verificar se o usuario tem role `super_admin`
+- Usada nas RLS policies das novas tabelas e para acesso cross-barbershop
 
-**Nota importante**: Vou criar icones SVG que serao referenciados, mas o usuario devera gerar os PNGs a partir da logo real da marca. Incluirei instrucoes claras.
+**RLS Policies:**
+- Super admins podem SELECT em todas as tabelas de barbearias (barbershops, appointments, payments, leads, etc.)
+- Super admins NAO podem modificar dados das barbearias (apenas visualizar para suporte)
 
-#### 4. `vite.config.ts` (MODIFICAR)
-Adicionar `VitePWA` plugin com:
-- Manifest inline (ou link para o webmanifest)
-- Workbox config com `navigateFallbackDenylist: [/^\/~oauth/]`
-- Estrategia NetworkFirst para navegacao
-- StaleWhileRevalidate para assets
+### 2. Paginas do Painel Super Admin
 
-#### 5. `index.html` (MODIFICAR)
-Adicionar no `<head>`:
-- `<link rel="manifest" href="/manifest.webmanifest">`
-- `<meta name="theme-color" content="#171717">`
-- `<meta name="apple-mobile-web-app-capable" content="yes">`
-- `<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">`
-- `<meta name="apple-mobile-web-app-title" content="BarberPLUS">`
-- `<link rel="apple-touch-icon" href="/icons/apple-touch-icon-180.png">`
+**`/super-admin` - Dashboard da Plataforma:**
+- Total de barbearias cadastradas
+- Total de usuarios (admins + barbers + clients)
+- Agendamentos totais (hoje / semana / mes)
+- Faturamento total da plataforma
+- Graficos de crescimento (novos cadastros por semana)
 
-#### 6. `public/offline.html` (CRIAR)
-Pagina offline simples com a marca BarberPLUS, informando que o usuario esta sem conexao.
+**`/super-admin/barbershops` - Gestao de Barbearias:**
+- Lista de todas as barbearias com busca e filtros
+- Status (ativa, inativa, qtd barbeiros, qtd servicos)
+- Clicar em uma barbearia abre detalhes (dados, barbeiros, servicos, metricas)
 
-#### 7. `src/components/InstallPWA.tsx` (CRIAR)
-Componente com:
-- **Android**: Captura `beforeinstallprompt`, mostra botao "Instalar App"
-- **iOS**: Detecta Safari iOS, mostra instrucoes "Toque em Compartilhar > Adicionar a Tela de Inicio"
-- Banner discreto (toast/banner fixo no bottom) que aparece apenas 1x (localStorage)
+**`/super-admin/users` - Gestao de Usuarios:**
+- Lista de todos os usuarios da plataforma
+- Filtro por role (admin, barber, client)
+- Acoes: ver detalhes, desativar conta
 
-#### 8. `src/App.tsx` (MODIFICAR)
-Importar e renderizar `<InstallPWA />` dentro do layout.
+**`/super-admin/metrics` - Metricas da Landing Page:**
+- Page views da pagina principal
+- Taxa de conversao (visita -> cadastro)
+- Servicos mais populares cross-barbearia
+- Graficos com Recharts (ja instalado)
 
-#### 9. `src/main.tsx` (MODIFICAR)
-Registrar o service worker gerado pelo vite-plugin-pwa.
+**`/super-admin/support` - Suporte (fase 2):**
+- Lista de tickets / problemas reportados
+- Chat com donos de barbearia
+
+### 3. Componentes
+
+**`SuperAdminLayout`** - Layout com sidebar propria (diferente da Navbar de barbearia)
+**`SuperAdminSidebar`** - Menu lateral com: Dashboard, Barbearias, Usuarios, Metricas, Suporte
+**`PlatformMetricsCards`** - Cards de metricas agregadas
+**`BarbershopsList`** - Tabela de barbearias com acoes
+**`UsersList`** - Tabela de usuarios com filtros
+
+### 4. Autenticacao e Protecao
+
+- Novo componente `SuperAdminRoute` que verifica `userRole === 'super_admin'`
+- `useAuth` ja suporta leitura de roles - apenas precisa reconhecer `super_admin`
+- `AuthRedirect` redireciona super_admin para `/super-admin` apos login
+- Navbar nao aparece no painel super admin (layout proprio)
+
+### 5. Criacao do Primeiro Super Admin
+
+- Criar o usuario super admin manualmente via SQL (inserir na tabela `user_roles` com role `super_admin`)
+- NAO expor cadastro de super admin na UI publica
 
 ---
 
-### Detalhes Tecnicos
+### Arquivos a Criar
 
-**Service Worker (via vite-plugin-pwa + Workbox)**:
-- `registerType: 'autoUpdate'` - atualiza automaticamente
-- Runtime caching:
-  - Navegacao: NetworkFirst (fallback offline.html)
-  - JS/CSS: StaleWhileRevalidate
-  - Imagens: CacheFirst com expiracao de 30 dias
-- `navigateFallbackDenylist: [/^\/~oauth/]` - nunca cachear OAuth
-- `skipWaiting: true`, `clientsClaim: true`
+| Arquivo | Descricao |
+|---------|-----------|
+| `src/pages/SuperAdmin/Dashboard.tsx` | Dashboard da plataforma |
+| `src/pages/SuperAdmin/Barbershops.tsx` | Gestao de barbearias |
+| `src/pages/SuperAdmin/Users.tsx` | Gestao de usuarios |
+| `src/pages/SuperAdmin/Metrics.tsx` | Metricas da landing |
+| `src/components/super-admin/SuperAdminLayout.tsx` | Layout com sidebar |
+| `src/components/super-admin/SuperAdminSidebar.tsx` | Menu lateral |
+| `src/components/super-admin/PlatformMetricsCards.tsx` | Cards de metricas |
+| `src/components/super-admin/BarbershopsList.tsx` | Tabela de barbearias |
+| `src/components/super-admin/UsersList.tsx` | Tabela de usuarios |
+| `src/components/SuperAdminRoute.tsx` | Protecao de rota |
 
-**Icones - Acao do usuario necessaria**:
-O usuario precisara gerar os PNGs a partir da logo real. Vou criar placeholders funcionais e instrucoes. Alternativa: posso usar a URL externa da logo existente para baixar e processar, mas como sao arquivos estaticos PNG, o ideal e o usuario fornecer os arquivos.
+### Arquivos a Modificar
 
-**Cores do tema**:
-- `theme_color`: `#171717` (--primary, preto da marca)
-- `background_color`: `#171717`
+| Arquivo | Mudanca |
+|---------|---------|
+| `src/App.tsx` | Adicionar rotas `/super-admin/*` |
+| `src/hooks/useAuth.tsx` | Reconhecer `super_admin` no redirect |
+| `src/components/AuthRedirect.tsx` | Redirecionar super_admin para `/super-admin` |
+
+### Migracoes SQL
+
+1. `ALTER TYPE app_role ADD VALUE 'super_admin'`
+2. Funcao `is_super_admin()` security definer
+3. Policies de SELECT cross-barbershop para super_admin nas tabelas: barbershops, appointments, payments, leads, profiles, barbers, services
+4. INSERT do primeiro usuario super admin
 
 ---
 
-### Checklist de Validacao (pos-implementacao)
+### Fases de Entrega
 
-- [ ] GET /manifest.webmanifest retorna 200 e content-type correto
-- [ ] GET /icons/icon-192.png retorna 200
-- [ ] GET /icons/icon-512.png retorna 200
-- [ ] GET /icons/maskable-192.png retorna 200
-- [ ] GET /icons/maskable-512.png retorna 200
-- [ ] GET /icons/apple-touch-icon-180.png retorna 200
-- [ ] Service Worker registrado e "controlled" no DevTools
-- [ ] start_url "/?source=pwa" abre 200 apos refresh
-- [ ] Android: instala, abre standalone e aparece no launcher
-- [ ] iOS: adiciona a Tela de Inicio, abre standalone e icone e o da marca
+**Fase 1 (este plano):**
+- Enum + funcao + policies
+- Dashboard com metricas reais do banco
+- Gestao de barbearias (listagem + detalhes)
+- Gestao de usuarios (listagem)
+- Protecao de rotas
+- Criacao do super admin
+
+**Fase 2 (futuro):**
+- Sistema de suporte / tickets
+- Analytics avancados da landing page (requer integracao com tracking)
+- Acoes administrativas (suspender barbearia, resetar senha)
 
