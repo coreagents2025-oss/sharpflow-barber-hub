@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Search, Users as UsersIcon } from 'lucide-react';
-import { useUsersList } from '@/hooks/useSuperAdminData';
+import { useUsersList, useChangeUserRole } from '@/hooks/useSuperAdminData';
 import { useState } from 'react';
 import { format } from 'date-fns';
 
@@ -30,6 +30,7 @@ const roleLabel = (role: string) => {
 
 export default function SuperAdminUsers() {
   const { data: users, isLoading } = useUsersList();
+  const changeRole = useChangeUserRole();
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
 
@@ -46,7 +47,7 @@ export default function SuperAdminUsers() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">Usuários</h1>
-            <p className="text-muted-foreground">Todos os usuários da plataforma</p>
+            <p className="text-muted-foreground">Gerenciar todos os usuários da plataforma</p>
           </div>
           <Badge variant="secondary" className="text-sm">
             <UsersIcon className="h-3 w-3 mr-1" />
@@ -57,12 +58,7 @@ export default function SuperAdminUsers() {
         <div className="flex gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por nome ou telefone..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10"
-            />
+            <Input placeholder="Buscar por nome ou telefone..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10" />
           </div>
           <Select value={roleFilter} onValueChange={setRoleFilter}>
             <SelectTrigger className="w-[160px]">
@@ -88,7 +84,8 @@ export default function SuperAdminUsers() {
                   <TableRow>
                     <TableHead>Nome</TableHead>
                     <TableHead>Telefone</TableHead>
-                    <TableHead>Role</TableHead>
+                    <TableHead>Role Atual</TableHead>
+                    <TableHead>Alterar Role</TableHead>
                     <TableHead>Criado em</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -100,6 +97,22 @@ export default function SuperAdminUsers() {
                       <TableCell>
                         <Badge variant={roleBadgeVariant(u.role) as any}>{roleLabel(u.role)}</Badge>
                       </TableCell>
+                      <TableCell>
+                        <Select
+                          value={u.role}
+                          onValueChange={newRole => changeRole.mutate({ roleId: u.roleId, newRole })}
+                        >
+                          <SelectTrigger className="w-[140px] h-8">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="super_admin">Super Admin</SelectItem>
+                            <SelectItem value="admin">Admin</SelectItem>
+                            <SelectItem value="barber">Barbeiro</SelectItem>
+                            <SelectItem value="client">Cliente</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
                       <TableCell className="text-xs text-muted-foreground">
                         {format(new Date(u.createdAt), 'dd/MM/yyyy')}
                       </TableCell>
@@ -107,7 +120,7 @@ export default function SuperAdminUsers() {
                   ))}
                   {filtered.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                         Nenhum usuário encontrado
                       </TableCell>
                     </TableRow>
