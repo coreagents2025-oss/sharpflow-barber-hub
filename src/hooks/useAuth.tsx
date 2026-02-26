@@ -38,13 +38,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             const { data: roleData } = await supabase
               .from('user_roles')
               .select('role')
-              .eq('user_id', session.user.id)
-              .single();
+              .eq('user_id', session.user.id);
             
-            setUserRole(roleData?.role ?? null);
+            // Prioritize super_admin > admin > barber > client
+            const roles = (roleData ?? []).map(r => r.role);
+            const prioritizedRole = roles.includes('super_admin') ? 'super_admin'
+              : roles.includes('admin') ? 'admin'
+              : roles.includes('barber') ? 'barber'
+              : roles[0] ?? null;
+            setUserRole(prioritizedRole);
 
             // Fetch barbershop_id for admin/barber users
-            if (roleData?.role === 'admin' || roleData?.role === 'barber') {
+            if (prioritizedRole === 'admin' || prioritizedRole === 'barber') {
               const { data: staffData } = await supabase
                 .from('barbershop_staff')
                 .select('barbershop_id')
@@ -76,13 +81,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const { data: roleData } = await supabase
             .from('user_roles')
             .select('role')
-            .eq('user_id', session.user.id)
-            .single();
+            .eq('user_id', session.user.id);
           
-          setUserRole(roleData?.role ?? null);
+          const roles = (roleData ?? []).map(r => r.role);
+          const prioritizedRole = roles.includes('super_admin') ? 'super_admin'
+            : roles.includes('admin') ? 'admin'
+            : roles.includes('barber') ? 'barber'
+            : roles[0] ?? null;
+          setUserRole(prioritizedRole);
 
           // Fetch barbershop_id for admin/barber users
-          if (roleData?.role === 'admin' || roleData?.role === 'barber') {
+          if (prioritizedRole === 'admin' || prioritizedRole === 'barber') {
             const { data: staffData } = await supabase
               .from('barbershop_staff')
               .select('barbershop_id')

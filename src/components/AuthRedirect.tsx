@@ -11,8 +11,12 @@ export const AuthRedirect = () => {
     if (!loading && user && userRole) {
       const currentPath = location.pathname;
       
-      // Redireciona admin/barber da página de auth ou landing page para o PDV
-      if (userRole === 'admin' || userRole === 'barber') {
+      // Redireciona super_admin para o painel super admin
+      if (userRole === 'super_admin') {
+        if (currentPath === '/auth' || currentPath === '/') {
+          navigate('/super-admin', { replace: true });
+        }
+      } else if (userRole === 'admin' || userRole === 'barber') {
         if (currentPath === '/auth') {
           navigate('/pdv', { replace: true });
         } else if (currentPath === '/') {

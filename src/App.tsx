@@ -24,6 +24,11 @@ import CRM from "./pages/CRM";
 import Financial from "./pages/Financial";
 import NotFound from "./pages/NotFound";
 import { InstallPWA } from "./components/InstallPWA";
+import { SuperAdminRoute } from "./components/SuperAdminRoute";
+import SuperAdminDashboard from "./pages/SuperAdmin/Dashboard";
+import SuperAdminBarbershops from "./pages/SuperAdmin/Barbershops";
+import SuperAdminUsers from "./pages/SuperAdmin/Users";
+import SuperAdminMetrics from "./pages/SuperAdmin/Metrics";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +60,11 @@ const App = () => (
             <Route path="/messages" element={<ProtectedRoute><CRM /></ProtectedRoute>} />
             <Route path="/financial" element={<ProtectedRoute><Financial /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute requiredRoles={[]}><Settings /></ProtectedRoute>} />
+            {/* Super Admin Routes */}
+            <Route path="/super-admin" element={<SuperAdminRoute><SuperAdminDashboard /></SuperAdminRoute>} />
+            <Route path="/super-admin/barbershops" element={<SuperAdminRoute><SuperAdminBarbershops /></SuperAdminRoute>} />
+            <Route path="/super-admin/users" element={<SuperAdminRoute><SuperAdminUsers /></SuperAdminRoute>} />
+            <Route path="/super-admin/metrics" element={<SuperAdminRoute><SuperAdminMetrics /></SuperAdminRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
