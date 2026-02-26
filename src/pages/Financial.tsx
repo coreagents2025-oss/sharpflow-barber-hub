@@ -11,6 +11,7 @@ import { TransactionModal } from '@/components/financial/TransactionModal';
 import { CashFlowTable } from '@/components/financial/CashFlowTable';
 import { CommissionConfigCard } from '@/components/financial/CommissionConfigCard';
 import { CommissionCalculator } from '@/components/financial/CommissionCalculator';
+import { ServicePricingCalculator } from '@/components/financial/ServicePricingCalculator';
 import { useCashFlow } from '@/hooks/useCashFlow';
 import { useFinancialReports } from '@/hooks/useFinancialReports';
 import { startOfMonth, endOfMonth, format, subDays } from 'date-fns';
@@ -192,10 +193,11 @@ export default function Financial() {
         </div>
 
         <Tabs defaultValue="caixa" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="caixa" className="text-xs md:text-sm">💰 Caixa</TabsTrigger>
             <TabsTrigger value="comissoes" className="text-xs md:text-sm">💵 Comissões</TabsTrigger>
             <TabsTrigger value="relatorios" className="text-xs md:text-sm">📈 Relatórios</TabsTrigger>
+            <TabsTrigger value="precificacao" className="text-xs md:text-sm">🧮 Precificação</TabsTrigger>
           </TabsList>
 
           <TabsContent value="caixa" className="space-y-4">
@@ -325,6 +327,10 @@ export default function Financial() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="precificacao" className="space-y-4">
+            <ServicePricingCalculator />
           </TabsContent>
         </Tabs>
       </main>
