@@ -23,6 +23,7 @@ import BarbersManagement from "./pages/BarbersManagement";
 import CRM from "./pages/CRM";
 import Financial from "./pages/Financial";
 import NotFound from "./pages/NotFound";
+import { InstallPWA } from "./components/InstallPWA";
 
 const queryClient = new QueryClient();
 
@@ -57,6 +58,7 @@ const App = () => (
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <InstallPWA />
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
