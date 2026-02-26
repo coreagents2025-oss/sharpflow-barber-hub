@@ -1,5 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/hooks/use-toast';
 
 export const usePlatformStats = () => {
   return useQuery({
@@ -29,6 +30,12 @@ export const usePlatformStats = () => {
         a => a.scheduled_at?.startsWith(today)
       ).length;
 
+      // Support tickets count
+      const { count: openTickets } = await supabase
+        .from('support_tickets')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'open');
+
       return {
         totalBarbershops,
         totalUsers,
@@ -38,6 +45,7 @@ export const usePlatformStats = () => {
         adminCount,
         barberCount,
         clientCount,
+        openTickets: openTickets ?? 0,
       };
     },
   });
@@ -54,7 +62,6 @@ export const useBarbershopsList = () => {
 
       if (error) throw error;
 
-      // Get counts per barbershop
       const barbershopIds = (barbershops ?? []).map(b => b.id);
       
       const [staffRes, servicesRes, appointmentsRes] = await Promise.all([
@@ -90,12 +97,235 @@ export const useUsersList = () => {
         return {
           userId: r.user_id,
           role: r.role,
+          roleId: r.id,
           fullName: profile?.full_name ?? 'Sem nome',
           phone: profile?.phone,
           avatarUrl: profile?.avatar_url,
           createdAt: r.created_at,
         };
       });
+    },
+  });
+};
+
+// Suspend/Unsuspend barbershop
+export const useSuspendBarbershop = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, suspend, reason }: { id: string; suspend: boolean; reason?: string }) => {
+      const { error } = await supabase
+        .from('barbershops')
+        .update({
+          is_suspended: suspend,
+          suspended_at: suspend ? new Date().toISOString() : null,
+          suspended_reason: suspend ? (reason ?? null) : null,
+        })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: (_, { suspend }) => {
+      toast({ title: suspend ? 'Barbearia suspensa' : 'Barbearia reativada' });
+      queryClient.invalidateQueries({ queryKey: ['super-admin'] });
+    },
+    onError: () => {
+      toast({ title: 'Erro ao atualizar barbearia', variant: 'destructive' });
+    },
+  });
+};
+
+// Change user role
+export const useChangeUserRole = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ roleId, newRole }: { roleId: string; newRole: string }) => {
+      const { error } = await supabase
+        .from('user_roles')
+        .update({ role: newRole as any })
+        .eq('id', roleId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: 'Role atualizado com sucesso' });
+      queryClient.invalidateQueries({ queryKey: ['super-admin'] });
+    },
+    onError: () => {
+      toast({ title: 'Erro ao atualizar role', variant: 'destructive' });
+    },
+  });
+};
+
+// Support tickets
+export const useSupportTickets = () => {
+  return useQuery({
+    queryKey: ['super-admin', 'support-tickets'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('support_tickets')
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (error) throw error;
+
+      // Enrich with barbershop name
+      const barbershopIds = [...new Set((data ?? []).map(t => t.barbershop_id))];
+      const { data: barbershops } = await supabase
+        .from('barbershops')
+        .select('id, name')
+        .in('id', barbershopIds);
+
+      return (data ?? []).map(t => ({
+        ...t,
+        barbershopName: barbershops?.find(b => b.id === t.barbershop_id)?.name ?? 'Desconhecida',
+      }));
+    },
+  });
+};
+
+export const useTicketMessages = (ticketId: string | null) => {
+  return useQuery({
+    queryKey: ['super-admin', 'ticket-messages', ticketId],
+    enabled: !!ticketId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('support_ticket_messages')
+        .select('*')
+        .eq('ticket_id', ticketId!)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+};
+
+export const useSendTicketMessage = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ ticketId, content, senderId }: { ticketId: string; content: string; senderId: string }) => {
+      const { error } = await supabase
+        .from('support_ticket_messages')
+        .insert({ ticket_id: ticketId, content, sender_id: senderId, is_admin_reply: true });
+      if (error) throw error;
+    },
+    onSuccess: (_, { ticketId }) => {
+      queryClient.invalidateQueries({ queryKey: ['super-admin', 'ticket-messages', ticketId] });
+    },
+  });
+};
+
+export const useUpdateTicketStatus = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ ticketId, status }: { ticketId: string; status: string }) => {
+      const { error } = await supabase
+        .from('support_tickets')
+        .update({ 
+          status,
+          ...(status === 'resolved' ? { resolved_at: new Date().toISOString() } : {}),
+        })
+        .eq('id', ticketId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast({ title: 'Status do ticket atualizado' });
+      queryClient.invalidateQueries({ queryKey: ['super-admin'] });
+    },
+  });
+};
+
+// Audit logs
+export const useAuditLogs = () => {
+  return useQuery({
+    queryKey: ['super-admin', 'audit-logs'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('audit_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(200);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+};
+
+// Advanced metrics
+export const useAdvancedMetrics = () => {
+  return useQuery({
+    queryKey: ['super-admin', 'advanced-metrics'],
+    queryFn: async () => {
+      const [barbershopsRes, appointmentsRes, paymentsRes, servicesRes] = await Promise.all([
+        supabase.from('barbershops').select('id, name, created_at, is_suspended'),
+        supabase.from('appointments').select('id, barbershop_id, status, scheduled_at, created_at'),
+        supabase.from('payments').select('id, barbershop_id, amount, status, created_at'),
+        supabase.from('services').select('id, barbershop_id'),
+      ]);
+
+      const barbershops = barbershopsRes.data ?? [];
+      const appointments = appointmentsRes.data ?? [];
+      const payments = paymentsRes.data ?? [];
+      const services = servicesRes.data ?? [];
+
+      // Ranking by revenue
+      const revenueByBarbershop: Record<string, number> = {};
+      payments.filter(p => p.status === 'completed').forEach(p => {
+        revenueByBarbershop[p.barbershop_id] = (revenueByBarbershop[p.barbershop_id] || 0) + Number(p.amount);
+      });
+
+      const ranking = barbershops
+        .map(b => ({
+          id: b.id,
+          name: b.name,
+          revenue: revenueByBarbershop[b.id] || 0,
+          appointments: appointments.filter(a => a.barbershop_id === b.id).length,
+          services: services.filter(s => s.barbershop_id === b.id).length,
+        }))
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 10);
+
+      // Retention / Churn (active = has appointment in last 30 days)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const thirtyDaysAgoStr = thirtyDaysAgo.toISOString();
+
+      const activeBarbershopIds = new Set(
+        appointments
+          .filter(a => a.scheduled_at > thirtyDaysAgoStr)
+          .map(a => a.barbershop_id)
+      );
+
+      const activeCount = barbershops.filter(b => activeBarbershopIds.has(b.id) && !b.is_suspended).length;
+      const inactiveCount = barbershops.filter(b => !activeBarbershopIds.has(b.id) && !b.is_suspended).length;
+      const suspendedCount = barbershops.filter(b => b.is_suspended).length;
+
+      // Funnel
+      const totalSignups = barbershops.length;
+      const withServices = new Set(services.map(s => s.barbershop_id)).size;
+      const withAppointments = new Set(appointments.map(a => a.barbershop_id)).size;
+      const withPayments = new Set(payments.filter(p => p.status === 'completed').map(p => p.barbershop_id)).size;
+
+      const funnel = [
+        { stage: 'Cadastro', count: totalSignups },
+        { stage: 'Serviço Criado', count: withServices },
+        { stage: '1º Agendamento', count: withAppointments },
+        { stage: '1º Pagamento', count: withPayments },
+      ];
+
+      // Revenue by month
+      const revenueByMonth: Record<string, number> = {};
+      payments.filter(p => p.status === 'completed').forEach(p => {
+        const month = p.created_at.substring(0, 7);
+        revenueByMonth[month] = (revenueByMonth[month] || 0) + Number(p.amount);
+      });
+      const revenueTimeline = Object.entries(revenueByMonth)
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .slice(-12)
+        .map(([month, amount]) => ({ month, amount }));
+
+      return {
+        ranking,
+        retention: { activeCount, inactiveCount, suspendedCount },
+        funnel,
+        revenueTimeline,
+      };
     },
   });
 };

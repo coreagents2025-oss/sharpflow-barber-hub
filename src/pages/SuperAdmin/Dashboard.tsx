@@ -1,6 +1,6 @@
 import { SuperAdminLayout } from '@/components/super-admin/SuperAdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Building2, Users, Calendar, DollarSign, TrendingUp, UserCheck } from 'lucide-react';
+import { Building2, Users, Calendar, DollarSign, TrendingUp, UserCheck, MessageSquare, AlertCircle } from 'lucide-react';
 import { usePlatformStats } from '@/hooks/useSuperAdminData';
 
 export default function SuperAdminDashboard() {
@@ -12,6 +12,7 @@ export default function SuperAdminDashboard() {
     { title: 'Agendamentos Total', value: stats?.totalAppointments ?? 0, icon: Calendar, color: 'text-purple-500' },
     { title: 'Faturamento Total', value: `R$ ${(stats?.totalRevenue ?? 0).toFixed(2)}`, icon: DollarSign, color: 'text-accent' },
     { title: 'Agendamentos Hoje', value: stats?.todayAppointments ?? 0, icon: TrendingUp, color: 'text-orange-500' },
+    { title: 'Tickets Abertos', value: stats?.openTickets ?? 0, icon: MessageSquare, color: 'text-red-500' },
     { title: 'Admins / Barbeiros / Clientes', value: `${stats?.adminCount ?? 0} / ${stats?.barberCount ?? 0} / ${stats?.clientCount ?? 0}`, icon: UserCheck, color: 'text-cyan-500' },
   ];
 
