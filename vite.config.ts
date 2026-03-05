@@ -16,7 +16,8 @@ export default defineConfig(({ mode }) => ({
     VitePWA({
       registerType: "autoUpdate",
       workbox: {
-        navigateFallback: "/offline.html",
+        globPatterns: ["**/*.{js,css,html,png,jpg,svg,ico,woff2}"],
+        navigateFallback: "/index.html",
         navigateFallbackDenylist: [/^\/~oauth/, /^\/api/],
         skipWaiting: true,
         clientsClaim: true,
