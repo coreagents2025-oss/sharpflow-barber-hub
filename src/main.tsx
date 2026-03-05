@@ -9,11 +9,3 @@ createRoot(document.getElementById("root")!).render(
   </React.StrictMode>
 );
 
-// Register PWA service worker
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js", { scope: "/" }).catch(() => {
-      // SW registration failed silently
-    });
-  });
-}
