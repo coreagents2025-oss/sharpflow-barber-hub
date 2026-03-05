@@ -594,13 +594,16 @@ export type Database = {
       }
       client_subscriptions: {
         Row: {
+          auto_renew: boolean
           barbershop_id: string
+          billing_interval: string
           client_id: string | null
           created_at: string
           credits_remaining: number
           expires_at: string | null
           id: string
           lead_id: string | null
+          next_billing_date: string | null
           plan_id: string
           service_id: string | null
           started_at: string
@@ -608,13 +611,16 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          auto_renew?: boolean
           barbershop_id: string
+          billing_interval?: string
           client_id?: string | null
           created_at?: string
           credits_remaining?: number
           expires_at?: string | null
           id?: string
           lead_id?: string | null
+          next_billing_date?: string | null
           plan_id: string
           service_id?: string | null
           started_at?: string
@@ -622,13 +628,16 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          auto_renew?: boolean
           barbershop_id?: string
+          billing_interval?: string
           client_id?: string | null
           created_at?: string
           credits_remaining?: number
           expires_at?: string | null
           id?: string
           lead_id?: string | null
+          next_billing_date?: string | null
           plan_id?: string
           service_id?: string | null
           started_at?: string
@@ -1394,9 +1403,70 @@ export type Database = {
           },
         ]
       }
+      subscription_payments: {
+        Row: {
+          amount: number
+          barbershop_id: string
+          created_at: string
+          due_date: string
+          id: string
+          paid_at: string | null
+          payment_method: string
+          status: string
+          subscription_id: string
+        }
+        Insert: {
+          amount: number
+          barbershop_id: string
+          created_at?: string
+          due_date: string
+          id?: string
+          paid_at?: string | null
+          payment_method?: string
+          status?: string
+          subscription_id: string
+        }
+        Update: {
+          amount?: number
+          barbershop_id?: string
+          created_at?: string
+          due_date?: string
+          id?: string
+          paid_at?: string | null
+          payment_method?: string
+          status?: string
+          subscription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_payments_barbershop_id_fkey"
+            columns: ["barbershop_id"]
+            isOneToOne: false
+            referencedRelation: "barbershops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_payments_barbershop_id_fkey"
+            columns: ["barbershop_id"]
+            isOneToOne: false
+            referencedRelation: "public_barbershops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_payments_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "client_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscription_plans: {
         Row: {
+          auto_renew: boolean
           barbershop_id: string
+          billing_interval: string
+          billing_method: string
           created_at: string
           credits_per_month: number
           description: string | null
@@ -1405,10 +1475,14 @@ export type Database = {
           is_active: boolean | null
           name: string
           price: number
+          reminder_days_before: number
           updated_at: string
         }
         Insert: {
+          auto_renew?: boolean
           barbershop_id: string
+          billing_interval?: string
+          billing_method?: string
           created_at?: string
           credits_per_month: number
           description?: string | null
@@ -1417,10 +1491,14 @@ export type Database = {
           is_active?: boolean | null
           name: string
           price: number
+          reminder_days_before?: number
           updated_at?: string
         }
         Update: {
+          auto_renew?: boolean
           barbershop_id?: string
+          billing_interval?: string
+          billing_method?: string
           created_at?: string
           credits_per_month?: number
           description?: string | null
@@ -1429,6 +1507,7 @@ export type Database = {
           is_active?: boolean | null
           name?: string
           price?: number
+          reminder_days_before?: number
           updated_at?: string
         }
         Relationships: [
