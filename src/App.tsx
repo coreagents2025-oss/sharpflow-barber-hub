@@ -22,6 +22,7 @@ import Settings from "./pages/Settings";
 import BarbersManagement from "./pages/BarbersManagement";
 import CRM from "./pages/CRM";
 import Financial from "./pages/Financial";
+import SubscriptionsManagement from "./pages/SubscriptionsManagement";
 import NotFound from "./pages/NotFound";
 import { InstallPWA } from "./components/InstallPWA";
 import { SuperAdminRoute } from "./components/SuperAdminRoute";
@@ -61,6 +62,7 @@ const App = () => (
             <Route path="/crm" element={<ProtectedRoute><CRM /></ProtectedRoute>} />
             <Route path="/messages" element={<ProtectedRoute><CRM /></ProtectedRoute>} />
             <Route path="/financial" element={<ProtectedRoute><Financial /></ProtectedRoute>} />
+            <Route path="/subscriptions" element={<ProtectedRoute><SubscriptionsManagement /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute requiredRoles={[]}><Settings /></ProtectedRoute>} />
             {/* Super Admin Routes */}
             <Route path="/super-admin" element={<SuperAdminRoute><SuperAdminDashboard /></SuperAdminRoute>} />
