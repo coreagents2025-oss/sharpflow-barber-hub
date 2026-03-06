@@ -19,14 +19,14 @@ const INTERNAL_ROUTES = [
 
 export const InstallPWA: React.FC = () => {
   const location = useLocation();
-  const isInternalRoute = INTERNAL_ROUTES.some(r => location.pathname.startsWith(r));
-  if (!isInternalRoute) return null;
-
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showAndroid, setShowAndroid] = useState(false);
   const [showIOS, setShowIOS] = useState(false);
 
+  const isInternalRoute = INTERNAL_ROUTES.some(r => location.pathname.startsWith(r));
+
   useEffect(() => {
+    if (!isInternalRoute) return;
     if (localStorage.getItem(DISMISS_KEY)) return;
 
     // Check if already installed as standalone
@@ -49,7 +49,7 @@ export const InstallPWA: React.FC = () => {
 
     window.addEventListener("beforeinstallprompt", handler);
     return () => window.removeEventListener("beforeinstallprompt", handler);
-  }, []);
+  }, [isInternalRoute]);
 
   const handleInstall = async () => {
     if (!deferredPrompt) return;
@@ -67,7 +67,7 @@ export const InstallPWA: React.FC = () => {
     localStorage.setItem(DISMISS_KEY, "1");
   };
 
-  if (!showAndroid && !showIOS) return null;
+  if (!isInternalRoute || (!showAndroid && !showIOS)) return null;
 
   return (
     <div className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-md animate-in slide-in-from-bottom-4 duration-300">
