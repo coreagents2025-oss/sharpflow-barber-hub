@@ -241,7 +241,7 @@ export function PlanFormDialog({ open, onOpenChange, onSubmit, editingPlan }: Pr
               {(form.benefits || []).map((benefit, idx) => {
                 if (benefit.benefit_type !== "service") return null;
                 return (
-                  <div key={idx} className="flex items-end gap-2 p-3 rounded-md border bg-muted/30">
+                  <div key={idx} className="flex flex-col sm:flex-row sm:items-end gap-2 p-3 rounded-md border bg-muted/30">
                     <div className="flex-1">
                       <Label className="text-xs">Serviço</Label>
                       <Select value={benefit.service_id || ""} onValueChange={(v) => updateBenefit(idx, { service_id: v })}>
@@ -255,17 +255,19 @@ export function PlanFormDialog({ open, onOpenChange, onSubmit, editingPlan }: Pr
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="w-20">
-                      <Label className="text-xs">Qtd/ciclo</Label>
-                      <Input className="h-9" type="number" min={1} value={benefit.quantity_per_cycle} onChange={(e) => updateBenefit(idx, { quantity_per_cycle: Number(e.target.value) })} />
+                    <div className="flex gap-2 items-end">
+                      <div className="w-full sm:w-20">
+                        <Label className="text-xs">Qtd/ciclo</Label>
+                        <Input className="h-9" type="number" min={1} value={benefit.quantity_per_cycle} onChange={(e) => updateBenefit(idx, { quantity_per_cycle: Number(e.target.value) })} />
+                      </div>
+                      <div className="w-full sm:w-20">
+                        <Label className="text-xs">Desc. %</Label>
+                        <Input className="h-9" type="number" min={0} max={100} value={benefit.discount_value} onChange={(e) => updateBenefit(idx, { discount_value: Number(e.target.value) })} />
+                      </div>
+                      <Button type="button" size="icon" variant="ghost" className="h-9 w-9 shrink-0 text-destructive" onClick={() => removeBenefit(idx)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
                     </div>
-                    <div className="w-20">
-                      <Label className="text-xs">Desc. %</Label>
-                      <Input className="h-9" type="number" min={0} max={100} value={benefit.discount_value} onChange={(e) => updateBenefit(idx, { discount_value: Number(e.target.value) })} />
-                    </div>
-                    <Button type="button" size="icon" variant="ghost" className="h-9 w-9 text-destructive" onClick={() => removeBenefit(idx)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
                   </div>
                 );
               })}
