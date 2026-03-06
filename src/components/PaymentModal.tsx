@@ -183,29 +183,8 @@ export const PaymentModal = ({ isOpen, onClose, appointment, onSuccess }: Paymen
 
     if (appointmentError) throw appointmentError;
 
-    // 3. Registrar no fluxo de caixa
-    const { data: user } = await supabase.auth.getUser();
-    
-    const { error: cashFlowError } = await supabase.from('cash_flow').insert({
-      barbershop_id: appointment.barbershop_id,
-      type: 'income',
-      category: 'service',
-      amount: totalAmount,
-      description: `Pagamento - ${appointment.service.name} - ${appointment.client.full_name}`,
-      reference_id: appointment.id,
-      reference_type: 'appointment',
-      payment_method: paymentMethod,
-      transaction_date: new Date().toISOString().split('T')[0],
-      created_by: user.user?.id
-    });
-
-    // Verificar erro no cash_flow (não crítico, trigger garante a sincronia)
-    if (cashFlowError) {
-      console.error('Error inserting cash flow:', cashFlowError);
-      toast.warning('Pagamento registrado, mas fluxo de caixa será sincronizado automaticamente');
-    } else {
-      toast.success('Pagamento registrado com sucesso!');
-    }
+    // 3. Fluxo de caixa é registrado automaticamente pela trigger sync_payment_to_cash_flow
+    toast.success('Pagamento registrado com sucesso!');
   };
 
   const getPaymentIcon = (method: string) => {
