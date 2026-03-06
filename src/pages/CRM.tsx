@@ -97,7 +97,7 @@ const CRM = () => {
                   statusFilter={statusFilter}
                   onStatusFilterChange={setStatusFilter}
                 />
-                <div className="max-h-[calc(100vh-400px)] overflow-hidden">
+                <div className="max-h-[calc(100vh-320px)] overflow-hidden">
                   <LeadsList
                     leads={filteredLeads}
                     selectedLead={selectedLead}
