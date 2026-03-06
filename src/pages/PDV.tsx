@@ -794,7 +794,7 @@ const PDV = () => {
                       variant={filterStatus === 'scheduled' ? 'default' : 'outline'} 
                       size="sm"
                       onClick={() => setFilterStatus('scheduled')}
-                      className="touch-target whitespace-nowrap flex-shrink-0 snap-start min-w-[90px] text-xs sm:text-sm"
+                      className="touch-target whitespace-nowrap flex-shrink-0 snap-start text-[10px] sm:text-xs px-2 sm:px-3 h-7 sm:h-8"
                     >
                       Pendentes ({statusCounts.scheduled})
                     </Button>
