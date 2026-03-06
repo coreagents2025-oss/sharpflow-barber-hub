@@ -13,6 +13,7 @@ import { PaymentHistoryTable } from "@/components/subscriptions/PaymentHistoryTa
 import { PlanBenefitsList } from "@/components/subscriptions/PlanBenefitsList";
 import { RewardsManager } from "@/components/subscriptions/RewardsManager";
 import { MigrationImportTab } from "@/components/subscriptions/MigrationImportTab";
+import { AddSubscriberDialog } from "@/components/subscriptions/AddSubscriberDialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useIsMobile } from "@/hooks/use-mobile";
 
