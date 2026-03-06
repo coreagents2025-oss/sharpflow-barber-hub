@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { CalendarIcon } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -12,15 +15,18 @@ import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { SubscriptionPlan } from '@/hooks/useLeadSubscription';
-import { CreditCard, Calendar, Sparkles } from 'lucide-react';
+import { CreditCard, Calendar as CalendarLucide, Sparkles } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface SellSubscriptionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   leadName: string;
   plans: SubscriptionPlan[];
-  onConfirm: (planId: string) => Promise<boolean>;
+  onConfirm: (planId: string, startDate: Date) => Promise<boolean>;
 }
 
 export function SellSubscriptionDialog({
@@ -31,18 +37,20 @@ export function SellSubscriptionDialog({
   onConfirm,
 }: SellSubscriptionDialogProps) {
   const [selectedPlanId, setSelectedPlanId] = useState<string>('');
+  const [startDate, setStartDate] = useState<Date>(new Date());
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleConfirm = async () => {
     if (!selectedPlanId) return;
     
     setIsSubmitting(true);
-    const success = await onConfirm(selectedPlanId);
+    const success = await onConfirm(selectedPlanId, startDate);
     setIsSubmitting(false);
     
     if (success) {
       onOpenChange(false);
       setSelectedPlanId('');
+      setStartDate(new Date());
     }
   };
 
@@ -69,54 +77,87 @@ export function SellSubscriptionDialog({
             </p>
           </div>
         ) : (
-          <RadioGroup
-            value={selectedPlanId}
-            onValueChange={setSelectedPlanId}
-            className="space-y-3"
-          >
-            {plans.map((plan) => (
-              <Card
-                key={plan.id}
-                className={`p-4 cursor-pointer transition-all hover:border-primary ${
-                  selectedPlanId === plan.id ? 'border-primary bg-primary/5' : ''
-                }`}
-                onClick={() => setSelectedPlanId(plan.id)}
-              >
-                <div className="flex items-start gap-3">
-                  <RadioGroupItem value={plan.id} id={plan.id} className="mt-1" />
-                  <div className="flex-1">
-                    <Label htmlFor={plan.id} className="cursor-pointer">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-semibold">{plan.name}</span>
-                        <Badge variant="secondary" className="font-bold">
-                          R$ {plan.price.toFixed(2)}
-                        </Badge>
-                      </div>
-                      {plan.description && (
-                        <p className="text-sm text-muted-foreground mb-2">
-                          {plan.description}
-                        </p>
-                      )}
-                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <CreditCard className="h-3 w-3" />
-                          {plan.credits_per_month} créditos
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {plan.subscription_duration_days} dias
-                        </span>
-                      </div>
-                    </Label>
+          <>
+            <RadioGroup
+              value={selectedPlanId}
+              onValueChange={setSelectedPlanId}
+              className="space-y-3"
+            >
+              {plans.map((plan) => (
+                <Card
+                  key={plan.id}
+                  className={`p-4 cursor-pointer transition-all hover:border-primary ${
+                    selectedPlanId === plan.id ? 'border-primary bg-primary/5' : ''
+                  }`}
+                  onClick={() => setSelectedPlanId(plan.id)}
+                >
+                  <div className="flex items-start gap-3">
+                    <RadioGroupItem value={plan.id} id={plan.id} className="mt-1" />
+                    <div className="flex-1">
+                      <Label htmlFor={plan.id} className="cursor-pointer">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="font-semibold">{plan.name}</span>
+                          <Badge variant="secondary" className="font-bold">
+                            R$ {plan.price.toFixed(2)}
+                          </Badge>
+                        </div>
+                        {plan.description && (
+                          <p className="text-sm text-muted-foreground mb-2">
+                            {plan.description}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                          <span className="flex items-center gap-1">
+                            <CreditCard className="h-3 w-3" />
+                            {plan.credits_per_month} créditos
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <CalendarLucide className="h-3 w-3" />
+                            {plan.subscription_duration_days} dias
+                          </span>
+                        </div>
+                      </Label>
+                    </div>
                   </div>
-                </div>
-              </Card>
-            ))}
-          </RadioGroup>
+                </Card>
+              ))}
+            </RadioGroup>
+
+            {/* Date Picker */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Data de início da assinatura</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !startDate && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {startDate ? format(startDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : 'Selecione uma data'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={startDate}
+                    onSelect={(date) => date && setStartDate(date)}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                  />
+                </PopoverContent>
+              </Popover>
+              <p className="text-xs text-muted-foreground">
+                Use uma data passada para migrar assinantes existentes.
+              </p>
+            </div>
+          </>
         )}
 
         {selectedPlan && (
-          <div className="bg-primary/10 p-4 rounded-lg mt-4">
+          <div className="bg-primary/10 p-4 rounded-lg mt-2">
             <div className="flex justify-between items-center">
               <div>
                 <p className="text-sm text-muted-foreground">Total a receber:</p>

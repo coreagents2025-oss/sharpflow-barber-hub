@@ -1,35 +1,23 @@
 
 
-## Plano: Melhorar template CSV de migração + data de início no formulário manual
+## Problema identificado
 
-### Problemas atuais
-1. Template CSV é básico -- colunas em inglês, sem instruções, difícil para barbeiro leigo
-2. `SellSubscriptionDialog` não permite definir data de início (usa `now()` automaticamente)
-3. Planilha não inclui método de cobrança (`billing_method`) nem auto-renovação
+O PWA está configurado com `navigateFallback: "/offline.html"`, o que significa que **qualquer navegação offline mostra a página estática de "Sem conexão"** em vez de carregar o app cacheado. Além disso, o `main.tsx` registra manualmente o service worker (`/sw.js`), conflitando com o registro automático do `vite-plugin-pwa`.
 
-### Mudanças
+## Correções
 
-**1. `src/components/subscriptions/MigrationImportTab.tsx` -- Template CSV profissional**
+### 1. Alterar `navigateFallback` para `/index.html` (vite.config.ts)
+- Trocar `"/offline.html"` por `"/index.html"` para que o service worker sirva o shell do app (SPA) quando offline
+- Adicionar `"/index.html"` e `"/offline.html"` ao `globPatterns` para garantir que sejam pré-cacheados
 
-- Renomear colunas para português amigável no template: `nome_cliente`, `telefone`, `email`, `nome_plano`, `preco`, `recorrencia`, `metodo_cobranca`, `creditos_restantes`, `data_inicio`, `data_vencimento`, `proxima_cobranca`, `renovacao_auto`, `status`, `observacoes`
-- Adicionar uma **seção de instruções** visível na UI (Card com lista de regras: formato de data, valores aceitos para recorrência/status/método)
-- Manter mapeamento interno para as mesmas chaves do banco
-- Adicionar coluna `metodo_cobranca` (pix/card/boleto/cash) e `renovacao_auto` (sim/nao) ao parse
-- Template exemplo com 3 linhas variadas mostrando diferentes combinações
-- Validação atualizada para os novos campos
+### 2. Remover registro manual do SW (main.tsx)
+- O `vite-plugin-pwa` com `registerType: "autoUpdate"` já gera e registra o service worker automaticamente
+- O registro manual de `/sw.js` conflita e pode impedir o cache correto
 
-**2. `src/components/subscriptions/SellSubscriptionDialog.tsx` -- Campo de data de início**
+### 3. Adicionar `globPatterns` para pré-cachear os assets do app (vite.config.ts)
+- Incluir `*.html`, `*.js`, `*.css`, e ícones no precache do workbox para que o app funcione offline de verdade
 
-- Adicionar um `Popover` + `Calendar` (DatePicker) para o campo "Data de início da assinatura"
-- Default: hoje (`new Date()`)
-- Permitir selecionar data passada (para migrações manuais) ou futura
-- Passar a data selecionada no `onConfirm` callback (alterar assinatura para `onConfirm: (planId: string, startDate: Date) => Promise<boolean>`)
-
-**3. `src/hooks/useLeadSubscription.ts`** (se necessário)
-- Ajustar a função que cria assinatura para aceitar `startDate` opcional e calcular `expires_at` / `next_billing_date` baseado nela
-
-### Resultado
-- Barbeiro baixa planilha organizada em português com instruções claras
-- Formulário manual permite definir data retroativa de início
-- Mais campos na planilha para importação completa
+### Resultado esperado
+- App carrega normalmente mesmo sem internet (usando cache do SPA)
+- A página `offline.html` só apareceria se o cache do index.html falhasse (cenário extremo)
 
