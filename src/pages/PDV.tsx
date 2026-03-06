@@ -71,11 +71,7 @@ const PDV = () => {
 
   useEffect(() => {
     if (authBarbershopId) {
-      fetchTodayAppointments();
-      fetchStats();
-      fetchBarberStatuses();
-      fetchPopularServices();
-      fetchDailyPayments();
+      refreshAll();
       
       // Real-time updates
       const channel = supabase
