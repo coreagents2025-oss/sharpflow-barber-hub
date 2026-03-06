@@ -15,3 +15,5 @@ project_id = "jgpffcjktwsohfyljtsg"
     verify_jwt = true
   [functions.webhook-dispatcher]
     verify_jwt = true
+  [functions.send-subscription-email]
+    verify_jwt = true

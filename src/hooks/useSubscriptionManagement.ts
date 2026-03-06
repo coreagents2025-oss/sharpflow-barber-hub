@@ -314,6 +314,20 @@ export function useSubscriptionManagement() {
     if (error) { toast.error('Erro ao marcar pagamento'); return false; }
     toast.success('Pagamento confirmado!');
     await fetchPayments();
+
+    // Fire-and-forget payment confirmed email
+    const sub = activeSubscriptions.find(s => s.id === (await supabase
+      .from('subscription_payments').select('subscription_id').eq('id', paymentId).single()
+      .then(r => r.data?.subscription_id)));
+    const subIdForEmail = activeSubscriptions.find(s =>
+      payments.find(p => p.id === paymentId && p.subscription_id === s.id)
+    )?.id ?? payments.find(p => p.id === paymentId)?.subscription_id;
+
+    if (subIdForEmail) {
+      supabase.functions.invoke('send-subscription-email', {
+        body: { type: 'payment_confirmed', subscription_id: subIdForEmail, payment_id: paymentId },
+      }).catch(console.error);
+    }
     return true;
   };
 
