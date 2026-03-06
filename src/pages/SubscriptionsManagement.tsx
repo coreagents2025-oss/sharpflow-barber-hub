@@ -221,6 +221,13 @@ export default function SubscriptionsManagement() {
         onSubmit={handleSubmit}
         editingPlan={editingPlan}
       />
+
+      <AddSubscriberDialog
+        open={addSubscriberOpen}
+        onOpenChange={setAddSubscriberOpen}
+        plans={plans}
+        onSuccess={refetch}
+      />
     </div>
   );
 }
