@@ -36,9 +36,9 @@ export function PaymentHistoryTable({ payments, onMarkPaid }: Props) {
           <TableRow>
             <TableHead>Vencimento</TableHead>
             <TableHead>Valor</TableHead>
-            <TableHead>Método</TableHead>
+            <TableHead className="hidden sm:table-cell">Método</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Pago em</TableHead>
+            <TableHead className="hidden sm:table-cell">Pago em</TableHead>
             <TableHead className="text-right">Ações</TableHead>
           </TableRow>
         </TableHeader>
