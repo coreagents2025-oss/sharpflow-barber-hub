@@ -198,8 +198,9 @@ const Settings = () => {
             
             const emailCreds = (credentials?.email_credentials || {}) as any;
             setEmailSettings({
-              from_email: emailCreds.from_email || '',
-              from_name: emailCreds.from_name || '',
+              contact_email: emailCreds.contact_email || '',
+              contact_phone: emailCreds.contact_phone || '',
+              contact_whatsapp: emailCreds.contact_whatsapp || '',
               notifications_enabled: emailCreds.notifications_enabled ?? true,
             });
             
