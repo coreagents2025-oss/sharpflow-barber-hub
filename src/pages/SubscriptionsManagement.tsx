@@ -32,6 +32,7 @@ export default function SubscriptionsManagement() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<SubscriptionPlan | null>(null);
   const [metricsOpen, setMetricsOpen] = useState(false);
+  const [addSubscriberOpen, setAddSubscriberOpen] = useState(false);
   const isMobile = useIsMobile();
 
   const handleSubmit = async (data: PlanFormData) => {
