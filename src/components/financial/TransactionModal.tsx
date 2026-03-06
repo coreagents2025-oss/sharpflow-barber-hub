@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -7,49 +7,77 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useCashFlow } from '@/hooks/useCashFlow';
 
+interface EditingTransaction {
+  id: string;
+  type: 'income' | 'expense';
+  category: string;
+  amount: number;
+  description: string;
+  payment_method?: string;
+  transaction_date: string;
+}
+
 interface TransactionModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   barbershopId: string;
   onSuccess: () => void;
+  editingTransaction?: EditingTransaction | null;
 }
 
-export const TransactionModal = ({ open, onOpenChange, barbershopId, onSuccess }: TransactionModalProps) => {
-  const { addTransaction, loading } = useCashFlow(barbershopId);
-  const [formData, setFormData] = useState({
+export const TransactionModal = ({ open, onOpenChange, barbershopId, onSuccess, editingTransaction }: TransactionModalProps) => {
+  const { addTransaction, updateTransaction, loading } = useCashFlow(barbershopId);
+  const isEditing = !!editingTransaction;
+
+  const defaultForm = {
     type: 'income' as 'income' | 'expense',
     category: '',
     amount: '',
     description: '',
     payment_method: 'cash',
     transaction_date: new Date().toISOString().split('T')[0]
-  });
+  };
+
+  const [formData, setFormData] = useState(defaultForm);
+
+  useEffect(() => {
+    if (editingTransaction) {
+      setFormData({
+        type: editingTransaction.type,
+        category: editingTransaction.category,
+        amount: String(editingTransaction.amount),
+        description: editingTransaction.description,
+        payment_method: editingTransaction.payment_method || 'cash',
+        transaction_date: editingTransaction.transaction_date
+      });
+    } else {
+      setFormData(defaultForm);
+    }
+  }, [editingTransaction, open]);
 
   const incomeCategories = ['service', 'subscription', 'other'];
   const expenseCategories = ['commission', 'salary', 'rent', 'supplies', 'maintenance', 'marketing', 'other'];
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = await addTransaction({
+
+    const payload = {
       type: formData.type,
       category: formData.category,
       amount: parseFloat(formData.amount),
       description: formData.description,
       payment_method: formData.payment_method,
       transaction_date: formData.transaction_date
-    });
+    };
+
+    const success = isEditing
+      ? await updateTransaction(editingTransaction!.id, payload)
+      : await addTransaction(payload);
 
     if (success) {
       onSuccess();
       onOpenChange(false);
-      setFormData({
-        type: 'income',
-        category: '',
-        amount: '',
-        description: '',
-        payment_method: 'cash',
-        transaction_date: new Date().toISOString().split('T')[0]
-      });
+      setFormData(defaultForm);
     }
   };
 
@@ -57,7 +85,7 @@ export const TransactionModal = ({ open, onOpenChange, barbershopId, onSuccess }
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Novo Lançamento</DialogTitle>
+          <DialogTitle>{isEditing ? 'Editar Lançamento' : 'Novo Lançamento'}</DialogTitle>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -148,7 +176,7 @@ export const TransactionModal = ({ open, onOpenChange, barbershopId, onSuccess }
               Cancelar
             </Button>
             <Button type="submit" disabled={loading} className="flex-1">
-              {loading ? 'Salvando...' : 'Salvar'}
+              {loading ? 'Salvando...' : isEditing ? 'Atualizar' : 'Salvar'}
             </Button>
           </div>
         </form>

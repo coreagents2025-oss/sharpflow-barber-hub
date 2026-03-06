@@ -40,6 +40,33 @@ export const useCashFlow = (barbershopId: string) => {
     }
   };
 
+  const updateTransaction = async (id: string, transaction: Partial<CashFlowTransaction>) => {
+    try {
+      setLoading(true);
+      const { error } = await supabase
+        .from('cash_flow')
+        .update({
+          type: transaction.type,
+          category: transaction.category,
+          amount: transaction.amount,
+          description: transaction.description,
+          payment_method: transaction.payment_method,
+          transaction_date: transaction.transaction_date,
+        })
+        .eq('id', id);
+
+      if (error) throw error;
+      toast.success('Lançamento atualizado');
+      return true;
+    } catch (error: any) {
+      toast.error('Erro ao atualizar lançamento');
+      console.error(error);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getTransactions = async (filters?: {
     type?: 'income' | 'expense';
     category?: string;
@@ -130,6 +157,7 @@ export const useCashFlow = (barbershopId: string) => {
   return {
     loading,
     addTransaction,
+    updateTransaction,
     getTransactions,
     getCashSummary,
     deleteTransaction

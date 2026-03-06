@@ -14,7 +14,7 @@ import { CommissionCalculator } from '@/components/financial/CommissionCalculato
 import { ServicePricingCalculator } from '@/components/financial/ServicePricingCalculator';
 import { useCashFlow } from '@/hooks/useCashFlow';
 import { useFinancialReports } from '@/hooks/useFinancialReports';
-import { startOfMonth, endOfMonth, format, subDays } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 
 export default function Financial() {
@@ -22,8 +22,8 @@ export default function Financial() {
   const [barbershopId, setBarbershopId] = useState<string>('');
   const [barbers, setBarbers] = useState<Array<{ id: string; name: string }>>([]);
   const [transactions, setTransactions] = useState<any[]>([]);
-  const [commissionHistory, setCommissionHistory] = useState<any[]>([]);
   const [showTransactionModal, setShowTransactionModal] = useState(false);
+  const [editingTransaction, setEditingTransaction] = useState<any>(null);
   const [period, setPeriod] = useState<'30' | '60' | '90' | 'custom'>('30');
   const [startDate, setStartDate] = useState(format(subDays(new Date(), 30), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -31,7 +31,7 @@ export default function Financial() {
   const [monthlyRevenue, setMonthlyRevenue] = useState<any[]>([]);
   const [revenueByCategory, setRevenueByCategory] = useState<any[]>([]);
 
-  const { getTransactions, getCashSummary } = useCashFlow(barbershopId);
+  const { getTransactions, getCashSummary, deleteTransaction } = useCashFlow(barbershopId);
   const { getMonthlyRevenue, getRevenueByCategory } = useFinancialReports(barbershopId);
 
   useEffect(() => {
@@ -82,14 +82,12 @@ export default function Financial() {
   const fetchReports = async () => {
     const revenue = await getMonthlyRevenue(6);
     setMonthlyRevenue(revenue);
-
     const byCategory = await getRevenueByCategory(startDate, endDate);
     setRevenueByCategory(byCategory);
   };
 
   const handlePeriodChange = (value: '30' | '60' | '90' | 'custom') => {
     setPeriod(value);
-    
     if (value !== 'custom') {
       const days = parseInt(value);
       const end = new Date();
@@ -97,6 +95,24 @@ export default function Financial() {
       setStartDate(format(start, 'yyyy-MM-dd'));
       setEndDate(format(end, 'yyyy-MM-dd'));
     }
+  };
+
+  const handleEdit = (transaction: any) => {
+    setEditingTransaction(transaction);
+    setShowTransactionModal(true);
+  };
+
+  const handleDelete = async (id: string) => {
+    const success = await deleteTransaction(id);
+    if (success) {
+      fetchTransactions();
+      fetchSummary();
+    }
+  };
+
+  const handleModalClose = (open: boolean) => {
+    setShowTransactionModal(open);
+    if (!open) setEditingTransaction(null);
   };
 
   const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted))'];
@@ -207,13 +223,17 @@ export default function Financial() {
                   <CardTitle className="text-lg md:text-xl">Fluxo de Caixa</CardTitle>
                   <CardDescription className="text-xs md:text-sm">Gerencie entradas e saídas</CardDescription>
                 </div>
-                <Button onClick={() => setShowTransactionModal(true)} className="w-full sm:w-auto">
+                <Button onClick={() => { setEditingTransaction(null); setShowTransactionModal(true); }} className="w-full sm:w-auto">
                   <Plus className="h-4 w-4 mr-2" />
                   Novo Lançamento
                 </Button>
               </CardHeader>
               <CardContent className="px-2 sm:px-6">
-                <CashFlowTable transactions={transactions} />
+                <CashFlowTable
+                  transactions={transactions}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
               </CardContent>
             </Card>
 
@@ -337,12 +357,13 @@ export default function Financial() {
 
       <TransactionModal
         open={showTransactionModal}
-        onOpenChange={setShowTransactionModal}
+        onOpenChange={handleModalClose}
         barbershopId={barbershopId}
         onSuccess={() => {
           fetchTransactions();
           fetchSummary();
         }}
+        editingTransaction={editingTransaction}
       />
     </div>
   );

@@ -1,36 +1,23 @@
 
 
-## Problema e Melhorias para a Seção Financeira
+## Problema identificado
 
-### Problema atual
-A tabela de fluxo de caixa (`CashFlowTable`) nao tem botoes de editar ou excluir. O hook `useCashFlow` ja tem `deleteTransaction` mas nao tem `updateTransaction`, e a tabela nao usa nenhum dos dois. As RLS policies do banco permitem UPDATE e DELETE para staff, entao o problema e apenas no frontend.
+O PWA está configurado com `navigateFallback: "/offline.html"`, o que significa que **qualquer navegação offline mostra a página estática de "Sem conexão"** em vez de carregar o app cacheado. Além disso, o `main.tsx` registra manualmente o service worker (`/sw.js`), conflitando com o registro automático do `vite-plugin-pwa`.
 
-### Correcoes e melhorias
+## Correções
 
-#### 1. Adicionar `updateTransaction` ao hook `useCashFlow`
-- Nova funcao para atualizar lancamentos existentes no banco
+### 1. Alterar `navigateFallback` para `/index.html` (vite.config.ts)
+- Trocar `"/offline.html"` por `"/index.html"` para que o service worker sirva o shell do app (SPA) quando offline
+- Adicionar `"/index.html"` e `"/offline.html"` ao `globPatterns` para garantir que sejam pré-cacheados
 
-#### 2. Adicionar botoes de Editar/Excluir na `CashFlowTable`
-- Coluna "Acoes" com dropdown menu (tres pontinhos) contendo Editar e Excluir
-- Dialogo de confirmacao antes de excluir
-- Indicar visualmente lancamentos automaticos (vindos de pagamentos via trigger) com icone/tooltip, impedindo exclusao deles para nao quebrar a sincronia
+### 2. Remover registro manual do SW (main.tsx)
+- O `vite-plugin-pwa` com `registerType: "autoUpdate"` já gera e registra o service worker automaticamente
+- O registro manual de `/sw.js` conflita e pode impedir o cache correto
 
-#### 3. Reutilizar `TransactionModal` para edicao
-- Aceitar prop opcional `editingTransaction` para pre-preencher o formulario
-- Alterar titulo para "Editar Lancamento" quando estiver editando
-- Chamar `updateTransaction` em vez de `addTransaction`
+### 3. Adicionar `globPatterns` para pré-cachear os assets do app (vite.config.ts)
+- Incluir `*.html`, `*.js`, `*.css`, e ícones no precache do workbox para que o app funcione offline de verdade
 
-#### 4. Melhorias adicionais na secao
-- **Filtros na tabela**: adicionar filtro por tipo (Entrada/Saida) e categoria acima da tabela
-- **Totalizador na tabela**: linha de rodape com soma das entradas e saidas filtradas
-- **Protecao de lancamentos automaticos**: lancamentos com `reference_type = 'appointment'` mostram badge "Automatico" e nao podem ser editados/excluidos (sao geridos pela trigger)
-
-### Arquivos alterados
-
-| Arquivo | Acao |
-|---|---|
-| `src/hooks/useCashFlow.ts` | Adicionar `updateTransaction` |
-| `src/components/financial/CashFlowTable.tsx` | Adicionar coluna Acoes com editar/excluir, filtros, totalizador, badge "Automatico" |
-| `src/components/financial/TransactionModal.tsx` | Suportar modo edicao via prop `editingTransaction` |
-| `src/pages/Financial.tsx` | Passar callbacks de editar/excluir, estado de edicao, filtros |
+### Resultado esperado
+- App carrega normalmente mesmo sem internet (usando cache do SPA)
+- A página `offline.html` só apareceria se o cache do index.html falhasse (cenário extremo)
 
