@@ -57,6 +57,18 @@ const PDV = () => {
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+
+  const refreshAll = () => {
+    fetchTodayAppointments();
+    fetchStats();
+    fetchBarberStatuses();
+    fetchPopularServices();
+    fetchDailyPayments();
+    setLastUpdated(new Date());
+  };
+
   useEffect(() => {
     if (authBarbershopId) {
       fetchTodayAppointments();
