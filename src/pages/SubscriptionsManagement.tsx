@@ -177,11 +177,19 @@ export default function SubscriptionsManagement() {
           </TabsContent>
 
           <TabsContent value="active">
-            <ActiveSubscriptionsList
-              subscriptions={activeSubscriptions}
-              onRenew={renewSubscription}
-              onCancel={cancelSubscription}
-            />
+            <div className="space-y-3">
+              <div className="flex justify-end">
+                <Button size="sm" onClick={() => setAddSubscriberOpen(true)}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Nova Assinatura
+                </Button>
+              </div>
+              <ActiveSubscriptionsList
+                subscriptions={activeSubscriptions}
+                onRenew={renewSubscription}
+                onCancel={cancelSubscription}
+              />
+            </div>
           </TabsContent>
 
           <TabsContent value="payments">
