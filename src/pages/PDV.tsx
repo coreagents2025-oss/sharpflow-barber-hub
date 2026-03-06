@@ -489,6 +489,14 @@ const PDV = () => {
 
   const dailyTotal = dailyPayments.reduce((sum, p) => sum + Number(p.amount), 0);
 
+  // Contagens por status para os filtros
+  const statusCounts = {
+    all: todayAppointments.length,
+    scheduled: todayAppointments.filter(a => a.status === 'scheduled').length,
+    in_progress: todayAppointments.filter(a => a.status === 'in_progress').length,
+    completed: todayAppointments.filter(a => a.status === 'completed').length,
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
       <Navbar />
