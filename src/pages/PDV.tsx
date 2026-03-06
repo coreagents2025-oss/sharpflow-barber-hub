@@ -788,7 +788,7 @@ const PDV = () => {
                       onClick={() => setFilterStatus('all')}
                       className="touch-target whitespace-nowrap flex-shrink-0 snap-start min-w-[80px] text-xs sm:text-sm"
                     >
-                      Todos
+                      Todos ({statusCounts.all})
                     </Button>
                     <Button 
                       variant={filterStatus === 'scheduled' ? 'default' : 'outline'} 
@@ -796,7 +796,7 @@ const PDV = () => {
                       onClick={() => setFilterStatus('scheduled')}
                       className="touch-target whitespace-nowrap flex-shrink-0 snap-start min-w-[90px] text-xs sm:text-sm"
                     >
-                      Pendentes
+                      Pendentes ({statusCounts.scheduled})
                     </Button>
                     <Button 
                       variant={filterStatus === 'in_progress' ? 'default' : 'outline'} 
@@ -804,7 +804,7 @@ const PDV = () => {
                       onClick={() => setFilterStatus('in_progress')}
                       className="touch-target whitespace-nowrap flex-shrink-0 snap-start min-w-[100px] text-xs sm:text-sm"
                     >
-                      Atendendo
+                      Atendendo ({statusCounts.in_progress})
                     </Button>
                     <Button 
                       variant={filterStatus === 'completed' ? 'default' : 'outline'} 
@@ -812,7 +812,7 @@ const PDV = () => {
                       onClick={() => setFilterStatus('completed')}
                       className="touch-target whitespace-nowrap flex-shrink-0 snap-start min-w-[100px] text-xs sm:text-sm"
                     >
-                      Finalizados
+                      Finalizados ({statusCounts.completed})
                     </Button>
                   </div>
                   <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none sm:hidden" />
