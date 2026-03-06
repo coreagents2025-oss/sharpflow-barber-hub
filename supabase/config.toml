@@ -1,16 +1,15 @@
 project_id = "jgpffcjktwsohfyljtsg"
 
-[functions.send-whatsapp-notification]
-verify_jwt = true
-
-[functions.send-booking-confirmation]
-verify_jwt = true
-
-[functions.send-promotional-email]
-verify_jwt = true
-
-[functions.receive-whatsapp-message]
-verify_jwt = false
-
-[functions.webhook-dispatcher]
-verify_jwt = true
+[functions]
+  [functions.auth-email-hook]
+    verify_jwt = false
+  [functions.receive-whatsapp-message]
+    verify_jwt = false
+  [functions.send-booking-confirmation]
+    verify_jwt = true
+  [functions.send-promotional-email]
+    verify_jwt = true
+  [functions.send-whatsapp-notification]
+    verify_jwt = true
+  [functions.webhook-dispatcher]
+    verify_jwt = true
