@@ -12,6 +12,7 @@ import { ActiveSubscriptionsList } from "@/components/subscriptions/ActiveSubscr
 import { PaymentHistoryTable } from "@/components/subscriptions/PaymentHistoryTable";
 import { PlanBenefitsList } from "@/components/subscriptions/PlanBenefitsList";
 import { RewardsManager } from "@/components/subscriptions/RewardsManager";
+import { MigrationImportTab } from "@/components/subscriptions/MigrationImportTab";
 
 const intervalMap: Record<string, string> = { weekly: "Semanal", biweekly: "Quinzenal", monthly: "Mensal" };
 const methodMap: Record<string, string> = { pix: "PIX", card: "Cartão", boleto: "Boleto", cash: "Dinheiro" };
@@ -22,6 +23,7 @@ export default function SubscriptionsManagement() {
     createPlan, updatePlan, togglePlanActive, deletePlan,
     markPaymentPaid, renewSubscription, cancelSubscription,
     createReward, updateReward, toggleRewardActive, deleteReward,
+    refetch,
   } = useSubscriptionManagement();
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -72,11 +74,12 @@ export default function SubscriptionsManagement() {
         <SubscriptionDashboard metrics={metrics} />
 
         <Tabs defaultValue="plans" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5">
             <TabsTrigger value="plans">Planos</TabsTrigger>
             <TabsTrigger value="active">Ativas</TabsTrigger>
             <TabsTrigger value="payments">Cobranças</TabsTrigger>
             <TabsTrigger value="rewards">Recompensas</TabsTrigger>
+            <TabsTrigger value="migration">Migração</TabsTrigger>
           </TabsList>
 
           <TabsContent value="plans">
@@ -167,6 +170,13 @@ export default function SubscriptionsManagement() {
               onUpdate={updateReward}
               onToggle={toggleRewardActive}
               onDelete={deleteReward}
+            />
+          </TabsContent>
+
+          <TabsContent value="migration">
+            <MigrationImportTab
+              plans={plans}
+              onImportComplete={refetch}
             />
           </TabsContent>
         </Tabs>
