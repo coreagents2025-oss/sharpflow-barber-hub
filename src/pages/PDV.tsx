@@ -771,22 +771,22 @@ const PDV = () => {
 
         <div className="grid lg:grid-cols-3 gap-4 sm:gap-6 mt-6">
           {/* All Today's Appointments */}
-          <Card className="lg:col-span-2">
+          <Card className="lg:col-span-2 min-w-0 overflow-hidden">
             <CardHeader>
               <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-                <div>
-                  <CardTitle>Todos os Agendamentos de Hoje</CardTitle>
+                <div className="min-w-0">
+                  <CardTitle className="text-sm sm:text-base lg:text-lg">Todos os Agendamentos de Hoje</CardTitle>
                   <CardDescription>
                     {filteredAppointments.length} agendamento(s)
                   </CardDescription>
                 </div>
-                <div className="relative">
-                  <div className="flex gap-2 overflow-x-auto pb-2 sm:pb-0 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600 snap-x snap-mandatory">
+                <div className="relative min-w-0 w-full sm:w-auto">
+                  <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-2 sm:pb-0 snap-x snap-mandatory -mx-1 px-1">
                     <Button 
                       variant={filterStatus === 'all' ? 'default' : 'outline'} 
                       size="sm"
                       onClick={() => setFilterStatus('all')}
-                      className="touch-target whitespace-nowrap flex-shrink-0 snap-start min-w-[80px] text-xs sm:text-sm"
+                      className="touch-target whitespace-nowrap flex-shrink-0 snap-start text-[10px] sm:text-xs px-2 sm:px-3 h-7 sm:h-8"
                     >
                       Todos ({statusCounts.all})
                     </Button>
@@ -794,7 +794,7 @@ const PDV = () => {
                       variant={filterStatus === 'scheduled' ? 'default' : 'outline'} 
                       size="sm"
                       onClick={() => setFilterStatus('scheduled')}
-                      className="touch-target whitespace-nowrap flex-shrink-0 snap-start min-w-[90px] text-xs sm:text-sm"
+                      className="touch-target whitespace-nowrap flex-shrink-0 snap-start text-[10px] sm:text-xs px-2 sm:px-3 h-7 sm:h-8"
                     >
                       Pendentes ({statusCounts.scheduled})
                     </Button>
@@ -802,7 +802,7 @@ const PDV = () => {
                       variant={filterStatus === 'in_progress' ? 'default' : 'outline'} 
                       size="sm"
                       onClick={() => setFilterStatus('in_progress')}
-                      className="touch-target whitespace-nowrap flex-shrink-0 snap-start min-w-[100px] text-xs sm:text-sm"
+                      className="touch-target whitespace-nowrap flex-shrink-0 snap-start text-[10px] sm:text-xs px-2 sm:px-3 h-7 sm:h-8"
                     >
                       Atendendo ({statusCounts.in_progress})
                     </Button>
@@ -810,7 +810,7 @@ const PDV = () => {
                       variant={filterStatus === 'completed' ? 'default' : 'outline'} 
                       size="sm"
                       onClick={() => setFilterStatus('completed')}
-                      className="touch-target whitespace-nowrap flex-shrink-0 snap-start min-w-[100px] text-xs sm:text-sm"
+                      className="touch-target whitespace-nowrap flex-shrink-0 snap-start text-[10px] sm:text-xs px-2 sm:px-3 h-7 sm:h-8"
                     >
                       Finalizados ({statusCounts.completed})
                     </Button>
