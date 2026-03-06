@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { User, Building2, Bell, Shield, Globe, Eye, ExternalLink, MessageCircle, Facebook, Instagram } from 'lucide-react';
+import { User, Building2, Bell, Shield, Globe, Eye, ExternalLink, MessageCircle, Facebook, Instagram, Clock } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
@@ -144,6 +144,35 @@ const Settings = () => {
 
   const [showDomainGuide, setShowDomainGuide] = useState(false);
 
+  const DAYS = [
+    { key: 'monday',    label: 'Segunda-feira' },
+    { key: 'tuesday',   label: 'Terça-feira' },
+    { key: 'wednesday', label: 'Quarta-feira' },
+    { key: 'thursday',  label: 'Quinta-feira' },
+    { key: 'friday',    label: 'Sexta-feira' },
+    { key: 'saturday',  label: 'Sábado' },
+    { key: 'sunday',    label: 'Domingo' },
+  ];
+
+  const TIME_SLOTS = [
+    '07:00','07:30','08:00','08:30','09:00','09:30','10:00','10:30',
+    '11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30',
+    '15:00','15:30','16:00','16:30','17:00','17:30','18:00','18:30',
+    '19:00','19:30','20:00','20:30','21:00','21:30','22:00',
+  ];
+
+  type DayHours = { open: string; close: string } | null;
+  const [operatingHours, setOperatingHours] = useState<Record<string, DayHours>>({
+    monday:    { open: '09:00', close: '18:00' },
+    tuesday:   { open: '09:00', close: '18:00' },
+    wednesday: { open: '09:00', close: '18:00' },
+    thursday:  { open: '09:00', close: '18:00' },
+    friday:    { open: '09:00', close: '18:00' },
+    saturday:  { open: '09:00', close: '14:00' },
+    sunday:    null,
+  });
+  const [savingHours, setSavingHours] = useState(false);
+
   useEffect(() => {
     const loadData = async () => {
       if (!user) return;
@@ -188,6 +217,20 @@ const Settings = () => {
               slug: barbershop.slug || '',
               custom_domain: barbershop.custom_domain || '',
             });
+
+            // Carregar horários de funcionamento
+            if (barbershop.operating_hours) {
+              const oh = barbershop.operating_hours as any;
+              setOperatingHours({
+                monday:    oh.monday    ?? null,
+                tuesday:   oh.tuesday   ?? null,
+                wednesday: oh.wednesday ?? null,
+                thursday:  oh.thursday  ?? null,
+                friday:    oh.friday    ?? null,
+                saturday:  oh.saturday  ?? null,
+                sunday:    oh.sunday    ?? null,
+              });
+            }
 
             // Carregar credenciais da tabela barbershop_credentials
             const { data: credentials } = await supabase
@@ -428,6 +471,24 @@ const Settings = () => {
     }
   };
 
+  const handleSaveOperatingHours = async () => {
+    if (!barbershopId) return;
+    setSavingHours(true);
+    try {
+      const { error } = await supabase
+        .from('barbershops')
+        .update({ operating_hours: operatingHours })
+        .eq('id', barbershopId);
+      if (error) throw error;
+      toast.success('Horários de funcionamento salvos!');
+    } catch (error) {
+      console.error('Erro ao salvar horários:', error);
+      toast.error('Erro ao salvar horários de funcionamento');
+    } finally {
+      setSavingHours(false);
+    }
+  };
+
   const handleTestUAZapiConnection = async () => {
     if (!barbershopId) return;
     
@@ -466,7 +527,7 @@ const Settings = () => {
         <Tabs defaultValue="profile" className="space-y-4 sm:space-y-6">
           <div className="relative">
             <div className="w-full overflow-x-auto pb-2 sm:pb-0 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
-              <TabsList className="flex sm:grid sm:grid-cols-3 lg:grid-cols-5 gap-2 w-full sm:w-auto">
+              <TabsList className="flex sm:grid sm:grid-cols-3 lg:grid-cols-6 gap-2 w-full sm:w-auto">
                 <TabsTrigger value="profile" className="flex items-center gap-2 text-xs sm:text-sm flex-shrink-0 snap-start min-w-[100px] sm:min-w-0 touch-target">
                   <User className="h-4 w-4" />
                   <span>Perfil</span>
@@ -474,6 +535,10 @@ const Settings = () => {
                 <TabsTrigger value="barbershop" className="flex items-center gap-2 text-xs sm:text-sm flex-shrink-0 snap-start min-w-[120px] sm:min-w-0 touch-target">
                   <Building2 className="h-4 w-4" />
                   <span>Barbearia</span>
+                </TabsTrigger>
+                <TabsTrigger value="hours" className="flex items-center gap-2 text-xs sm:text-sm flex-shrink-0 snap-start min-w-[110px] sm:min-w-0 touch-target">
+                  <Clock className="h-4 w-4" />
+                  <span>Horários</span>
                 </TabsTrigger>
                 <TabsTrigger value="domain" className="flex items-center gap-2 text-xs sm:text-sm flex-shrink-0 snap-start min-w-[110px] sm:min-w-0 touch-target">
                   <Globe className="h-4 w-4" />
@@ -1236,6 +1301,113 @@ const Settings = () => {
                 <Button onClick={handleChangePassword} disabled={loading} className="bg-accent hover:bg-accent/90 w-full sm:w-auto touch-target">
                   {loading ? 'Alterando...' : 'Alterar Senha'}
                 </Button>
+              </CardContent>
+            </Card>
+           </TabsContent>
+
+          <TabsContent value="hours">
+            <Card className="border-0 sm:border shadow-sm">
+              <CardHeader className="px-4 sm:px-6 py-4 sm:py-6">
+                <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-accent" />
+                  Horários de Funcionamento
+                </CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
+                  Defina os horários padrão por dia da semana. Esta é a base para todos os agendamentos.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="px-4 sm:px-6 space-y-3">
+                {!barbershopId ? (
+                  <p className="text-muted-foreground text-sm">Você não está vinculado a nenhuma barbearia.</p>
+                ) : (
+                  <>
+                    <div className="rounded-lg border border-accent/20 bg-accent/5 px-4 py-3 mb-4">
+                      <p className="text-xs text-muted-foreground">
+                        💡 Os horários aqui configurados são a base do sistema de agendamento. Em <strong>Gerenciar Agenda</strong> você pode criar exceções para dias específicos.
+                      </p>
+                    </div>
+
+                    {DAYS.map((day) => {
+                      const hours = operatingHours[day.key];
+                      const isOpen = hours !== null;
+                      return (
+                        <div key={day.key} className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-lg border bg-card">
+                          <div className="flex items-center justify-between sm:justify-start gap-3 sm:w-48">
+                            <span className="text-sm font-medium">{day.label}</span>
+                            <Switch
+                              checked={isOpen}
+                              onCheckedChange={(checked) =>
+                                setOperatingHours((prev) => ({
+                                  ...prev,
+                                  [day.key]: checked ? { open: '09:00', close: '18:00' } : null,
+                                }))
+                              }
+                            />
+                          </div>
+                          {isOpen ? (
+                            <div className="flex items-center gap-2 flex-1">
+                              <div className="flex-1 min-w-0">
+                                <Label className="text-xs text-muted-foreground mb-1 block">Abertura</Label>
+                                <Select
+                                  value={hours!.open}
+                                  onValueChange={(val) =>
+                                    setOperatingHours((prev) => ({
+                                      ...prev,
+                                      [day.key]: { ...prev[day.key]!, open: val },
+                                    }))
+                                  }
+                                >
+                                  <SelectTrigger className="h-9 text-sm">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {TIME_SLOTS.map((t) => (
+                                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <span className="text-muted-foreground mt-5">–</span>
+                              <div className="flex-1 min-w-0">
+                                <Label className="text-xs text-muted-foreground mb-1 block">Fechamento</Label>
+                                <Select
+                                  value={hours!.close}
+                                  onValueChange={(val) =>
+                                    setOperatingHours((prev) => ({
+                                      ...prev,
+                                      [day.key]: { ...prev[day.key]!, close: val },
+                                    }))
+                                  }
+                                >
+                                  <SelectTrigger className="h-9 text-sm">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {TIME_SLOTS.map((t) => (
+                                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-sm text-muted-foreground italic">Fechado</span>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    <div className="pt-2">
+                      <Button
+                        onClick={handleSaveOperatingHours}
+                        disabled={savingHours}
+                        className="bg-accent hover:bg-accent/90 w-full sm:w-auto"
+                      >
+                        {savingHours ? 'Salvando...' : 'Salvar Horários'}
+                      </Button>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
