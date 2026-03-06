@@ -900,15 +900,25 @@ const PDV = () => {
                             <div className="flex gap-2 flex-wrap pt-2 border-t">
                               {apt.status === 'scheduled' && (
                                 <>
-                                  <Button 
-                                    size="sm" 
-                                    variant="default"
-                                    onClick={() => handleConfirmPresence(apt.id)}
-                                    className="touch-target flex-1 sm:flex-none whitespace-nowrap text-xs"
-                                  >
-                                    <UserCheck className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                                    Presente
-                                  </Button>
+                                   <Button 
+                                     size="sm" 
+                                     variant="default"
+                                     onClick={() => handleConfirmPresence(apt.id)}
+                                     disabled={confirmingId === apt.id}
+                                     className="touch-target flex-1 sm:flex-none whitespace-nowrap text-xs"
+                                   >
+                                     {confirmingId === apt.id ? (
+                                       <>
+                                         <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 text-green-400" />
+                                         Confirmado!
+                                       </>
+                                     ) : (
+                                       <>
+                                         <UserCheck className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                                         Presente
+                                       </>
+                                     )}
+                                   </Button>
                                   <Button 
                                     size="sm" 
                                     variant="outline"
