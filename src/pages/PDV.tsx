@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Clock, User, Scissors, CheckCircle2, AlertCircle, Bell, TrendingUp, Users as UsersIcon, Calendar as CalendarIcon, Percent, DollarSign, UserCheck, UserX, CreditCard } from 'lucide-react';
+import { Clock, User, Scissors, CheckCircle2, AlertCircle, Bell, TrendingUp, Users as UsersIcon, Calendar as CalendarIcon, Percent, DollarSign, UserCheck, UserX, CreditCard, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { PaymentModal } from '@/components/PaymentModal';
 import { SubscriptionBadgeInline } from '@/components/subscriptions/SubscriptionBadgeInline';
