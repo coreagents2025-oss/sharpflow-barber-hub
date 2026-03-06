@@ -144,6 +144,35 @@ const Settings = () => {
 
   const [showDomainGuide, setShowDomainGuide] = useState(false);
 
+  const DAYS = [
+    { key: 'monday',    label: 'Segunda-feira' },
+    { key: 'tuesday',   label: 'Terça-feira' },
+    { key: 'wednesday', label: 'Quarta-feira' },
+    { key: 'thursday',  label: 'Quinta-feira' },
+    { key: 'friday',    label: 'Sexta-feira' },
+    { key: 'saturday',  label: 'Sábado' },
+    { key: 'sunday',    label: 'Domingo' },
+  ];
+
+  const TIME_SLOTS = [
+    '07:00','07:30','08:00','08:30','09:00','09:30','10:00','10:30',
+    '11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30',
+    '15:00','15:30','16:00','16:30','17:00','17:30','18:00','18:30',
+    '19:00','19:30','20:00','20:30','21:00','21:30','22:00',
+  ];
+
+  type DayHours = { open: string; close: string } | null;
+  const [operatingHours, setOperatingHours] = useState<Record<string, DayHours>>({
+    monday:    { open: '09:00', close: '18:00' },
+    tuesday:   { open: '09:00', close: '18:00' },
+    wednesday: { open: '09:00', close: '18:00' },
+    thursday:  { open: '09:00', close: '18:00' },
+    friday:    { open: '09:00', close: '18:00' },
+    saturday:  { open: '09:00', close: '14:00' },
+    sunday:    null,
+  });
+  const [savingHours, setSavingHours] = useState(false);
+
   useEffect(() => {
     const loadData = async () => {
       if (!user) return;
