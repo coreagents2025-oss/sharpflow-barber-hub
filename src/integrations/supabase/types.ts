@@ -2109,6 +2109,16 @@ export type Database = {
         }
         Returns: boolean
       }
+      find_or_create_lead: {
+        Args: {
+          _barbershop_id: string
+          _email?: string
+          _full_name: string
+          _phone: string
+          _source?: string
+        }
+        Returns: string
+      }
       get_user_barbershop: { Args: { _user_id: string }; Returns: string }
       get_user_barbershops: {
         Args: { _user_id: string }
