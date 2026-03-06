@@ -171,6 +171,16 @@ export default function SubscriptionsManagement() {
               onDelete={deleteReward}
             />
           </TabsContent>
+
+          <TabsContent value="migration">
+            <MigrationImportTab
+              plans={plans}
+              onImportComplete={() => {
+                // refetch all data
+                window.location.reload();
+              }}
+            />
+          </TabsContent>
         </Tabs>
       </div>
 
