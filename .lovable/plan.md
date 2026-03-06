@@ -1,23 +1,39 @@
 
 
-## Problema identificado
+## Plano: CRM Mobile -- Cards compactos + Sheet para detalhes
 
-O PWA está configurado com `navigateFallback: "/offline.html"`, o que significa que **qualquer navegação offline mostra a página estática de "Sem conexão"** em vez de carregar o app cacheado. Além disso, o `main.tsx` registra manualmente o service worker (`/sw.js`), conflitando com o registro automático do `vite-plugin-pwa`.
+### Problemas identificados
+1. No mobile, o sistema usa **Tabs** para alternar lista/detalhes -- fluxo confuso, requer descobrir a aba "Detalhes"
+2. Cards dos leads ainda ocupam muito espaço vertical no mobile
+3. Ao clicar num lead no mobile, nada visível acontece (muda aba silenciosamente)
 
-## Correções
+### Solucao
 
-### 1. Alterar `navigateFallback` para `/index.html` (vite.config.ts)
-- Trocar `"/offline.html"` por `"/index.html"` para que o service worker sirva o shell do app (SPA) quando offline
-- Adicionar `"/index.html"` e `"/offline.html"` ao `globPatterns` para garantir que sejam pré-cacheados
+**Abordagem: Sheet (drawer) bottom-up no mobile**
+- Ao clicar num lead no mobile, abre um `Sheet` (vaul drawer) de baixo para cima com os detalhes completos
+- Remove o sistema de Tabs no mobile -- a lista fica sempre visivel
+- Mais intuitivo: toque no card -> detalhes sobem como drawer
 
-### 2. Remover registro manual do SW (main.tsx)
-- O `vite-plugin-pwa` com `registerType: "autoUpdate"` já gera e registra o service worker automaticamente
-- O registro manual de `/sw.js` conflita e pode impedir o cache correto
+### Mudancas
 
-### 3. Adicionar `globPatterns` para pré-cachear os assets do app (vite.config.ts)
-- Incluir `*.html`, `*.js`, `*.css`, e ícones no precache do workbox para que o app funcione offline de verdade
+**1. `src/components/crm/LeadCard.tsx` -- Cards ultra-compactos no mobile**
+- Usar layout de 1 linha: avatar pequeno (h-8 w-8), nome + status na mesma linha, stats inline
+- Remover telefone visivel no card (aparece no drawer)
+- Resultado: cada card ocupa ~48px em vez de ~80px
+
+**2. `src/pages/CRM.tsx` -- Mobile: remover Tabs, usar Sheet**
+- Remover todo o bloco `if (isMobile)` com Tabs
+- No mobile: lista full-height + `Sheet` que abre ao selecionar lead
+- Sheet usa `LeadDetailsPanel` dentro
+- Metricas colapsáveis no mobile (um `Collapsible` com toggle)
+- Aumentar scroll area: `max-h-[calc(100vh-180px)]`
+
+**3. `src/components/crm/LeadDetailsPanel.tsx` -- Sem alteracoes**
+- Ja funciona bem como conteudo do Sheet
 
 ### Resultado esperado
-- App carrega normalmente mesmo sem internet (usando cache do SPA)
-- A página `offline.html` só apareceria se o cache do index.html falhasse (cenário extremo)
+- Cards ~40% menores no mobile
+- Toque no lead -> drawer sobe com detalhes + acoes
+- Lista sempre visivel, sem necessidade de navegar entre abas
+- Scroll area maximizada
 
