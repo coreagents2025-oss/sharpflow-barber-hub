@@ -50,9 +50,45 @@ export const useBooking = (barbershopId: string | null) => {
         return false;
       }
 
-      // Verificar se está dentro do horário de funcionamento
-      if (schedule?.working_hours_start && schedule?.working_hours_end) {
-        if (data.time < schedule.working_hours_start || data.time > schedule.working_hours_end) {
+      // Determinar horários de funcionamento: daily_schedule tem prioridade, senão usar operating_hours da barbearia
+      let workingHoursStart: string | null = schedule?.working_hours_start ?? null;
+      let workingHoursEnd: string | null = schedule?.working_hours_end ?? null;
+
+      if (!workingHoursStart || !workingHoursEnd) {
+        const { data: barbershop } = await supabase
+          .from('public_barbershops')
+          .select('operating_hours')
+          .eq('id', barbershopId)
+          .maybeSingle();
+
+        if (barbershop?.operating_hours) {
+          const DAY_MAP = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+          const dayName = DAY_MAP[scheduledAt.getDay()];
+          const dayHours = (barbershop.operating_hours as any)?.[dayName];
+
+          if (dayHours?.open && dayHours?.close) {
+            workingHoursStart = dayHours.open;
+            workingHoursEnd = dayHours.close;
+          } else {
+            // Dia sem expediente configurado
+            toast.error('A barbearia não tem expediente neste dia.');
+            return false;
+          }
+        }
+      }
+
+      // Validar horário dentro do expediente
+      // Comparar como minutos totais para precisão (evitar string comparison fraca)
+      if (workingHoursStart && workingHoursEnd) {
+        const toMinutes = (t: string) => {
+          const [h, m] = t.split(':').map(Number);
+          return h * 60 + m;
+        };
+        const startMinutes = toMinutes(workingHoursStart);
+        const endMinutes = toMinutes(workingHoursEnd);
+        const bookingStartMinutes = toMinutes(data.time);
+        // bookingEndMinutes calculado após buscar duração do serviço abaixo
+        if (bookingStartMinutes < startMinutes || bookingStartMinutes >= endMinutes) {
           toast.error('Horário fora do expediente de trabalho.');
           return false;
         }
@@ -98,6 +134,20 @@ export const useBooking = (barbershopId: string | null) => {
       const durationMinutes = serviceData?.duration_minutes || 30;
       const endTime = new Date(scheduledAt);
       endTime.setMinutes(endTime.getMinutes() + durationMinutes);
+
+      // Validar que o TÉRMINO do serviço também está dentro do expediente
+      if (workingHoursEnd) {
+        const toMinutes = (t: string) => {
+          const [h, m] = t.split(':').map(Number);
+          return h * 60 + m;
+        };
+        const endMinutes = toMinutes(workingHoursEnd);
+        const serviceEndMinutes = endTime.getHours() * 60 + endTime.getMinutes();
+        if (serviceEndMinutes > endMinutes) {
+          toast.error(`Este serviço ultrapassa o horário de funcionamento (fechamento: ${workingHoursEnd}). Escolha um horário mais cedo.`);
+          return false;
+        }
+      }
 
       // Verificar se HÁ OVERLAP com agendamentos existentes (excluindo cancelled, no_show, completed)
       const { data: existingAppointments } = await supabase

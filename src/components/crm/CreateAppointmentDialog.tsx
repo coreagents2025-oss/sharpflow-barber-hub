@@ -135,7 +135,7 @@ export function CreateAppointmentDialog({
 
     const dateStr = selectedDate.toISOString().split('T')[0];
     
-    // Buscar configuração do dia para pegar horários de funcionamento
+    // Buscar configuração do dia específico
     const { data: schedule } = await supabase
       .from('daily_schedules')
       .select('working_hours_start, working_hours_end, blocked_slots')
@@ -144,31 +144,44 @@ export function CreateAppointmentDialog({
       .maybeSingle();
 
     const times: string[] = [];
-    let startHour = 9;
-    let endHour = 19;
+    let startHour = 9;  // fallback conservador
+    let endHour = 18;   // fallback conservador
 
-    // Se tem schedule configurado, usar horários do banco
-    if (schedule) {
-      if (schedule.working_hours_start) {
-        startHour = parseInt(schedule.working_hours_start.split(':')[0]);
-      }
-      if (schedule.working_hours_end) {
-        endHour = parseInt(schedule.working_hours_end.split(':')[0]);
+    if (schedule?.working_hours_start && schedule?.working_hours_end) {
+      // Usar horários do daily_schedule
+      startHour = parseInt(schedule.working_hours_start.split(':')[0]);
+      endHour = parseInt(schedule.working_hours_end.split(':')[0]);
+    } else {
+      // Fallback: usar operating_hours da barbearia pelo dia da semana
+      const { data: barbershop } = await supabase
+        .from('public_barbershops')
+        .select('operating_hours')
+        .eq('id', barbershopId)
+        .maybeSingle();
+
+      if (barbershop?.operating_hours) {
+        const DAY_MAP = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+        const dayName = DAY_MAP[selectedDate.getDay()];
+        const dayHours = (barbershop.operating_hours as any)?.[dayName];
+
+        if (dayHours?.open && dayHours?.close) {
+          startHour = parseInt(dayHours.open.split(':')[0]);
+          endHour = parseInt(dayHours.close.split(':')[0]);
+        } else {
+          // Dia fechado → sem horários disponíveis
+          setAvailableTimes([]);
+          return;
+        }
       }
     }
 
-    // Gerar horários (a cada 30 minutos)
+    // Gerar horários (a cada 30 minutos), excluindo bloqueados
     for (let hour = startHour; hour < endHour; hour++) {
       const time1 = `${hour.toString().padStart(2, '0')}:00`;
       const time2 = `${hour.toString().padStart(2, '0')}:30`;
       
-      // Verificar se não está nos bloqueados
-      if (!schedule?.blocked_slots?.includes(time1)) {
-        times.push(time1);
-      }
-      if (!schedule?.blocked_slots?.includes(time2)) {
-        times.push(time2);
-      }
+      if (!schedule?.blocked_slots?.includes(time1)) times.push(time1);
+      if (!schedule?.blocked_slots?.includes(time2)) times.push(time2);
     }
 
     setAvailableTimes(times);
