@@ -55,8 +55,9 @@ const domainSchema = z.object({
 });
 
 const emailSettingsSchema = z.object({
-  from_email: z.string().email('Email inválido'),
-  from_name: z.string().min(3, 'Nome obrigatório'),
+  contact_email: z.string().email('Email inválido').optional().or(z.literal('')),
+  contact_phone: z.string().optional().or(z.literal('')),
+  contact_whatsapp: z.string().optional().or(z.literal('')),
   notifications_enabled: z.boolean(),
 });
 
