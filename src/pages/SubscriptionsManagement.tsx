@@ -13,6 +13,7 @@ import { PaymentHistoryTable } from "@/components/subscriptions/PaymentHistoryTa
 import { PlanBenefitsList } from "@/components/subscriptions/PlanBenefitsList";
 import { RewardsManager } from "@/components/subscriptions/RewardsManager";
 import { MigrationImportTab } from "@/components/subscriptions/MigrationImportTab";
+import { AddSubscriberDialog } from "@/components/subscriptions/AddSubscriberDialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -31,6 +32,7 @@ export default function SubscriptionsManagement() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<SubscriptionPlan | null>(null);
   const [metricsOpen, setMetricsOpen] = useState(false);
+  const [addSubscriberOpen, setAddSubscriberOpen] = useState(false);
   const isMobile = useIsMobile();
 
   const handleSubmit = async (data: PlanFormData) => {
@@ -175,11 +177,19 @@ export default function SubscriptionsManagement() {
           </TabsContent>
 
           <TabsContent value="active">
-            <ActiveSubscriptionsList
-              subscriptions={activeSubscriptions}
-              onRenew={renewSubscription}
-              onCancel={cancelSubscription}
-            />
+            <div className="space-y-3">
+              <div className="flex justify-end">
+                <Button size="sm" onClick={() => setAddSubscriberOpen(true)}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Nova Assinatura
+                </Button>
+              </div>
+              <ActiveSubscriptionsList
+                subscriptions={activeSubscriptions}
+                onRenew={renewSubscription}
+                onCancel={cancelSubscription}
+              />
+            </div>
           </TabsContent>
 
           <TabsContent value="payments">
@@ -210,6 +220,13 @@ export default function SubscriptionsManagement() {
         onOpenChange={setDialogOpen}
         onSubmit={handleSubmit}
         editingPlan={editingPlan}
+      />
+
+      <AddSubscriberDialog
+        open={addSubscriberOpen}
+        onOpenChange={setAddSubscriberOpen}
+        plans={plans}
+        onSuccess={refetch}
       />
     </div>
   );
