@@ -35,6 +35,24 @@ function buildContactBlock(settings: Record<string, any>): string {
   `;
 }
 
+async function sendEmail(apiKey: string, from: string, to: string[], subject: string, html: string) {
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({ from, to, subject, html }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    console.error("Resend API error:", data);
+    throw new Error(data.message || `Email send failed with status ${res.status}`);
+  }
+  return data;
+}
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -149,22 +167,15 @@ const handler = async (req: Request): Promise<Response> => {
       </html>
     `;
 
-    const { Resend } = await import("https://esm.sh/resend@2.0.0");
-    const resend = new Resend(resendApiKey);
-
     console.log("Sending email to:", client_email);
 
-    const { data, error } = await resend.emails.send({
-      from: PLATFORM_SENDER,
-      to: [client_email],
-      subject: `Agendamento Confirmado - ${barbershop.name}`,
-      html: emailHTML,
-    });
-
-    if (error) {
-      console.error("Resend error:", error);
-      throw error;
-    }
+    const data = await sendEmail(
+      resendApiKey,
+      PLATFORM_SENDER,
+      [client_email],
+      `Agendamento Confirmado - ${barbershop.name}`,
+      emailHTML,
+    );
 
     console.log("Email sent successfully:", data);
 

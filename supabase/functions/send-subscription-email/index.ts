@@ -26,6 +26,24 @@ function buildContactBlock(settings: Record<string, any>): string {
   `;
 }
 
+async function sendEmail(apiKey: string, from: string, to: string[], subject: string, html: string) {
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({ from, to, subject, html }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    console.error("Resend API error:", data);
+    throw new Error(data.message || `Email send failed with status ${res.status}`);
+  }
+  return data;
+}
+
 function headerBlock(barbershop: { name: string; logo_url?: string | null }): string {
   return `
     <tr><td style="background-color:#18181b;padding:16px 28px;text-align:center;">
@@ -68,18 +86,12 @@ function wrapEmail(rows: string): string {
 }
 
 function buildWelcomeEmail(
-  clientName: string,
-  planName: string,
-  planPrice: number,
-  planCredits: number,
-  expiresAt: string | null,
-  barbershop: { name: string; logo_url?: string | null },
-  contactBlock: string,
+  clientName: string, planName: string, planPrice: number, planCredits: number,
+  expiresAt: string | null, barbershop: { name: string; logo_url?: string | null }, contactBlock: string,
 ): string {
   const expiresFormatted = expiresAt
     ? new Date(expiresAt).toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" })
     : "—";
-
   return wrapEmail(`
     ${headerBlock(barbershop)}
     <tr><td style="padding:24px 28px 0 28px;text-align:center;">
@@ -111,17 +123,12 @@ function buildWelcomeEmail(
 }
 
 function buildRenewalEmail(
-  clientName: string,
-  planName: string,
-  planCredits: number,
-  newExpiresAt: string | null,
-  barbershop: { name: string; logo_url?: string | null },
-  contactBlock: string,
+  clientName: string, planName: string, planCredits: number, newExpiresAt: string | null,
+  barbershop: { name: string; logo_url?: string | null }, contactBlock: string,
 ): string {
   const expiresFormatted = newExpiresAt
     ? new Date(newExpiresAt).toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" })
     : "—";
-
   return wrapEmail(`
     ${headerBlock(barbershop)}
     <tr><td style="padding:24px 28px 0 28px;text-align:center;">
@@ -149,10 +156,8 @@ function buildRenewalEmail(
 }
 
 function buildCancellationEmail(
-  clientName: string,
-  planName: string,
-  barbershop: { name: string; logo_url?: string | null },
-  contactBlock: string,
+  clientName: string, planName: string,
+  barbershop: { name: string; logo_url?: string | null }, contactBlock: string,
 ): string {
   return wrapEmail(`
     ${headerBlock(barbershop)}
@@ -183,21 +188,12 @@ function buildCancellationEmail(
 }
 
 function buildPaymentConfirmedEmail(
-  clientName: string,
-  amount: number,
-  paymentMethod: string,
-  barbershop: { name: string; logo_url?: string | null },
-  contactBlock: string,
+  clientName: string, amount: number, paymentMethod: string,
+  barbershop: { name: string; logo_url?: string | null }, contactBlock: string,
 ): string {
-  const methodMap: Record<string, string> = {
-    pix: "PIX",
-    card: "Cartão",
-    boleto: "Boleto",
-    cash: "Dinheiro",
-  };
+  const methodMap: Record<string, string> = { pix: "PIX", card: "Cartão", boleto: "Boleto", cash: "Dinheiro" };
   const methodLabel = methodMap[paymentMethod] || paymentMethod;
   const now = new Date().toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" });
-
   return wrapEmail(`
     ${headerBlock(barbershop)}
     <tr><td style="padding:24px 28px 0 28px;text-align:center;">
@@ -252,8 +248,6 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
-    const { Resend } = await import("https://esm.sh/resend@2.0.0");
-    const resend = new Resend(resendApiKey);
 
     // Fetch subscription with plan
     const { data: sub, error: subError } = await supabase
@@ -348,7 +342,6 @@ const handler = async (req: Request): Promise<Response> => {
       subject = `❌ Assinatura cancelada — ${barbershop.name}`;
       html = buildCancellationEmail(clientName, planName, barbershop, contactBlock);
     } else if (type === "payment_confirmed") {
-      // Fetch payment details if payment_id provided
       let amount = planPrice;
       let paymentMethod = "pix";
       if (payment_id) {
@@ -368,20 +361,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    const { error: sendError } = await resend.emails.send({
-      from: PLATFORM_SENDER,
-      to: [clientEmail],
-      subject,
-      html,
-    });
-
-    if (sendError) {
-      console.error("Error sending email:", sendError);
-      return new Response(JSON.stringify({ error: sendError }), {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      });
-    }
+    await sendEmail(resendApiKey, PLATFORM_SENDER, [clientEmail], subject, html);
 
     console.log(`Email '${type}' sent to ${clientEmail} for subscription ${subscription_id}`);
     return new Response(JSON.stringify({ success: true, type, recipient: clientEmail }), {

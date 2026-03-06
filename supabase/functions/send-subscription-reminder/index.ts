@@ -26,6 +26,24 @@ function buildContactBlock(settings: Record<string, any>): string {
   `;
 }
 
+async function sendEmail(apiKey: string, from: string, to: string[], subject: string, html: string) {
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({ from, to, subject, html }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    console.error("Resend API error:", data);
+    throw new Error(data.message || `Email send failed with status ${res.status}`);
+  }
+  return data;
+}
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -45,8 +63,6 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
-    const { Resend } = await import("https://esm.sh/resend@2.0.0");
-    const resend = new Resend(resendApiKey);
 
     const now = new Date();
     const threeDaysFromNow = new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000);
@@ -179,20 +195,16 @@ const handler = async (req: Request): Promise<Response> => {
           </html>
         `;
 
-        const { error: sendError } = await resend.emails.send({
-          from: PLATFORM_SENDER,
-          to: [clientEmail],
-          subject: `⏰ Seu plano vence em ${daysUntilExpiry} dia${daysUntilExpiry === 1 ? "" : "s"} — ${barbershop.name}`,
-          html: emailHTML,
-        });
+        await sendEmail(
+          resendApiKey,
+          PLATFORM_SENDER,
+          [clientEmail],
+          `⏰ Seu plano vence em ${daysUntilExpiry} dia${daysUntilExpiry === 1 ? "" : "s"} — ${barbershop.name}`,
+          emailHTML,
+        );
 
-        if (sendError) {
-          console.error(`Error sending to ${clientEmail}:`, sendError);
-          totalSkipped++;
-        } else {
-          console.log(`Reminder sent to ${clientEmail} for barbershop ${barbershop.name}`);
-          totalSent++;
-        }
+        console.log(`Reminder sent to ${clientEmail} for barbershop ${barbershop.name}`);
+        totalSent++;
       } catch (subErr) {
         console.error(`Error processing subscription ${sub.id}:`, subErr);
         totalSkipped++;

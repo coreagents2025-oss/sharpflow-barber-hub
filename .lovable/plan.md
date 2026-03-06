@@ -1,60 +1,23 @@
 
-## Diagnóstico completo
 
-### O que o usuário fez
-O usuário configurou o email direto pelo painel do Lovable (Cloud → Email), sem criar conta no Resend. Isso significa que o Lovable gerencia a entrega via **`LOVABLE_API_KEY`** — que já está disponível como secret.
+## Problema identificado
 
-### O problema atual
-Todas as edge functions de email do projeto (incluindo `send-subscription-email`, `send-booking-confirmation`, `send-promotional-email`, `send-subscription-reminder`) estão usando **`RESEND_API_KEY`** diretamente com o SDK do Resend. Isso é errado para integração via Lovable Cloud.
+O PWA está configurado com `navigateFallback: "/offline.html"`, o que significa que **qualquer navegação offline mostra a página estática de "Sem conexão"** em vez de carregar o app cacheado. Além disso, o `main.tsx` registra manualmente o service worker (`/sw.js`), conflitando com o registro automático do `vite-plugin-pwa`.
 
-Quando o email é configurado pelo Lovable (não pelo Resend diretamente), o envio deve ser feito via **API REST do Lovable** usando o `LOVABLE_API_KEY` + endpoint `https://api.lovable.dev/projects/{project_id}/email/send`.
+## Correções
 
-Há também outro problema: o domínio configurado é `notify.www.barberplus.shop` (status: `initiated`/pendente). Esse subdomínio duplo é problemático. O correto seria `notify.barberplus.shop`.
+### 1. Alterar `navigateFallback` para `/index.html` (vite.config.ts)
+- Trocar `"/offline.html"` por `"/index.html"` para que o service worker sirva o shell do app (SPA) quando offline
+- Adicionar `"/index.html"` e `"/offline.html"` ao `globPatterns` para garantir que sejam pré-cacheados
 
-### Status atual dos secrets
-- `LOVABLE_API_KEY` — disponível ✅
-- `RESEND_API_KEY` — disponível mas **provavelmente inválida/desnecessária** ❌
+### 2. Remover registro manual do SW (main.tsx)
+- O `vite-plugin-pwa` com `registerType: "autoUpdate"` já gera e registra o service worker automaticamente
+- O registro manual de `/sw.js` conflita e pode impedir o cache correto
 
-### Mudanças necessárias
+### 3. Adicionar `globPatterns` para pré-cachear os assets do app (vite.config.ts)
+- Incluir `*.html`, `*.js`, `*.css`, e ícones no precache do workbox para que o app funcione offline de verdade
 
-**Todas as 4 edge functions** precisam trocar o mecanismo de envio:
+### Resultado esperado
+- App carrega normalmente mesmo sem internet (usando cache do SPA)
+- A página `offline.html` só apareceria se o cache do index.html falhasse (cenário extremo)
 
-- `supabase/functions/send-subscription-email/index.ts`
-- `supabase/functions/send-booking-confirmation/index.ts`
-- `supabase/functions/send-promotional-email/index.ts`
-- `supabase/functions/send-subscription-reminder/index.ts`
-
-**Em cada função:**
-- Remover a dependência do `RESEND_API_KEY` e do SDK `resend@2.0.0`
-- Usar `LOVABLE_API_KEY` com chamada REST direta ao endpoint de email do Lovable
-- Manter exatamente os mesmos templates HTML e lógica de negócio
-- Remetente: `noreply@notify.www.barberplus.shop` (ou ajustar para `notify.barberplus.shop` após reconfigurar o domínio)
-
-**Novo padrão de envio (substituição do SDK Resend):**
-```ts
-const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
-const projectId = Deno.env.get("VITE_SUPABASE_PROJECT_ID") || "jgpffcjktwsohfyljtsg";
-
-const res = await fetch(`https://api.lovable.dev/projects/${projectId}/email/send`, {
-  method: "POST",
-  headers: {
-    "Authorization": `Bearer ${lovableApiKey}`,
-    "Content-Type": "application/json",
-  },
-  body: JSON.stringify({ from, to, subject, html }),
-});
-```
-
-### Sobre o DNS do Hostinger
-
-O domínio `notify.www.barberplus.shop` está com status **`initiated`** (pendente). Os registros que aparecem na imagem do Hostinger (`ns6.lovable.cloud`) são para o **custom domain do app**, não para email.
-
-O Lovable Cloud Email precisa de registros **TXT e CNAME** específicos que aparecem em **Configurações → Email** do projeto. O usuário deve:
-1. Abrir o painel de Email do Lovable (botão abaixo)
-2. Copiar os registros DNS exatos mostrados ali
-3. Adicionar no Hostinger como **TXT** e **CNAME** (ambos suportados pelo Hostinger ✅)
-
-### Resumo do plano
-1. Atualizar as 4 edge functions para usar `LOVABLE_API_KEY` via API REST (sem Resend SDK)
-2. Manter todos os templates, lógica e remetente inalterados
-3. Orientar sobre os registros DNS corretos via painel de Email

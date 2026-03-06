@@ -33,6 +33,24 @@ function buildContactBlock(settings: Record<string, any>): string {
   `;
 }
 
+async function sendEmail(apiKey: string, from: string, to: string[], subject: string, html: string) {
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({ from, to, subject, html }),
+  });
+
+  const data = await res.json();
+  if (!res.ok) {
+    console.error("Resend API error:", data);
+    throw new Error(data.message || `Email send failed with status ${res.status}`);
+  }
+  return data;
+}
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -52,8 +70,6 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const supabase = createClient(supabaseUrl, supabaseKey);
-    const { Resend } = await import("https://esm.sh/resend@2.0.0");
-    const resend = new Resend(resendApiKey);
 
     const { barbershop_id, subject, message, recipient_emails }: PromotionalEmailRequest = await req.json();
 
@@ -175,18 +191,9 @@ const handler = async (req: Request): Promise<Response> => {
     for (let i = 0; i < recipients.length; i += batchSize) {
       const batch = recipients.slice(i, i + batchSize);
       try {
-        const { data, error } = await resend.emails.send({
-          from: PLATFORM_SENDER,
-          to: batch,
-          subject: subject,
-          html: emailHTML,
-        });
-        if (error) {
-          console.error("Resend error for batch:", error);
-        } else {
-          console.log("Batch sent successfully:", data);
-          totalSent += batch.length;
-        }
+        await sendEmail(resendApiKey, PLATFORM_SENDER, batch, subject, emailHTML);
+        console.log("Batch sent successfully, count:", batch.length);
+        totalSent += batch.length;
       } catch (err) {
         console.error("Error sending batch:", err);
       }
