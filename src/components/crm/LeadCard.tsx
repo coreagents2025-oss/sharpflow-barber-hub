@@ -31,25 +31,25 @@ export function LeadCard({ lead, isSelected, onClick }: LeadCardProps) {
 
   return (
     <Card
-      className={`p-4 cursor-pointer transition-all hover:shadow-md ${
+      className={`p-5 cursor-pointer transition-all hover:shadow-md ${
         isSelected ? 'ring-2 ring-primary shadow-lg' : ''
       }`}
       onClick={onClick}
     >
-      <div className="flex items-start gap-3">
-        <Avatar className="h-12 w-12">
+      <div className="flex items-start gap-4">
+        <Avatar className="h-14 w-14">
           <AvatarImage src={lead.avatar_url} alt={lead.full_name} />
-          <AvatarFallback className="bg-primary text-primary-foreground">
+          <AvatarFallback className="bg-primary text-primary-foreground text-base">
             {initials}
           </AvatarFallback>
         </Avatar>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between gap-2 mb-1">
-            <h3 className="font-semibold text-sm truncate">{lead.full_name}</h3>
-            <div className="flex items-center gap-1">
+          <div className="flex items-center justify-between gap-2 mb-1.5">
+            <h3 className="font-semibold text-base truncate">{lead.full_name}</h3>
+            <div className="flex items-center gap-1.5">
               {needsAttention && (
-                <Badge variant="destructive" className="h-5 text-xs px-1.5">
+                <Badge variant="destructive" className="h-6 text-xs px-2">
                   Atenção
                 </Badge>
               )}
@@ -57,26 +57,26 @@ export function LeadCard({ lead, isSelected, onClick }: LeadCardProps) {
             </div>
           </div>
 
-          <p className="text-xs text-muted-foreground mb-2">{lead.phone}</p>
+          <p className="text-sm text-muted-foreground mb-3">{lead.phone}</p>
 
-          <div className="flex items-center gap-3 text-xs text-muted-foreground">
-            <div className="flex items-center gap-1">
-              <Calendar className="h-3 w-3" />
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <div className="flex items-center gap-1.5">
+              <Calendar className="h-4 w-4" />
               <span>{lead.total_appointments}</span>
             </div>
-            <div className="flex items-center gap-1">
-              <DollarSign className="h-3 w-3" />
+            <div className="flex items-center gap-1.5">
+              <DollarSign className="h-4 w-4" />
               <span>R$ {lead.total_spent.toFixed(0)}</span>
             </div>
             {lead.notes_count > 0 && (
-              <div className="flex items-center gap-1">
-                <StickyNote className="h-3 w-3" />
+              <div className="flex items-center gap-1.5">
+                <StickyNote className="h-4 w-4" />
                 <span>{lead.notes_count}</span>
               </div>
             )}
             {lead.unread_messages > 0 && (
-              <Badge variant="destructive" className="h-5 px-1.5">
-                <MessageCircle className="h-3 w-3 mr-1" />
+              <Badge variant="destructive" className="h-6 px-2">
+                <MessageCircle className="h-3.5 w-3.5 mr-1" />
                 {lead.unread_messages}
               </Badge>
             )}
