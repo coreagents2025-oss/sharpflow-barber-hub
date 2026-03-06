@@ -87,6 +87,12 @@ export const useBooking = (barbershopId: string | null) => {
         const startMinutes = toMinutes(workingHoursStart);
         const endMinutes = toMinutes(workingHoursEnd);
         const bookingStartMinutes = toMinutes(data.time);
+        // bookingEndMinutes calculado após buscar duração do serviço abaixo
+        if (bookingStartMinutes < startMinutes || bookingStartMinutes >= endMinutes) {
+          toast.error('Horário fora do expediente de trabalho.');
+          return false;
+        }
+      }
 
       // Normalizar telefone (remover formatação)
       const normalizedPhone = data.clientPhone.replace(/\D/g, '');
