@@ -550,6 +550,68 @@ export type Database = {
           },
         ]
       }
+      client_loyalty_points: {
+        Row: {
+          barbershop_id: string
+          created_at: string
+          id: string
+          lead_id: string | null
+          redeemed_points: number
+          subscription_id: string
+          total_points: number
+          updated_at: string
+        }
+        Insert: {
+          barbershop_id: string
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          redeemed_points?: number
+          subscription_id: string
+          total_points?: number
+          updated_at?: string
+        }
+        Update: {
+          barbershop_id?: string
+          created_at?: string
+          id?: string
+          lead_id?: string | null
+          redeemed_points?: number
+          subscription_id?: string
+          total_points?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_loyalty_points_barbershop_id_fkey"
+            columns: ["barbershop_id"]
+            isOneToOne: false
+            referencedRelation: "barbershops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_loyalty_points_barbershop_id_fkey"
+            columns: ["barbershop_id"]
+            isOneToOne: false
+            referencedRelation: "public_barbershops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_loyalty_points_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_loyalty_points_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "client_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_notes: {
         Row: {
           barbershop_id: string
@@ -1036,6 +1098,92 @@ export type Database = {
           },
         ]
       }
+      loyalty_point_history: {
+        Row: {
+          created_at: string
+          id: string
+          loyalty_id: string
+          points: number
+          reason: string
+          reference_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          loyalty_id: string
+          points: number
+          reason: string
+          reference_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          loyalty_id?: string
+          points?: number
+          reason?: string
+          reference_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_point_history_loyalty_id_fkey"
+            columns: ["loyalty_id"]
+            isOneToOne: false
+            referencedRelation: "client_loyalty_points"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      loyalty_rewards: {
+        Row: {
+          barbershop_id: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          points_required: number
+          reward_type: string
+          updated_at: string
+        }
+        Insert: {
+          barbershop_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          points_required?: number
+          reward_type?: string
+          updated_at?: string
+        }
+        Update: {
+          barbershop_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          points_required?: number
+          reward_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "loyalty_rewards_barbershop_id_fkey"
+            columns: ["barbershop_id"]
+            isOneToOne: false
+            referencedRelation: "barbershops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "loyalty_rewards_barbershop_id_fkey"
+            columns: ["barbershop_id"]
+            isOneToOne: false
+            referencedRelation: "public_barbershops"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount: number
@@ -1131,6 +1279,95 @@ export type Database = {
             columns: ["subscription_id"]
             isOneToOne: false
             referencedRelation: "client_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plan_benefits: {
+        Row: {
+          benefit_type: string
+          created_at: string
+          custom_description: string | null
+          custom_name: string | null
+          discount_type: string
+          discount_value: number
+          id: string
+          plan_id: string
+          quantity_per_cycle: number
+          service_id: string | null
+        }
+        Insert: {
+          benefit_type?: string
+          created_at?: string
+          custom_description?: string | null
+          custom_name?: string | null
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          plan_id: string
+          quantity_per_cycle?: number
+          service_id?: string | null
+        }
+        Update: {
+          benefit_type?: string
+          created_at?: string
+          custom_description?: string | null
+          custom_name?: string | null
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          plan_id?: string
+          quantity_per_cycle?: number
+          service_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_benefits_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "plan_benefits_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      plan_points_config: {
+        Row: {
+          bonus_points_monthly: number
+          created_at: string
+          id: string
+          plan_id: string
+          points_per_real_spent: number
+          points_per_visit: number
+        }
+        Insert: {
+          bonus_points_monthly?: number
+          created_at?: string
+          id?: string
+          plan_id: string
+          points_per_real_spent?: number
+          points_per_visit?: number
+        }
+        Update: {
+          bonus_points_monthly?: number
+          created_at?: string
+          id?: string
+          plan_id?: string
+          points_per_real_spent?: number
+          points_per_visit?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "plan_points_config_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: true
+            referencedRelation: "subscription_plans"
             referencedColumns: ["id"]
           },
         ]
