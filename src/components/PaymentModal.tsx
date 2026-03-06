@@ -315,13 +315,13 @@ export const PaymentModal = ({ isOpen, onClose, appointment, onSuccess }: Paymen
                         Pix
                       </div>
                     </SelectItem>
-                    <SelectItem value="debit">
+                    <SelectItem value="debit_card">
                       <div className="flex items-center gap-2">
                         <CreditCard className="h-4 w-4" />
                         Cartão de Débito
                       </div>
                     </SelectItem>
-                    <SelectItem value="credit">
+                    <SelectItem value="credit_card">
                       <div className="flex items-center gap-2">
                         <CreditCard className="h-4 w-4" />
                         Cartão de Crédito
