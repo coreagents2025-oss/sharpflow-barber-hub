@@ -12,6 +12,7 @@ import { ActiveSubscriptionsList } from "@/components/subscriptions/ActiveSubscr
 import { PaymentHistoryTable } from "@/components/subscriptions/PaymentHistoryTable";
 import { PlanBenefitsList } from "@/components/subscriptions/PlanBenefitsList";
 import { RewardsManager } from "@/components/subscriptions/RewardsManager";
+import { MigrationImportTab } from "@/components/subscriptions/MigrationImportTab";
 
 const intervalMap: Record<string, string> = { weekly: "Semanal", biweekly: "Quinzenal", monthly: "Mensal" };
 const methodMap: Record<string, string> = { pix: "PIX", card: "Cartão", boleto: "Boleto", cash: "Dinheiro" };
