@@ -1008,9 +1008,10 @@ const PDV = () => {
                             className="text-[9px] sm:text-xs px-1 py-0 h-auto"
                           >
                             {payment.payment_method === 'cash' && '💵 Dinheiro'}
-                            {payment.payment_method === 'credit' && '💳 Crédito'}
-                            {payment.payment_method === 'debit' && '💳 Débito'}
+                            {payment.payment_method === 'credit_card' && '💳 Crédito'}
+                            {payment.payment_method === 'debit_card' && '💳 Débito'}
                             {payment.payment_method === 'pix' && '📱 PIX'}
+                            {payment.payment_method === 'subscription' && '⭐ Assinatura'}
                           </Badge>
                         </div>
                       </div>
