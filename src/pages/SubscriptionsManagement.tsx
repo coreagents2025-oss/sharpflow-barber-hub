@@ -176,10 +176,8 @@ export default function SubscriptionsManagement() {
           <TabsContent value="migration">
             <MigrationImportTab
               plans={plans}
-              onImportComplete={() => {
-                // refetch all data
-                window.location.reload();
-              }}
+              onImportComplete={refetch}
+            />
             />
           </TabsContent>
         </Tabs>
