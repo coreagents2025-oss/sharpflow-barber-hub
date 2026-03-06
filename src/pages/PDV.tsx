@@ -883,6 +883,11 @@ const PDV = () => {
                             <div className="flex items-center gap-1">
                               <Scissors className="h-3 w-3 flex-shrink-0" />
                               <span className="truncate">{apt.services?.name || 'Serviço'}</span>
+                              {apt.services?.price && (
+                                <span className="font-medium text-accent ml-1">
+                                  R$ {apt.services.price.toFixed(2)}
+                                </span>
+                              )}
                             </div>
                             <div className="flex items-center gap-1">
                               <User className="h-3 w-3 flex-shrink-0" />
