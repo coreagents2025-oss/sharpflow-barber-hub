@@ -56,9 +56,9 @@ export function ActiveSubscriptionsList({ subscriptions, onRenew, onCancel }: Pr
                 </TableCell>
                 <TableCell>{sub.plan?.name || "—"}</TableCell>
                 <TableCell><Badge variant={st.variant}>{st.label}</Badge></TableCell>
-                <TableCell>{sub.credits_remaining}</TableCell>
-                <TableCell>{intervalMap[sub.billing_interval] || sub.billing_interval}</TableCell>
-                <TableCell>
+                <TableCell className="hidden sm:table-cell">{sub.credits_remaining}</TableCell>
+                <TableCell className="hidden sm:table-cell">{intervalMap[sub.billing_interval] || sub.billing_interval}</TableCell>
+                <TableCell className="hidden md:table-cell">
                   {sub.expires_at ? format(new Date(sub.expires_at), "dd/MM/yyyy", { locale: ptBR }) : "—"}
                 </TableCell>
                 <TableCell className="text-right space-x-1">
