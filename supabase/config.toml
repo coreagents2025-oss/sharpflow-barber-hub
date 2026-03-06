@@ -9,6 +9,8 @@ project_id = "jgpffcjktwsohfyljtsg"
     verify_jwt = true
   [functions.send-promotional-email]
     verify_jwt = true
+  [functions.send-subscription-reminder]
+    verify_jwt = false
   [functions.send-whatsapp-notification]
     verify_jwt = true
   [functions.webhook-dispatcher]
