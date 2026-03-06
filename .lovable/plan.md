@@ -1,46 +1,60 @@
 
 ## Diagnóstico completo
 
-### Problema 1 — RESEND_API_KEY inválida (erro principal)
-Os logs da edge function mostram claramente:
+### O que o usuário fez
+O usuário configurou o email direto pelo painel do Lovable (Cloud → Email), sem criar conta no Resend. Isso significa que o Lovable gerencia a entrega via **`LOVABLE_API_KEY`** — que já está disponível como secret.
+
+### O problema atual
+Todas as edge functions de email do projeto (incluindo `send-subscription-email`, `send-booking-confirmation`, `send-promotional-email`, `send-subscription-reminder`) estão usando **`RESEND_API_KEY`** diretamente com o SDK do Resend. Isso é errado para integração via Lovable Cloud.
+
+Quando o email é configurado pelo Lovable (não pelo Resend diretamente), o envio deve ser feito via **API REST do Lovable** usando o `LOVABLE_API_KEY` + endpoint `https://api.lovable.dev/projects/{project_id}/email/send`.
+
+Há também outro problema: o domínio configurado é `notify.www.barberplus.shop` (status: `initiated`/pendente). Esse subdomínio duplo é problemático. O correto seria `notify.barberplus.shop`.
+
+### Status atual dos secrets
+- `LOVABLE_API_KEY` — disponível ✅
+- `RESEND_API_KEY` — disponível mas **provavelmente inválida/desnecessária** ❌
+
+### Mudanças necessárias
+
+**Todas as 4 edge functions** precisam trocar o mecanismo de envio:
+
+- `supabase/functions/send-subscription-email/index.ts`
+- `supabase/functions/send-booking-confirmation/index.ts`
+- `supabase/functions/send-promotional-email/index.ts`
+- `supabase/functions/send-subscription-reminder/index.ts`
+
+**Em cada função:**
+- Remover a dependência do `RESEND_API_KEY` e do SDK `resend@2.0.0`
+- Usar `LOVABLE_API_KEY` com chamada REST direta ao endpoint de email do Lovable
+- Manter exatamente os mesmos templates HTML e lógica de negócio
+- Remetente: `noreply@notify.www.barberplus.shop` (ou ajustar para `notify.barberplus.shop` após reconfigurar o domínio)
+
+**Novo padrão de envio (substituição do SDK Resend):**
+```ts
+const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
+const projectId = Deno.env.get("VITE_SUPABASE_PROJECT_ID") || "jgpffcjktwsohfyljtsg";
+
+const res = await fetch(`https://api.lovable.dev/projects/${projectId}/email/send`, {
+  method: "POST",
+  headers: {
+    "Authorization": `Bearer ${lovableApiKey}`,
+    "Content-Type": "application/json",
+  },
+  body: JSON.stringify({ from, to, subject, html }),
+});
 ```
-ERROR Error sending email: { statusCode: 401, name: "validation_error", message: "API key is invalid" }
-```
-A chave `RESEND_API_KEY` configurada nos secrets do projeto está **inválida ou expirada**. Isso é o bloqueio principal — sem isso nenhum email sai, independente do DNS.
 
-### Problema 2 — DNS configurado errado no Hostinger
-Analisando a imagem enviada, os registros DNS estão assim:
+### Sobre o DNS do Hostinger
 
-| Tipo | Nome | Conteúdo |
-|------|------|---------|
-| TXT | notify | "ns6.lovable.cloud" |
-| TXT | notify.www | "ns5.lovable.cloud" |
-| TXT | _lovable-email.www | lovable_email_verify=... |
+O domínio `notify.www.barberplus.shop` está com status **`initiated`** (pendente). Os registros que aparecem na imagem do Hostinger (`ns6.lovable.cloud`) são para o **custom domain do app**, não para email.
 
-**O que está errado:**
-- Os registros TXT com nome `notify` e `notify.www` têm conteúdo `"ns6.lovable.cloud"` e `"ns5.lovable.cloud"` — isso **não faz sentido para verificação de email**. Esses valores parecem ser de outra configuração (Lovable custom domain, não email).
-- O domínio de envio configurado é `notify.www.barberplus.shop` — esse nome é incomum (tem duplo subdomínio `notify.www.`). O padrão ideal seria simplesmente `notify.barberplus.shop`.
+O Lovable Cloud Email precisa de registros **TXT e CNAME** específicos que aparecem em **Configurações → Email** do projeto. O usuário deve:
+1. Abrir o painel de Email do Lovable (botão abaixo)
+2. Copiar os registros DNS exatos mostrados ali
+3. Adicionar no Hostinger como **TXT** e **CNAME** (ambos suportados pelo Hostinger ✅)
 
-O Lovable Email precisa de registros específicos que o sistema gera automaticamente pelo painel Cloud → Email. Os registros que aparecem na imagem **não são os registros corretos do Resend** (SPF TXT, DKIM CNAME).
-
-### O que precisa ser feito (sem código)
-
-**Passo 1 — Atualizar RESEND_API_KEY**
-Ir em [resend.com/api-keys](https://resend.com/api-keys), gerar uma nova chave e atualizar o secret no projeto via Settings → Connectors → Lovable Cloud → Secrets.
-
-**Passo 2 — Corrigir o domínio de envio**
-O domínio `notify.www.barberplus.shop` é problemático porque `www` já é um subdomínio de `barberplus.shop`. Recomendo usar `notify.barberplus.shop` no lugar.
-
-**Passo 3 — Adicionar os registros DNS corretos no Hostinger**
-O Resend/Lovable Email requer **3 tipos de registro** específicos que o Lovable gera automaticamente. O painel Cloud → Email mostra exatamente quais registros adicionar. Os registros na imagem NÃO são os corretos do Resend.
-
-### Plano de implementação (apenas orientação, sem mudança de código)
-
-Este é um problema de configuração de infraestrutura (API key + DNS), não de código. O plano é:
-
-1. **Atualizar a `RESEND_API_KEY`** — gerar nova chave no Resend e atualizar nos secrets
-2. **Acessar Cloud → Email** e verificar os registros DNS exatos que o Lovable solicita para o domínio
-3. **No Hostinger**, remover os registros TXT errados (`notify` e `notify.www` com valores `ns*.lovable.cloud`) e adicionar os registros corretos fornecidos pelo Lovable (SPF TXT + DKIM CNAMEs para o Resend)
-4. **Aguardar propagação DNS** (pode levar até 24h) e então o status no painel mudará de `initiated` para `active`
-
-Não há mudança de código necessária — o código da edge function está correto e funcional. O único bloqueio são a API key inválida e os registros DNS incorretos.
+### Resumo do plano
+1. Atualizar as 4 edge functions para usar `LOVABLE_API_KEY` via API REST (sem Resend SDK)
+2. Manter todos os templates, lógica e remetente inalterados
+3. Orientar sobre os registros DNS corretos via painel de Email
