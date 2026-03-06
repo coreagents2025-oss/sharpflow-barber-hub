@@ -152,33 +152,55 @@ const handler = async (req: Request): Promise<Response> => {
     // Preparar HTML do email
     const emailHTML = `
       <!DOCTYPE html>
-      <html>
+      <html lang="pt-BR">
         <head>
           <meta charset="utf-8">
-          <style>
-            body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
-            .container { max-width: 600px; margin: 0 auto; padding: 20px; }
-            .header { background: linear-gradient(135deg, #8B4513 0%, #D2691E 100%); color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
-            .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 8px 8px; }
-            .message { background: white; padding: 20px; border-radius: 8px; margin: 20px 0; }
-            .footer { text-align: center; margin-top: 30px; color: #666; font-size: 14px; }
-          </style>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
         </head>
-        <body>
-          <div class="container">
-            <div class="header">
-              <h1>${subject}</h1>
-            </div>
-            <div class="content">
-              <div class="message">
-                ${message.replace(/\n/g, '<br>')}
-              </div>
-              <p><strong>${barbershop.name}</strong></p>
-            </div>
-            <div class="footer">
-              <p>Este é um email promocional de ${barbershop.name}</p>
-            </div>
-          </div>
+        <body style="margin:0;padding:0;background-color:#f5f5f5;font-family:Arial,sans-serif;color:#1a1a1a;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#f5f5f5;padding:40px 20px;">
+            <tr>
+              <td align="center">
+                <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+                  <!-- Platform Header -->
+                  <tr>
+                    <td style="background-color:#18181b;padding:14px 28px;text-align:center;">
+                      <span style="color:#ffffff;font-size:13px;font-weight:600;letter-spacing:0.05em;">✂️ BarberPLUS</span>
+                    </td>
+                  </tr>
+                  <!-- Barbershop Banner -->
+                  <tr>
+                    <td style="background:linear-gradient(135deg,#B45309 0%,#D97706 100%);padding:28px;text-align:center;">
+                      <p style="margin:0 0 4px 0;color:rgba(255,255,255,0.85);font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;">Mensagem de</p>
+                      <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;">${barbershop.name}</h1>
+                    </td>
+                  </tr>
+                  <!-- Subject -->
+                  <tr>
+                    <td style="padding:28px 28px 0 28px;">
+                      <h2 style="margin:0 0 16px 0;font-size:20px;color:#1a1a1a;">${subject}</h2>
+                    </td>
+                  </tr>
+                  <!-- Body -->
+                  <tr>
+                    <td style="padding:0 28px 28px 28px;">
+                      <div style="font-size:15px;color:#444;line-height:1.7;background:#f9f9f9;border-radius:8px;padding:20px;">
+                        ${message.replace(/\n/g, "<br>")}
+                      </div>
+                      <p style="margin:24px 0 0 0;font-size:15px;color:#444;">Com carinho, <strong>${barbershop.name}</strong></p>
+                    </td>
+                  </tr>
+                  <!-- Footer -->
+                  <tr>
+                    <td style="background:#f9f9f9;border-top:1px solid #e5e5e5;padding:20px 28px;text-align:center;">
+                      <p style="margin:0 0 4px 0;font-size:13px;color:#666;">Este email promocional foi enviado pela <strong>${barbershop.name}</strong></p>
+                      <p style="margin:0;font-size:11px;color:#999;">gerenciado via ✂️ BarberPLUS · Para cancelar, entre em contato com a barbearia.</p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
         </body>
       </html>
     `;
