@@ -13,39 +13,39 @@ interface LeadMetricsProps {
 
 export function LeadMetrics({ metrics }: LeadMetricsProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-4">
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-4 pt-3">
           <CardTitle className="text-sm font-medium">Total de Leads</CardTitle>
           <Users className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{metrics.total}</div>
+        <CardContent className="px-4 pb-3 pt-0">
+          <div className="text-xl font-bold">{metrics.total}</div>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-4 pt-3">
           <CardTitle className="text-sm font-medium">Novos (30d)</CardTitle>
           <UserPlus className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{metrics.new30d}</div>
+        <CardContent className="px-4 pb-3 pt-0">
+          <div className="text-xl font-bold">{metrics.new30d}</div>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-4 pt-3">
           <CardTitle className="text-sm font-medium">Taxa de Conversão</CardTitle>
           <TrendingUp className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{metrics.conversionRate.toFixed(1)}%</div>
+        <CardContent className="px-4 pb-3 pt-0">
+          <div className="text-xl font-bold">{metrics.conversionRate.toFixed(1)}%</div>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-1 px-4 pt-3">
           <CardTitle className="text-sm font-medium">Valor Total</CardTitle>
           <DollarSign className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
