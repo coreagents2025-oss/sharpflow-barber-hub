@@ -50,13 +50,43 @@ export const useBooking = (barbershopId: string | null) => {
         return false;
       }
 
-      // Verificar se está dentro do horário de funcionamento
-      if (schedule?.working_hours_start && schedule?.working_hours_end) {
-        if (data.time < schedule.working_hours_start || data.time > schedule.working_hours_end) {
-          toast.error('Horário fora do expediente de trabalho.');
-          return false;
+      // Determinar horários de funcionamento: daily_schedule tem prioridade, senão usar operating_hours da barbearia
+      let workingHoursStart: string | null = schedule?.working_hours_start ?? null;
+      let workingHoursEnd: string | null = schedule?.working_hours_end ?? null;
+
+      if (!workingHoursStart || !workingHoursEnd) {
+        const { data: barbershop } = await supabase
+          .from('public_barbershops')
+          .select('operating_hours')
+          .eq('id', barbershopId)
+          .maybeSingle();
+
+        if (barbershop?.operating_hours) {
+          const DAY_MAP = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+          const dayName = DAY_MAP[scheduledAt.getDay()];
+          const dayHours = (barbershop.operating_hours as any)?.[dayName];
+
+          if (dayHours?.open && dayHours?.close) {
+            workingHoursStart = dayHours.open;
+            workingHoursEnd = dayHours.close;
+          } else {
+            // Dia sem expediente configurado
+            toast.error('A barbearia não tem expediente neste dia.');
+            return false;
+          }
         }
       }
+
+      // Validar horário dentro do expediente
+      // Comparar como minutos totais para precisão (evitar string comparison fraca)
+      if (workingHoursStart && workingHoursEnd) {
+        const toMinutes = (t: string) => {
+          const [h, m] = t.split(':').map(Number);
+          return h * 60 + m;
+        };
+        const startMinutes = toMinutes(workingHoursStart);
+        const endMinutes = toMinutes(workingHoursEnd);
+        const bookingStartMinutes = toMinutes(data.time);
 
       // Normalizar telefone (remover formatação)
       const normalizedPhone = data.clientPhone.replace(/\D/g, '');
