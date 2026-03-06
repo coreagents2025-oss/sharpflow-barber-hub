@@ -1303,6 +1303,113 @@ const Settings = () => {
                 </Button>
               </CardContent>
             </Card>
+           </TabsContent>
+
+          <TabsContent value="hours">
+            <Card className="border-0 sm:border shadow-sm">
+              <CardHeader className="px-4 sm:px-6 py-4 sm:py-6">
+                <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                  <Clock className="h-5 w-5 text-accent" />
+                  Horários de Funcionamento
+                </CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
+                  Defina os horários padrão por dia da semana. Esta é a base para todos os agendamentos.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="px-4 sm:px-6 space-y-3">
+                {!barbershopId ? (
+                  <p className="text-muted-foreground text-sm">Você não está vinculado a nenhuma barbearia.</p>
+                ) : (
+                  <>
+                    <div className="rounded-lg border border-accent/20 bg-accent/5 px-4 py-3 mb-4">
+                      <p className="text-xs text-muted-foreground">
+                        💡 Os horários aqui configurados são a base do sistema de agendamento. Em <strong>Gerenciar Agenda</strong> você pode criar exceções para dias específicos.
+                      </p>
+                    </div>
+
+                    {DAYS.map((day) => {
+                      const hours = operatingHours[day.key];
+                      const isOpen = hours !== null;
+                      return (
+                        <div key={day.key} className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 rounded-lg border bg-card">
+                          <div className="flex items-center justify-between sm:justify-start gap-3 sm:w-48">
+                            <span className="text-sm font-medium">{day.label}</span>
+                            <Switch
+                              checked={isOpen}
+                              onCheckedChange={(checked) =>
+                                setOperatingHours((prev) => ({
+                                  ...prev,
+                                  [day.key]: checked ? { open: '09:00', close: '18:00' } : null,
+                                }))
+                              }
+                            />
+                          </div>
+                          {isOpen ? (
+                            <div className="flex items-center gap-2 flex-1">
+                              <div className="flex-1 min-w-0">
+                                <Label className="text-xs text-muted-foreground mb-1 block">Abertura</Label>
+                                <Select
+                                  value={hours!.open}
+                                  onValueChange={(val) =>
+                                    setOperatingHours((prev) => ({
+                                      ...prev,
+                                      [day.key]: { ...prev[day.key]!, open: val },
+                                    }))
+                                  }
+                                >
+                                  <SelectTrigger className="h-9 text-sm">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {TIME_SLOTS.map((t) => (
+                                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <span className="text-muted-foreground mt-5">–</span>
+                              <div className="flex-1 min-w-0">
+                                <Label className="text-xs text-muted-foreground mb-1 block">Fechamento</Label>
+                                <Select
+                                  value={hours!.close}
+                                  onValueChange={(val) =>
+                                    setOperatingHours((prev) => ({
+                                      ...prev,
+                                      [day.key]: { ...prev[day.key]!, close: val },
+                                    }))
+                                  }
+                                >
+                                  <SelectTrigger className="h-9 text-sm">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {TIME_SLOTS.map((t) => (
+                                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-sm text-muted-foreground italic">Fechado</span>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    <div className="pt-2">
+                      <Button
+                        onClick={handleSaveOperatingHours}
+                        disabled={savingHours}
+                        className="bg-accent hover:bg-accent/90 w-full sm:w-auto"
+                      >
+                        {savingHours ? 'Salvando...' : 'Salvar Horários'}
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </main>
