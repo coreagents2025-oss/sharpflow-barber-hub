@@ -98,7 +98,7 @@ export function useLeadSubscription(leadId: string | undefined, barbershopId: st
     }
   };
 
-  const createSubscription = async (planId: string) => {
+  const createSubscription = async (planId: string, startDate: Date = new Date()) => {
     if (!leadId || !barbershopId) {
       toast.error('Lead ou barbearia não identificados');
       return false;
@@ -111,7 +111,7 @@ export function useLeadSubscription(leadId: string | undefined, barbershopId: st
         return false;
       }
 
-      const expiresAt = new Date();
+      const expiresAt = new Date(startDate);
       expiresAt.setDate(expiresAt.getDate() + plan.subscription_duration_days);
 
       const { error } = await supabase
@@ -123,7 +123,7 @@ export function useLeadSubscription(leadId: string | undefined, barbershopId: st
           barbershop_id: barbershopId,
           status: 'active',
           credits_remaining: plan.credits_per_month,
-          started_at: new Date().toISOString(),
+          started_at: startDate.toISOString(),
           expires_at: expiresAt.toISOString(),
         });
 
