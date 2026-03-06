@@ -810,7 +810,7 @@ const PDV = () => {
                       variant={filterStatus === 'completed' ? 'default' : 'outline'} 
                       size="sm"
                       onClick={() => setFilterStatus('completed')}
-                      className="touch-target whitespace-nowrap flex-shrink-0 snap-start min-w-[100px] text-xs sm:text-sm"
+                      className="touch-target whitespace-nowrap flex-shrink-0 snap-start text-[10px] sm:text-xs px-2 sm:px-3 h-7 sm:h-8"
                     >
                       Finalizados ({statusCounts.completed})
                     </Button>
