@@ -420,6 +420,8 @@ const PDV = () => {
   };
 
   const handleConfirmPresence = async (appointmentId: string) => {
+    if (confirmingId) return;
+    setConfirmingId(appointmentId);
     try {
       const { error } = await supabase
         .from('appointments')
@@ -433,6 +435,8 @@ const PDV = () => {
     } catch (error: any) {
       console.error('Error confirming presence:', error);
       toast.error('Erro ao confirmar presença');
+    } finally {
+      setTimeout(() => setConfirmingId(null), 1500);
     }
   };
 
