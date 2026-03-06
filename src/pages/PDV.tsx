@@ -84,10 +84,7 @@ const PDV = () => {
             table: 'appointments'
           },
           () => {
-            fetchTodayAppointments();
-            fetchStats();
-            fetchBarberStatuses();
-            fetchDailyPayments();
+            refreshAll();
           }
         )
         .subscribe();
