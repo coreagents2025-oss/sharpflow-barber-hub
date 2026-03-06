@@ -178,7 +178,6 @@ export default function SubscriptionsManagement() {
               plans={plans}
               onImportComplete={refetch}
             />
-            />
           </TabsContent>
         </Tabs>
       </div>
