@@ -1,8 +1,13 @@
 import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Search, Filter } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { LeadStatus } from '@/hooks/useLeads';
-import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 interface LeadsFiltersProps {
   searchQuery: string;
@@ -17,50 +22,46 @@ export function LeadsFilters({
   statusFilter,
   onStatusFilterChange,
 }: LeadsFiltersProps) {
-  const statuses: Array<{ value: LeadStatus | 'all' | 'needs_contact' | 'at_risk' | 'inactive' | 'archived'; label: string; variant?: 'default' | 'outline' | 'destructive' | 'secondary' }> = [
+  const statuses = [
     { value: 'all', label: 'Todos' },
     { value: 'new', label: 'Novos' },
     { value: 'contacted', label: 'Contatados' },
     { value: 'active', label: 'Ativos' },
     { value: 'converted', label: 'Convertidos' },
     { value: 'lost', label: 'Perdidos' },
-    { value: 'needs_contact', label: '⚠️ Precisa Contato', variant: 'destructive' },
-    { value: 'at_risk', label: '⚠️ Risco de Perda', variant: 'destructive' },
-    { value: 'inactive', label: '⚠️ Inativos', variant: 'secondary' },
-    { value: 'archived', label: '📦 Arquivados', variant: 'secondary' },
+    { value: 'needs_contact', label: '⚠️ Precisa Contato' },
+    { value: 'at_risk', label: '⚠️ Risco de Perda' },
+    { value: 'inactive', label: '⚠️ Inativos' },
+    { value: 'archived', label: '📦 Arquivados' },
   ];
 
   return (
-    <div className="space-y-4 p-4 border-b border-border bg-card">
-      <div className="relative">
+    <div className="flex flex-col sm:flex-row gap-2 p-3 border-b border-border bg-card">
+      <div className="relative flex-1">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
           placeholder="Buscar por nome ou telefone..."
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-10"
+          className="pl-10 h-9"
         />
       </div>
 
-      <div className="space-y-2">
-        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-          <Filter className="h-4 w-4" />
-          Filtrar por status
-        </div>
-        <div className="flex flex-wrap gap-2">
+      <Select
+        value={statusFilter}
+        onValueChange={(val) => onStatusFilterChange(val as any)}
+      >
+        <SelectTrigger className="w-full sm:w-[200px] h-9">
+          <SelectValue placeholder="Filtrar status" />
+        </SelectTrigger>
+        <SelectContent>
           {statuses.map((status) => (
-            <Button
-              key={status.value}
-              variant={statusFilter === status.value ? 'default' : (status.variant || 'outline')}
-              size="sm"
-              onClick={() => onStatusFilterChange(status.value)}
-              className="text-xs"
-            >
+            <SelectItem key={status.value} value={status.value}>
               {status.label}
-            </Button>
+            </SelectItem>
           ))}
-        </div>
-      </div>
+        </SelectContent>
+      </Select>
     </div>
   );
 }
