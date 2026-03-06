@@ -52,9 +52,9 @@ export function PaymentHistoryTable({ payments, onMarkPaid }: Props) {
               <TableRow key={p.id}>
                 <TableCell>{format(new Date(p.due_date), "dd/MM/yyyy", { locale: ptBR })}</TableCell>
                 <TableCell>R$ {Number(p.amount).toFixed(2)}</TableCell>
-                <TableCell>{methodMap[p.payment_method] || p.payment_method}</TableCell>
+                <TableCell className="hidden sm:table-cell">{methodMap[p.payment_method] || p.payment_method}</TableCell>
                 <TableCell><Badge variant={st.variant}>{st.label}</Badge></TableCell>
-                <TableCell>
+                <TableCell className="hidden sm:table-cell">
                   {p.paid_at ? format(new Date(p.paid_at), "dd/MM/yyyy", { locale: ptBR }) : "—"}
                 </TableCell>
                 <TableCell className="text-right">

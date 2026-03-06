@@ -332,7 +332,7 @@ export function PlanFormDialog({ open, onOpenChange, onSubmit, editingPlan }: Pr
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <Label className="text-xs">Pontos por visita</Label>
                   <Input type="number" min={0} value={form.points_config?.points_per_visit ?? 0} onChange={(e) => updatePointsConfig({ points_per_visit: Number(e.target.value) })} />

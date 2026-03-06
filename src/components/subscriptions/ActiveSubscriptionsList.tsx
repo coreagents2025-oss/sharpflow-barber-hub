@@ -61,16 +61,16 @@ export function ActiveSubscriptionsList({ subscriptions, onRenew, onCancel }: Pr
                 <TableCell className="hidden md:table-cell">
                   {sub.expires_at ? format(new Date(sub.expires_at), "dd/MM/yyyy", { locale: ptBR }) : "—"}
                 </TableCell>
-                <TableCell className="text-right space-x-1">
+                <TableCell className="text-right">
                   {sub.status === "active" && (
-                    <>
+                    <div className="flex flex-col sm:flex-row gap-1 justify-end">
                       <Button size="sm" variant="outline" onClick={() => onRenew(sub.id)}>
                         <RefreshCw className="h-3 w-3 mr-1" /> Renovar
                       </Button>
                       <Button size="sm" variant="destructive" onClick={() => onCancel(sub.id)}>
                         <XCircle className="h-3 w-3 mr-1" /> Cancelar
                       </Button>
-                    </>
+                    </div>
                   )}
                 </TableCell>
               </TableRow>
