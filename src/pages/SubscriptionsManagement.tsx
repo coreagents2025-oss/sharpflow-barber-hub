@@ -73,11 +73,12 @@ export default function SubscriptionsManagement() {
         <SubscriptionDashboard metrics={metrics} />
 
         <Tabs defaultValue="plans" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5">
             <TabsTrigger value="plans">Planos</TabsTrigger>
             <TabsTrigger value="active">Ativas</TabsTrigger>
             <TabsTrigger value="payments">Cobranças</TabsTrigger>
             <TabsTrigger value="rewards">Recompensas</TabsTrigger>
+            <TabsTrigger value="migration">Migração</TabsTrigger>
           </TabsList>
 
           <TabsContent value="plans">
