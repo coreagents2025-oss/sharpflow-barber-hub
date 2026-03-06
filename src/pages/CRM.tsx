@@ -71,11 +71,11 @@ const CRM = () => {
       <div className="min-h-screen bg-background">
         <Navbar />
         
-        <div className="container mx-auto px-4 py-6">
-          <div className="mb-6">
-            <h1 className="text-3xl sm:text-4xl font-bold mb-2">CRM de Leads</h1>
-            <p className="text-muted-foreground text-sm sm:text-base">
-              Gerencie seus leads e acompanhe o relacionamento com seus clientes
+        <div className="container mx-auto px-4 py-4">
+          <div className="mb-4">
+            <h1 className="text-2xl sm:text-3xl font-bold mb-1">CRM de Leads</h1>
+            <p className="text-muted-foreground text-sm">
+              Gerencie seus leads e acompanhe o relacionamento
             </p>
           </div>
 
