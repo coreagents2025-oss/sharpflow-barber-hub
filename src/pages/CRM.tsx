@@ -121,7 +121,7 @@ const CRM = () => {
                     Voltar para lista
                   </Button>
                 </div>
-                <div className="max-h-[calc(100vh-400px)] overflow-auto">
+                <div className="max-h-[calc(100vh-320px)] overflow-auto">
                   <LeadDetailsPanel lead={selectedLead} />
                 </div>
               </div>
