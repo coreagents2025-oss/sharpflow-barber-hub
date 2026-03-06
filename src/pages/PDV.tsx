@@ -802,7 +802,7 @@ const PDV = () => {
                       variant={filterStatus === 'in_progress' ? 'default' : 'outline'} 
                       size="sm"
                       onClick={() => setFilterStatus('in_progress')}
-                      className="touch-target whitespace-nowrap flex-shrink-0 snap-start min-w-[100px] text-xs sm:text-sm"
+                      className="touch-target whitespace-nowrap flex-shrink-0 snap-start text-[10px] sm:text-xs px-2 sm:px-3 h-7 sm:h-8"
                     >
                       Atendendo ({statusCounts.in_progress})
                     </Button>
