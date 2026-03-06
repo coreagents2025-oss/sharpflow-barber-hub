@@ -1,37 +1,23 @@
 
 
-## Problema: PWA abre offline mesmo com internet
+## Problema identificado
 
-### Causa raiz
+O PWA está configurado com `navigateFallback: "/offline.html"`, o que significa que **qualquer navegação offline mostra a página estática de "Sem conexão"** em vez de carregar o app cacheado. Além disso, o `main.tsx` registra manualmente o service worker (`/sw.js`), conflitando com o registro automático do `vite-plugin-pwa`.
 
-Existem **dois problemas** na configuração atual:
+## Correções
 
-1. **Service Worker nao esta sendo registrado**: O `vite-plugin-pwa` com `registerType: "autoUpdate"` precisa que o registro do SW seja injetado no app. Por padrao, o plugin usa `injectRegister: "auto"` que injeta um script no HTML. Porem, como `manifest: false` esta configurado (manifest externo), o plugin pode nao estar injetando corretamente. Sem registro explícito, o SW nao e ativado e o cache nunca e populado.
+### 1. Alterar `navigateFallback` para `/index.html` (vite.config.ts)
+- Trocar `"/offline.html"` por `"/index.html"` para que o service worker sirva o shell do app (SPA) quando offline
+- Adicionar `"/index.html"` e `"/offline.html"` ao `globPatterns` para garantir que sejam pré-cacheados
 
-2. **Conflito no runtime caching de navegacao**: A regra de runtime caching para `request.mode === "navigate"` com `NetworkFirst` **intercepta as requisicoes de navegacao antes do `navigateFallback` do precache**. Na primeira abertura apos instalar (quando o cache ainda esta vazio), o NetworkFirst tenta a rede, e se houver qualquer lentidao ou falha, retorna erro em vez de servir o app do precache.
+### 2. Remover registro manual do SW (main.tsx)
+- O `vite-plugin-pwa` com `registerType: "autoUpdate"` já gera e registra o service worker automaticamente
+- O registro manual de `/sw.js` conflita e pode impedir o cache correto
 
-### Correcoes
-
-#### 1. Registrar o SW explicitamente no `main.tsx`
-Importar `registerSW` do modulo virtual `virtual:pwa-register` para garantir que o service worker seja registrado e atualizado automaticamente.
-
-#### 2. Remover a regra de runtime cache para navegacao no `vite.config.ts`
-A regra `request.mode === "navigate"` com `NetworkFirst` conflita com o `navigateFallback` do precache. O Workbox precache ja cuida da navegacao via `navigateFallback: "/index.html"`. Remover essa regra evita que o runtime cache intercepte e cause falhas.
-
-#### 3. Adicionar regra de runtime cache para chamadas API (Supabase)
-Manter cache das chamadas API com `NetworkFirst` para que dados carreguem mesmo com conexao instavel.
-
-### Arquivos alterados
-
-| Arquivo | Acao |
-|---|---|
-| `src/main.tsx` | Adicionar `import { registerSW } from 'virtual:pwa-register'` e chamar `registerSW()` |
-| `src/vite-env.d.ts` | Adicionar type reference para `vite-plugin-pwa/client` |
-| `vite.config.ts` | Remover regra de runtime cache para navegacao, adicionar regra para API do Supabase, adicionar `injectRegister: null` (registro manual) |
+### 3. Adicionar `globPatterns` para pré-cachear os assets do app (vite.config.ts)
+- Incluir `*.html`, `*.js`, `*.css`, e ícones no precache do workbox para que o app funcione offline de verdade
 
 ### Resultado esperado
-- SW registrado corretamente na primeira visita
-- Assets pre-cacheados incluindo `index.html`
-- App abre normalmente apos instalacao do PWA, mesmo com conexao lenta
-- Navegacao offline funciona servindo o shell do SPA do precache
+- App carrega normalmente mesmo sem internet (usando cache do SPA)
+- A página `offline.html` só apareceria se o cache do index.html falhasse (cenário extremo)
 

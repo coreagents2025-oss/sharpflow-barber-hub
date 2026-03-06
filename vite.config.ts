@@ -15,6 +15,7 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
+      injectRegister: null, // Manual registration in main.tsx
       workbox: {
         maximumFileSizeToCacheInBytes: 3 * 1024 * 1024,
         globPatterns: ["**/*.{js,css,html,png,jpg,svg,ico,woff2}"],
@@ -40,16 +41,17 @@ export default defineConfig(({ mode }) => ({
             },
           },
           {
-            urlPattern: ({ request }) => request.mode === "navigate",
+            urlPattern: /^https:\/\/.*supabase.*\/rest\/|^https:\/\/.*supabase.*\/auth\//i,
             handler: "NetworkFirst",
             options: {
-              cacheName: "pages",
-              expiration: { maxEntries: 30, maxAgeSeconds: 24 * 60 * 60 },
+              cacheName: "supabase-api",
+              expiration: { maxEntries: 50, maxAgeSeconds: 24 * 60 * 60 },
+              networkTimeoutSeconds: 10,
             },
           },
         ],
       },
-      manifest: false, // We use our own manifest.webmanifest
+      manifest: false,
       devOptions: {
         enabled: false,
       },
