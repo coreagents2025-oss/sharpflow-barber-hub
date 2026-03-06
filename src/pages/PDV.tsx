@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Clock, User, Scissors, CheckCircle2, AlertCircle, Bell, TrendingUp, Users as UsersIcon, Calendar as CalendarIcon, Percent, DollarSign, UserCheck, UserX, CreditCard } from 'lucide-react';
+import { Clock, User, Scissors, CheckCircle2, AlertCircle, Bell, TrendingUp, Users as UsersIcon, Calendar as CalendarIcon, Percent, DollarSign, UserCheck, UserX, CreditCard, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { PaymentModal } from '@/components/PaymentModal';
 import { SubscriptionBadgeInline } from '@/components/subscriptions/SubscriptionBadgeInline';
@@ -57,13 +57,21 @@ const PDV = () => {
   const [paymentModalOpen, setPaymentModalOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<any>(null);
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+
+  const refreshAll = () => {
+    fetchTodayAppointments();
+    fetchStats();
+    fetchBarberStatuses();
+    fetchPopularServices();
+    fetchDailyPayments();
+    setLastUpdated(new Date());
+  };
+
   useEffect(() => {
     if (authBarbershopId) {
-      fetchTodayAppointments();
-      fetchStats();
-      fetchBarberStatuses();
-      fetchPopularServices();
-      fetchDailyPayments();
+      refreshAll();
       
       // Real-time updates
       const channel = supabase
@@ -76,10 +84,7 @@ const PDV = () => {
             table: 'appointments'
           },
           () => {
-            fetchTodayAppointments();
-            fetchStats();
-            fetchBarberStatuses();
-            fetchDailyPayments();
+            refreshAll();
           }
         )
         .subscribe();
@@ -415,6 +420,8 @@ const PDV = () => {
   };
 
   const handleConfirmPresence = async (appointmentId: string) => {
+    if (confirmingId) return;
+    setConfirmingId(appointmentId);
     try {
       const { error } = await supabase
         .from('appointments')
@@ -428,6 +435,8 @@ const PDV = () => {
     } catch (error: any) {
       console.error('Error confirming presence:', error);
       toast.error('Erro ao confirmar presença');
+    } finally {
+      setTimeout(() => setConfirmingId(null), 1500);
     }
   };
 
@@ -480,6 +489,14 @@ const PDV = () => {
 
   const dailyTotal = dailyPayments.reduce((sum, p) => sum + Number(p.amount), 0);
 
+  // Contagens por status para os filtros
+  const statusCounts = {
+    all: todayAppointments.length,
+    scheduled: todayAppointments.filter(a => a.status === 'scheduled').length,
+    in_progress: todayAppointments.filter(a => a.status === 'in_progress').length,
+    completed: todayAppointments.filter(a => a.status === 'completed').length,
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
       <Navbar />
@@ -492,10 +509,31 @@ const PDV = () => {
               {new Date().toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </p>
           </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-muted-foreground hidden sm:block">
+              Atualizado: {lastUpdated.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </span>
+            <Button variant="outline" size="sm" onClick={refreshAll}>
+              <RefreshCw className="h-4 w-4 mr-1" />
+              Atualizar
+            </Button>
+          </div>
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
+          <Card className="border-primary/30 bg-primary/5">
+            <CardHeader className="pb-2 p-3 sm:p-4 lg:p-6">
+              <CardDescription className="flex items-center gap-2 text-xs sm:text-sm">
+                <DollarSign className="h-4 w-4" />
+                Faturamento Hoje
+              </CardDescription>
+              <CardTitle className="text-2xl sm:text-3xl text-primary">
+                R$ {dailyTotal.toFixed(2)}
+              </CardTitle>
+            </CardHeader>
+          </Card>
+
           <Card>
             <CardHeader className="pb-2 p-3 sm:p-4 lg:p-6">
               <CardDescription className="flex items-center gap-2 text-xs sm:text-sm">
@@ -750,7 +788,7 @@ const PDV = () => {
                       onClick={() => setFilterStatus('all')}
                       className="touch-target whitespace-nowrap flex-shrink-0 snap-start min-w-[80px] text-xs sm:text-sm"
                     >
-                      Todos
+                      Todos ({statusCounts.all})
                     </Button>
                     <Button 
                       variant={filterStatus === 'scheduled' ? 'default' : 'outline'} 
@@ -758,7 +796,7 @@ const PDV = () => {
                       onClick={() => setFilterStatus('scheduled')}
                       className="touch-target whitespace-nowrap flex-shrink-0 snap-start min-w-[90px] text-xs sm:text-sm"
                     >
-                      Pendentes
+                      Pendentes ({statusCounts.scheduled})
                     </Button>
                     <Button 
                       variant={filterStatus === 'in_progress' ? 'default' : 'outline'} 
@@ -766,7 +804,7 @@ const PDV = () => {
                       onClick={() => setFilterStatus('in_progress')}
                       className="touch-target whitespace-nowrap flex-shrink-0 snap-start min-w-[100px] text-xs sm:text-sm"
                     >
-                      Atendendo
+                      Atendendo ({statusCounts.in_progress})
                     </Button>
                     <Button 
                       variant={filterStatus === 'completed' ? 'default' : 'outline'} 
@@ -774,7 +812,7 @@ const PDV = () => {
                       onClick={() => setFilterStatus('completed')}
                       className="touch-target whitespace-nowrap flex-shrink-0 snap-start min-w-[100px] text-xs sm:text-sm"
                     >
-                      Finalizados
+                      Finalizados ({statusCounts.completed})
                     </Button>
                   </div>
                   <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none sm:hidden" />
@@ -845,6 +883,11 @@ const PDV = () => {
                             <div className="flex items-center gap-1">
                               <Scissors className="h-3 w-3 flex-shrink-0" />
                               <span className="truncate">{apt.services?.name || 'Serviço'}</span>
+                              {apt.services?.price && (
+                                <span className="font-medium text-accent ml-1">
+                                  R$ {apt.services.price.toFixed(2)}
+                                </span>
+                              )}
                             </div>
                             <div className="flex items-center gap-1">
                               <User className="h-3 w-3 flex-shrink-0" />
@@ -857,15 +900,25 @@ const PDV = () => {
                             <div className="flex gap-2 flex-wrap pt-2 border-t">
                               {apt.status === 'scheduled' && (
                                 <>
-                                  <Button 
-                                    size="sm" 
-                                    variant="default"
-                                    onClick={() => handleConfirmPresence(apt.id)}
-                                    className="touch-target flex-1 sm:flex-none whitespace-nowrap text-xs"
-                                  >
-                                    <UserCheck className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                                    Presente
-                                  </Button>
+                                   <Button 
+                                     size="sm" 
+                                     variant="default"
+                                     onClick={() => handleConfirmPresence(apt.id)}
+                                     disabled={confirmingId === apt.id}
+                                     className="touch-target flex-1 sm:flex-none whitespace-nowrap text-xs"
+                                   >
+                                     {confirmingId === apt.id ? (
+                                       <>
+                                         <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 text-green-400" />
+                                         Confirmado!
+                                       </>
+                                     ) : (
+                                       <>
+                                         <UserCheck className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                                         Presente
+                                       </>
+                                     )}
+                                   </Button>
                                   <Button 
                                     size="sm" 
                                     variant="outline"
@@ -955,9 +1008,10 @@ const PDV = () => {
                             className="text-[9px] sm:text-xs px-1 py-0 h-auto"
                           >
                             {payment.payment_method === 'cash' && '💵 Dinheiro'}
-                            {payment.payment_method === 'credit' && '💳 Crédito'}
-                            {payment.payment_method === 'debit' && '💳 Débito'}
+                            {payment.payment_method === 'credit_card' && '💳 Crédito'}
+                            {payment.payment_method === 'debit_card' && '💳 Débito'}
                             {payment.payment_method === 'pix' && '📱 PIX'}
+                            {payment.payment_method === 'subscription' && '⭐ Assinatura'}
                           </Badge>
                         </div>
                       </div>
