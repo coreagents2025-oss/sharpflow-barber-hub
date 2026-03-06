@@ -1,47 +1,23 @@
 
 
-## Esclarecimento: Como o email funciona no seu projeto
+## Problema identificado
 
-Quando você configurou o domínio de email via Lovable (`notify.www.barberplus.shop`), o Lovable provisionou automaticamente uma chave Resend (`RESEND_API_KEY`) nos bastidores. Você não precisa gerenciar isso manualmente -- faz parte do Lovable Cloud.
+O PWA está configurado com `navigateFallback: "/offline.html"`, o que significa que **qualquer navegação offline mostra a página estática de "Sem conexão"** em vez de carregar o app cacheado. Além disso, o `main.tsx` registra manualmente o service worker (`/sw.js`), conflitando com o registro automático do `vite-plugin-pwa`.
 
-**Custo**: O envio de emails faz parte do uso do Lovable Cloud, com pricing baseado em uso. Há uma quantidade gratuita incluída. Para volumes maiores, o custo é marginal. Consulte a [documentação de pricing do Cloud](https://docs.lovable.dev/features/cloud) para detalhes exatos.
+## Correções
 
-**Observação**: Seu domínio `www.barberplus.shop` ainda está com verificação DNS pendente (status: `initiated`). Até que o DNS seja verificado, os emails não serão enviados. Recomendo concluir a verificação:
+### 1. Alterar `navigateFallback` para `/index.html` (vite.config.ts)
+- Trocar `"/offline.html"` por `"/index.html"` para que o service worker sirva o shell do app (SPA) quando offline
+- Adicionar `"/index.html"` e `"/offline.html"` ao `globPatterns` para garantir que sejam pré-cacheados
 
-<lov-actions>
-<lov-open-email-setup>Configurar domínio de email</lov-open-email-setup>
-</lov-actions>
+### 2. Remover registro manual do SW (main.tsx)
+- O `vite-plugin-pwa` com `registerType: "autoUpdate"` já gera e registra o service worker automaticamente
+- O registro manual de `/sw.js` conflita e pode impedir o cache correto
 
----
+### 3. Adicionar `globPatterns` para pré-cachear os assets do app (vite.config.ts)
+- Incluir `*.html`, `*.js`, `*.css`, e ícones no precache do workbox para que o app funcione offline de verdade
 
-## Plano: Simplificar Configurações de Email em Settings
-
-A seção atual pede `from_email` e `from_name` (campos de remetente), mas o remetente real é sempre o domínio da plataforma. Vamos trocar por **informações de contato** que aparecem no corpo dos emails.
-
-### Mudanças
-
-**`src/pages/Settings.tsx`**
-- Renomear seção de "Configurações de Email" para "Informações de Contato nos Emails"
-- Trocar campos `from_email` / `from_name` por: `contact_email`, `contact_phone`, `contact_whatsapp`
-- Manter toggle `notifications_enabled`
-- Descrição: "Estes dados aparecerão nos emails enviados aos seus clientes"
-
-**Edge Functions** (3 arquivos):
-- `send-booking-confirmation/index.ts`
-- `send-promotional-email/index.ts`  
-- `send-subscription-reminder/index.ts`
-
-Em todos:
-- Remetente fixo: `BarberPLUS <noreply@notify.www.barberplus.shop>`
-- Ler `contact_email`, `contact_phone`, `contact_whatsapp` de `barbershop_credentials.email_credentials`
-- Inserir bloco de contato no rodapé do email:
-  ```
-  📧 contato@barbearia.com
-  📱 (11) 99999-9999
-  💬 WhatsApp: (11) 99999-9999
-  ```
-- Remover lógica que verifica `from_email` para decidir se envia (usar apenas `notifications_enabled`)
-
-### Sem migração de banco
-`email_credentials` é JSONB -- a estrutura muda sem alterar schema.
+### Resultado esperado
+- App carrega normalmente mesmo sem internet (usando cache do SPA)
+- A página `offline.html` só apareceria se o cache do index.html falhasse (cenário extremo)
 

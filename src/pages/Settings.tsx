@@ -55,8 +55,9 @@ const domainSchema = z.object({
 });
 
 const emailSettingsSchema = z.object({
-  from_email: z.string().email('Email inválido'),
-  from_name: z.string().min(3, 'Nome obrigatório'),
+  contact_email: z.string().email('Email inválido').optional().or(z.literal('')),
+  contact_phone: z.string().optional().or(z.literal('')),
+  contact_whatsapp: z.string().optional().or(z.literal('')),
   notifications_enabled: z.boolean(),
 });
 
@@ -113,8 +114,9 @@ const Settings = () => {
   });
 
   const [emailSettings, setEmailSettings] = useState({
-    from_email: '',
-    from_name: '',
+    contact_email: '',
+    contact_phone: '',
+    contact_whatsapp: '',
     notifications_enabled: true,
   });
 
@@ -196,8 +198,9 @@ const Settings = () => {
             
             const emailCreds = (credentials?.email_credentials || {}) as any;
             setEmailSettings({
-              from_email: emailCreds.from_email || '',
-              from_name: emailCreds.from_name || '',
+              contact_email: emailCreds.contact_email || '',
+              contact_phone: emailCreds.contact_phone || '',
+              contact_whatsapp: emailCreds.contact_whatsapp || '',
               notifications_enabled: emailCreds.notifications_enabled ?? true,
             });
             
@@ -748,8 +751,10 @@ const Settings = () => {
 
               <Card className="border-0 sm:border shadow-sm">
                 <CardHeader className="px-4 sm:px-6 py-4 sm:py-6">
-                  <CardTitle className="text-lg sm:text-xl">Configurações de Email</CardTitle>
-                  <CardDescription className="text-xs sm:text-sm">Configure emails para notificações de agendamento</CardDescription>
+                  <CardTitle className="text-lg sm:text-xl">Informações de Contato nos Emails</CardTitle>
+                  <CardDescription className="text-xs sm:text-sm">
+                    Estes dados aparecerão nos emails enviados aos seus clientes
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="px-4 sm:px-6 space-y-3 sm:space-y-4">
                   {dataLoading ? (
@@ -760,29 +765,43 @@ const Settings = () => {
                   ) : (
                     <>
                       <div className="space-y-2">
-                        <Label htmlFor="from-email">Email de Envio</Label>
+                        <Label htmlFor="contact-email">Email de Contato</Label>
                         <Input 
-                          id="from-email"
+                          id="contact-email"
                           type="email"
-                          placeholder="noreply@minhabarbearia.com"
-                          value={emailSettings.from_email}
-                          onChange={(e) => setEmailSettings({ ...emailSettings, from_email: e.target.value })}
+                          placeholder="contato@minhabarbearia.com"
+                          value={emailSettings.contact_email}
+                          onChange={(e) => setEmailSettings({ ...emailSettings, contact_email: e.target.value })}
                           disabled={loading}
                         />
                         <p className="text-xs text-muted-foreground">
-                          Email que seus clientes verão como remetente
+                          Email exibido no rodapé dos emails para seus clientes entrarem em contato
                         </p>
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="from-name">Nome do Remetente</Label>
+                        <Label htmlFor="contact-phone">Telefone de Contato</Label>
                         <Input 
-                          id="from-name"
-                          placeholder="Barbearia Elite"
-                          value={emailSettings.from_name}
-                          onChange={(e) => setEmailSettings({ ...emailSettings, from_name: e.target.value })}
+                          id="contact-phone"
+                          placeholder="(11) 99999-9999"
+                          value={emailSettings.contact_phone}
+                          onChange={(e) => setEmailSettings({ ...emailSettings, contact_phone: e.target.value })}
                           disabled={loading}
                         />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="contact-whatsapp">WhatsApp de Contato</Label>
+                        <Input 
+                          id="contact-whatsapp"
+                          placeholder="(11) 99999-9999"
+                          value={emailSettings.contact_whatsapp}
+                          onChange={(e) => setEmailSettings({ ...emailSettings, contact_whatsapp: e.target.value })}
+                          disabled={loading}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Número de WhatsApp exibido nos emails para contato direto
+                        </p>
                       </div>
 
                       <div className="flex items-center justify-between py-2">
