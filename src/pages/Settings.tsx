@@ -471,6 +471,24 @@ const Settings = () => {
     }
   };
 
+  const handleSaveOperatingHours = async () => {
+    if (!barbershopId) return;
+    setSavingHours(true);
+    try {
+      const { error } = await supabase
+        .from('barbershops')
+        .update({ operating_hours: operatingHours })
+        .eq('id', barbershopId);
+      if (error) throw error;
+      toast.success('Horários de funcionamento salvos!');
+    } catch (error) {
+      console.error('Erro ao salvar horários:', error);
+      toast.error('Erro ao salvar horários de funcionamento');
+    } finally {
+      setSavingHours(false);
+    }
+  };
+
   const handleTestUAZapiConnection = async () => {
     if (!barbershopId) return;
     
