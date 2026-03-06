@@ -314,6 +314,14 @@ export function useSubscriptionManagement() {
     if (error) { toast.error('Erro ao marcar pagamento'); return false; }
     toast.success('Pagamento confirmado!');
     await fetchPayments();
+
+    // Fire-and-forget payment confirmed email — find subscription_id from local payments state
+    const subIdForEmail = payments.find(p => p.id === paymentId)?.subscription_id;
+    if (subIdForEmail) {
+      supabase.functions.invoke('send-subscription-email', {
+        body: { type: 'payment_confirmed', subscription_id: subIdForEmail, payment_id: paymentId },
+      }).catch(console.error);
+    }
     return true;
   };
 
@@ -352,6 +360,12 @@ export function useSubscriptionManagement() {
 
     toast.success('Assinatura renovada!');
     await Promise.all([fetchActiveSubscriptions(), fetchPayments()]);
+
+    // Fire-and-forget renewal email
+    supabase.functions.invoke('send-subscription-email', {
+      body: { type: 'renewal', subscription_id: subscriptionId },
+    }).catch(console.error);
+
     return true;
   };
 
@@ -363,6 +377,12 @@ export function useSubscriptionManagement() {
     if (error) { toast.error('Erro ao cancelar'); return false; }
     toast.success('Assinatura cancelada');
     await fetchActiveSubscriptions();
+
+    // Fire-and-forget cancellation email
+    supabase.functions.invoke('send-subscription-email', {
+      body: { type: 'cancellation', subscription_id: subscriptionId },
+    }).catch(console.error);
+
     return true;
   };
 

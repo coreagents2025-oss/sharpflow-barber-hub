@@ -175,6 +175,11 @@ export function AddSubscriberDialog({ open, onOpenChange, plans, onSuccess }: Pr
       toast.success(`Assinatura criada para ${selectedLead.full_name}!`);
       onSuccess();
       onOpenChange(false);
+
+      // Fire-and-forget welcome email
+      supabase.functions.invoke('send-subscription-email', {
+        body: { type: 'welcome', subscription_id: subData.id },
+      }).catch(console.error);
     } catch (err: any) {
       console.error(err);
       toast.error('Erro ao criar assinatura');
