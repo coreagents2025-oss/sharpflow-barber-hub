@@ -360,6 +360,12 @@ export function useSubscriptionManagement() {
 
     toast.success('Assinatura renovada!');
     await Promise.all([fetchActiveSubscriptions(), fetchPayments()]);
+
+    // Fire-and-forget renewal email
+    supabase.functions.invoke('send-subscription-email', {
+      body: { type: 'renewal', subscription_id: subscriptionId },
+    }).catch(console.error);
+
     return true;
   };
 
@@ -371,6 +377,12 @@ export function useSubscriptionManagement() {
     if (error) { toast.error('Erro ao cancelar'); return false; }
     toast.success('Assinatura cancelada');
     await fetchActiveSubscriptions();
+
+    // Fire-and-forget cancellation email
+    supabase.functions.invoke('send-subscription-email', {
+      body: { type: 'cancellation', subscription_id: subscriptionId },
+    }).catch(console.error);
+
     return true;
   };
 
