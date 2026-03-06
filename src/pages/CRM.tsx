@@ -147,7 +147,7 @@ const CRM = () => {
 
         <LeadMetrics metrics={metrics} />
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-300px)]">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 h-[calc(100vh-240px)]">
           {/* Sidebar - Filtros e Lista */}
           <div className="lg:col-span-4 flex flex-col border rounded-lg bg-card overflow-hidden">
             <LeadsFilters
