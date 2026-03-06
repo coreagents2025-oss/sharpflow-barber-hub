@@ -114,8 +114,9 @@ const Settings = () => {
   });
 
   const [emailSettings, setEmailSettings] = useState({
-    from_email: '',
-    from_name: '',
+    contact_email: '',
+    contact_phone: '',
+    contact_whatsapp: '',
     notifications_enabled: true,
   });
 
