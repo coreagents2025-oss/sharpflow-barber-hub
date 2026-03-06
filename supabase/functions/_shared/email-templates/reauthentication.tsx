@@ -7,6 +7,7 @@ import {
   Container,
   Head,
   Heading,
+  Hr,
   Html,
   Preview,
   Text,
@@ -17,17 +18,20 @@ interface ReauthenticationEmailProps {
 }
 
 export const ReauthenticationEmail = ({ token }: ReauthenticationEmailProps) => (
-  <Html lang="en" dir="ltr">
+  <Html lang="pt-BR" dir="ltr">
     <Head />
-    <Preview>Your verification code</Preview>
+    <Preview>Seu código de verificação — BarberPLUS</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>Confirm reauthentication</Heading>
-        <Text style={text}>Use the code below to confirm your identity:</Text>
+        <div style={logoWrapper}>
+          <span style={logoText}>✂️ BarberPLUS</span>
+        </div>
+        <Heading style={h1}>Confirme sua identidade</Heading>
+        <Text style={text}>Use o código abaixo para verificar sua identidade:</Text>
         <Text style={codeStyle}>{token}</Text>
+        <Hr style={hr} />
         <Text style={footer}>
-          This code will expire shortly. If you didn't request this, you can
-          safely ignore this email.
+          Este código expira em breve. Se você não solicitou isto, pode ignorar este e-mail com segurança.
         </Text>
       </Container>
     </Body>
@@ -36,25 +40,40 @@ export const ReauthenticationEmail = ({ token }: ReauthenticationEmailProps) => 
 
 export default ReauthenticationEmail
 
-const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
-const container = { padding: '20px 25px' }
+const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, Helvetica, sans-serif' }
+const container = {
+  maxWidth: '560px',
+  margin: '0 auto',
+  padding: '32px 28px',
+  border: '1px solid hsl(0, 0%, 90%)',
+  borderRadius: '12px',
+}
+const logoWrapper = { marginBottom: '24px' }
+const logoText = {
+  fontSize: '20px',
+  fontWeight: 'bold' as const,
+  color: 'hsl(0, 0%, 9%)',
+  letterSpacing: '-0.5px',
+}
 const h1 = {
   fontSize: '22px',
   fontWeight: 'bold' as const,
-  color: '#000000',
+  color: 'hsl(0, 0%, 9%)',
   margin: '0 0 20px',
 }
 const text = {
   fontSize: '14px',
-  color: '#55575d',
-  lineHeight: '1.5',
-  margin: '0 0 25px',
+  color: 'hsl(0, 0%, 45%)',
+  lineHeight: '1.6',
+  margin: '0 0 20px',
 }
 const codeStyle = {
   fontFamily: 'Courier, monospace',
-  fontSize: '22px',
+  fontSize: '28px',
   fontWeight: 'bold' as const,
-  color: '#000000',
+  color: 'hsl(38, 92%, 50%)',
+  letterSpacing: '4px',
   margin: '0 0 30px',
 }
-const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
+const hr = { borderColor: 'hsl(0, 0%, 90%)', margin: '28px 0 20px' }
+const footer = { fontSize: '12px', color: 'hsl(0, 0%, 55%)', margin: '0' }
