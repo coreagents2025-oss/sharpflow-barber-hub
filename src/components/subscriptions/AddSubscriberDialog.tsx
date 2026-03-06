@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { CalendarIcon, Search, UserPlus, CreditCard, Calendar as CalendarLucide, Sparkles } from 'lucide-react';
+import { CalendarIcon, Search, UserPlus, CreditCard, Calendar as CalendarLucide } from 'lucide-react';
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
@@ -34,9 +34,11 @@ interface Props {
   onSuccess: () => void;
 }
 
+type Step = 'lead' | 'new-lead' | 'plan';
+
 export function AddSubscriberDialog({ open, onOpenChange, plans, onSuccess }: Props) {
   const { barbershopId } = useAuth();
-  const [step, setStep] = useState<'lead' | 'plan'>('lead');
+  const [step, setStep] = useState<Step>('lead');
   const [search, setSearch] = useState('');
   const [leads, setLeads] = useState<Lead[]>([]);
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
@@ -44,6 +46,12 @@ export function AddSubscriberDialog({ open, onOpenChange, plans, onSuccess }: Pr
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [loadingLeads, setLoadingLeads] = useState(false);
+
+  // New lead form
+  const [newName, setNewName] = useState('');
+  const [newPhone, setNewPhone] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [creatingLead, setCreatingLead] = useState(false);
 
   const activePlans = plans.filter(p => p.is_active);
 
@@ -57,6 +65,9 @@ export function AddSubscriberDialog({ open, onOpenChange, plans, onSuccess }: Pr
       setSelectedLead(null);
       setSelectedPlanId('');
       setStartDate(new Date());
+      setNewName('');
+      setNewPhone('');
+      setNewEmail('');
     }
   }, [open, barbershopId]);
 
@@ -89,6 +100,39 @@ export function AddSubscriberDialog({ open, onOpenChange, plans, onSuccess }: Pr
     setStep('plan');
   };
 
+  const handleCreateLead = async () => {
+    if (!barbershopId || !newName.trim() || !newPhone.trim()) return;
+    setCreatingLead(true);
+    try {
+      const { data, error } = await supabase.rpc('find_or_create_lead', {
+        _barbershop_id: barbershopId,
+        _phone: newPhone.trim(),
+        _full_name: newName.trim(),
+        _email: newEmail.trim() || null,
+        _source: 'manual',
+      });
+      if (error) throw error;
+
+      const leadId = data as string;
+      const { data: leadData } = await supabase
+        .from('leads')
+        .select('id, full_name, phone, email')
+        .eq('id', leadId)
+        .single();
+
+      if (leadData) {
+        setSelectedLead(leadData);
+        setStep('plan');
+        toast.success('Cliente cadastrado!');
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Erro ao cadastrar cliente');
+    } finally {
+      setCreatingLead(false);
+    }
+  };
+
   const handleConfirm = async () => {
     if (!selectedLead || !selectedPlanId || !barbershopId) return;
 
@@ -104,7 +148,7 @@ export function AddSubscriberDialog({ open, onOpenChange, plans, onSuccess }: Pr
       const nextBilling = new Date(startDate);
       nextBilling.setDate(nextBilling.getDate() + days);
 
-      const { error } = await supabase.from('client_subscriptions').insert({
+      const { data: subData, error } = await supabase.from('client_subscriptions').insert({
         lead_id: selectedLead.id,
         plan_id: plan.id,
         barbershop_id: barbershopId,
@@ -115,25 +159,16 @@ export function AddSubscriberDialog({ open, onOpenChange, plans, onSuccess }: Pr
         next_billing_date: nextBilling.toISOString(),
         billing_interval: plan.billing_interval,
         auto_renew: plan.auto_renew,
-      });
+      }).select('id').single();
 
       if (error) throw error;
 
-      // Create first payment record
       await supabase.from('subscription_payments').insert({
-        subscription_id: (await supabase
-          .from('client_subscriptions')
-          .select('id')
-          .eq('lead_id', selectedLead.id)
-          .eq('plan_id', plan.id)
-          .eq('barbershop_id', barbershopId)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .single()).data?.id || '',
+        subscription_id: subData.id,
         barbershop_id: barbershopId,
         amount: plan.price,
         due_date: startDate.toISOString().split('T')[0],
-        payment_method: plan.billing_method,
+        payment_method: plan.billing_method || 'pix',
         status: 'pending',
       });
 
@@ -150,6 +185,12 @@ export function AddSubscriberDialog({ open, onOpenChange, plans, onSuccess }: Pr
 
   const selectedPlan = activePlans.find(p => p.id === selectedPlanId);
 
+  const stepTitle = {
+    'lead': 'Selecione o cliente',
+    'new-lead': 'Cadastrar novo cliente',
+    'plan': `Plano para ${selectedLead?.full_name}`,
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg">
@@ -158,12 +199,10 @@ export function AddSubscriberDialog({ open, onOpenChange, plans, onSuccess }: Pr
             <UserPlus className="h-5 w-5 text-primary" />
             Nova Assinatura Manual
           </DialogTitle>
-          <DialogDescription>
-            {step === 'lead' ? 'Selecione o cliente' : `Plano para ${selectedLead?.full_name}`}
-          </DialogDescription>
+          <DialogDescription>{stepTitle[step]}</DialogDescription>
         </DialogHeader>
 
-        {step === 'lead' ? (
+        {step === 'lead' && (
           <div className="space-y-3">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -174,7 +213,7 @@ export function AddSubscriberDialog({ open, onOpenChange, plans, onSuccess }: Pr
                 className="pl-9"
               />
             </div>
-            <ScrollArea className="h-[300px]">
+            <ScrollArea className="h-[260px]">
               <div className="space-y-1">
                 {loadingLeads && <p className="text-sm text-muted-foreground text-center py-4">Buscando...</p>}
                 {!loadingLeads && leads.length === 0 && (
@@ -197,8 +236,63 @@ export function AddSubscriberDialog({ open, onOpenChange, plans, onSuccess }: Pr
                 ))}
               </div>
             </ScrollArea>
+            <Button
+              variant="outline"
+              className="w-full"
+              onClick={() => setStep('new-lead')}
+            >
+              <UserPlus className="h-4 w-4 mr-2" />
+              Cadastrar novo cliente
+            </Button>
           </div>
-        ) : (
+        )}
+
+        {step === 'new-lead' && (
+          <div className="space-y-4">
+            <Button variant="ghost" size="sm" onClick={() => setStep('lead')} className="text-xs">
+              ← Voltar à busca
+            </Button>
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="new-name">Nome completo *</Label>
+                <Input
+                  id="new-name"
+                  placeholder="Ex: João Silva"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="new-phone">Telefone *</Label>
+                <Input
+                  id="new-phone"
+                  placeholder="(11) 99999-9999"
+                  value={newPhone}
+                  onChange={(e) => setNewPhone(e.target.value)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="new-email">Email (opcional)</Label>
+                <Input
+                  id="new-email"
+                  type="email"
+                  placeholder="email@exemplo.com"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                />
+              </div>
+            </div>
+            <Button
+              className="w-full"
+              onClick={handleCreateLead}
+              disabled={!newName.trim() || !newPhone.trim() || creatingLead}
+            >
+              {creatingLead ? 'Cadastrando...' : 'Cadastrar e continuar'}
+            </Button>
+          </div>
+        )}
+
+        {step === 'plan' && (
           <div className="space-y-4">
             <Button variant="ghost" size="sm" onClick={() => setStep('lead')} className="text-xs">
               ← Trocar cliente
@@ -242,7 +336,6 @@ export function AddSubscriberDialog({ open, onOpenChange, plans, onSuccess }: Pr
               </RadioGroup>
             )}
 
-            {/* Date Picker */}
             <div className="space-y-2">
               <Label className="text-sm font-medium">Data de início</Label>
               <Popover>

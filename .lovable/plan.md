@@ -1,25 +1,23 @@
 
 
-## Plano: Adicionar formulário de cadastro de novo lead no AddSubscriberDialog
+## Problema identificado
 
-### Problema
-O dialog atual só permite buscar leads existentes. O usuário quer poder cadastrar um novo cliente diretamente ali, sem precisar ir ao CRM antes. Além disso, há um bug no `handleConfirm` -- o `billing_method` do plano pode não existir no tipo `SubscriptionPlan`, causando erro ao inserir o payment.
+O PWA está configurado com `navigateFallback: "/offline.html"`, o que significa que **qualquer navegação offline mostra a página estática de "Sem conexão"** em vez de carregar o app cacheado. Além disso, o `main.tsx` registra manualmente o service worker (`/sw.js`), conflitando com o registro automático do `vite-plugin-pwa`.
 
-### Mudanças
+## Correções
 
-**1. `src/components/subscriptions/AddSubscriberDialog.tsx` -- Adicionar step de cadastro**
+### 1. Alterar `navigateFallback` para `/index.html` (vite.config.ts)
+- Trocar `"/offline.html"` por `"/index.html"` para que o service worker sirva o shell do app (SPA) quando offline
+- Adicionar `"/index.html"` e `"/offline.html"` ao `globPatterns` para garantir que sejam pré-cacheados
 
-- Adicionar novo step `'new-lead'` ao fluxo (lead → new-lead → plan)
-- Na tela de busca de leads, adicionar botão "Cadastrar novo cliente" abaixo da lista
-- Step `new-lead`: formulário com campos Nome completo, Telefone, Email (opcional)
-- Ao submeter, usar a função `find_or_create_lead` do banco (já existe) para criar o lead
-- Após criação, selecionar automaticamente o lead e ir para step `plan`
-- Corrigir bug no `handleConfirm`: o `billing_method` referenciado como `plan.billing_method` pode ser undefined -- usar fallback `'pix'`
-- Corrigir lógica do payment: buscar o `subscription_id` de forma mais robusta (usar o retorno do insert em vez de query separada)
+### 2. Remover registro manual do SW (main.tsx)
+- O `vite-plugin-pwa` com `registerType: "autoUpdate"` já gera e registra o service worker automaticamente
+- O registro manual de `/sw.js` conflita e pode impedir o cache correto
 
-### Resultado
-- Botão "Cadastrar novo cliente" visível na tela de busca
-- Formulário limpo com nome, telefone e email
-- Usa `find_or_create_lead` (evita duplicatas por telefone)
-- Fluxo: busca OU cadastra → seleciona plano → confirma
+### 3. Adicionar `globPatterns` para pré-cachear os assets do app (vite.config.ts)
+- Incluir `*.html`, `*.js`, `*.css`, e ícones no precache do workbox para que o app funcione offline de verdade
+
+### Resultado esperado
+- App carrega normalmente mesmo sem internet (usando cache do SPA)
+- A página `offline.html` só apareceria se o cache do index.html falhasse (cenário extremo)
 
