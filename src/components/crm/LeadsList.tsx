@@ -33,7 +33,7 @@ export function LeadsList({ leads, selectedLead, onSelectLead, loading }: LeadsL
 
   return (
     <ScrollArea className="h-full">
-      <div className="p-4 space-y-3">
+      <div className="p-2 space-y-2">
         {leads.map((lead) => (
           <LeadCard
             key={lead.id}

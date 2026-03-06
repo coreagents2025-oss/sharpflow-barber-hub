@@ -49,8 +49,8 @@ export function LeadMetrics({ metrics }: LeadMetricsProps) {
           <CardTitle className="text-sm font-medium">Valor Total</CardTitle>
           <DollarSign className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">R$ {metrics.totalValue.toFixed(0)}</div>
+        <CardContent className="px-4 pb-3 pt-0">
+          <div className="text-xl font-bold">R$ {metrics.totalValue.toFixed(0)}</div>
         </CardContent>
       </Card>
     </div>
