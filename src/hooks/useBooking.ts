@@ -135,6 +135,20 @@ export const useBooking = (barbershopId: string | null) => {
       const endTime = new Date(scheduledAt);
       endTime.setMinutes(endTime.getMinutes() + durationMinutes);
 
+      // Validar que o TÉRMINO do serviço também está dentro do expediente
+      if (workingHoursEnd) {
+        const toMinutes = (t: string) => {
+          const [h, m] = t.split(':').map(Number);
+          return h * 60 + m;
+        };
+        const endMinutes = toMinutes(workingHoursEnd);
+        const serviceEndMinutes = endTime.getHours() * 60 + endTime.getMinutes();
+        if (serviceEndMinutes > endMinutes) {
+          toast.error(`Este serviço ultrapassa o horário de funcionamento (fechamento: ${workingHoursEnd}). Escolha um horário mais cedo.`);
+          return false;
+        }
+      }
+
       // Verificar se HÁ OVERLAP com agendamentos existentes (excluindo cancelled, no_show, completed)
       const { data: existingAppointments } = await supabase
         .from('appointments')
