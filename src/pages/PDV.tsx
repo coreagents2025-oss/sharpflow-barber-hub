@@ -521,7 +521,19 @@ const PDV = () => {
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 mb-6">
+          <Card className="border-primary/30 bg-primary/5">
+            <CardHeader className="pb-2 p-3 sm:p-4 lg:p-6">
+              <CardDescription className="flex items-center gap-2 text-xs sm:text-sm">
+                <DollarSign className="h-4 w-4" />
+                Faturamento Hoje
+              </CardDescription>
+              <CardTitle className="text-2xl sm:text-3xl text-primary">
+                R$ {dailyTotal.toFixed(2)}
+              </CardTitle>
+            </CardHeader>
+          </Card>
+
           <Card>
             <CardHeader className="pb-2 p-3 sm:p-4 lg:p-6">
               <CardDescription className="flex items-center gap-2 text-xs sm:text-sm">
