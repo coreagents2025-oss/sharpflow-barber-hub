@@ -550,6 +550,52 @@ export type Database = {
           },
         ]
       }
+      client_barbershop_links: {
+        Row: {
+          barbershop_id: string
+          created_at: string | null
+          id: string
+          lead_id: string | null
+          user_id: string
+        }
+        Insert: {
+          barbershop_id: string
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          user_id: string
+        }
+        Update: {
+          barbershop_id?: string
+          created_at?: string | null
+          id?: string
+          lead_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_barbershop_links_barbershop_id_fkey"
+            columns: ["barbershop_id"]
+            isOneToOne: false
+            referencedRelation: "barbershops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_barbershop_links_barbershop_id_fkey"
+            columns: ["barbershop_id"]
+            isOneToOne: false
+            referencedRelation: "public_barbershops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_barbershop_links_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_loyalty_points: {
         Row: {
           barbershop_id: string
@@ -2354,6 +2400,10 @@ export type Database = {
           _phone: string
           _source?: string
         }
+        Returns: string
+      }
+      get_client_barbershop_id: {
+        Args: { _slug: string; _user_id: string }
         Returns: string
       }
       get_user_barbershop: { Args: { _user_id: string }; Returns: string }
