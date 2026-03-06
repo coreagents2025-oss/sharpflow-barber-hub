@@ -193,8 +193,8 @@ export const PaymentModal = ({ isOpen, onClose, appointment, onSuccess }: Paymen
         return <Banknote className="h-4 w-4" />;
       case 'pix':
         return <Smartphone className="h-4 w-4" />;
-      case 'debit':
-      case 'credit':
+      case 'debit_card':
+      case 'credit_card':
         return <CreditCard className="h-4 w-4" />;
       default:
         return <DollarSign className="h-4 w-4" />;
