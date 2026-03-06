@@ -37,9 +37,9 @@ export function ActiveSubscriptionsList({ subscriptions, onRenew, onCancel }: Pr
             <TableHead>Cliente</TableHead>
             <TableHead>Plano</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Créditos</TableHead>
-            <TableHead>Recorrência</TableHead>
-            <TableHead>Expira em</TableHead>
+            <TableHead className="hidden sm:table-cell">Créditos</TableHead>
+            <TableHead className="hidden sm:table-cell">Recorrência</TableHead>
+            <TableHead className="hidden md:table-cell">Expira em</TableHead>
             <TableHead className="text-right">Ações</TableHead>
           </TableRow>
         </TableHeader>
