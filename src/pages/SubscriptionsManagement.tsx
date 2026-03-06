@@ -10,15 +10,18 @@ import { SubscriptionDashboard } from "@/components/subscriptions/SubscriptionDa
 import { PlanFormDialog } from "@/components/subscriptions/PlanFormDialog";
 import { ActiveSubscriptionsList } from "@/components/subscriptions/ActiveSubscriptionsList";
 import { PaymentHistoryTable } from "@/components/subscriptions/PaymentHistoryTable";
+import { PlanBenefitsList } from "@/components/subscriptions/PlanBenefitsList";
+import { RewardsManager } from "@/components/subscriptions/RewardsManager";
 
 const intervalMap: Record<string, string> = { weekly: "Semanal", biweekly: "Quinzenal", monthly: "Mensal" };
 const methodMap: Record<string, string> = { pix: "PIX", card: "Cartão", boleto: "Boleto", cash: "Dinheiro" };
 
 export default function SubscriptionsManagement() {
   const {
-    plans, activeSubscriptions, payments, loading, metrics,
+    plans, activeSubscriptions, payments, rewards, loading, metrics,
     createPlan, updatePlan, togglePlanActive, deletePlan,
     markPaymentPaid, renewSubscription, cancelSubscription,
+    createReward, updateReward, toggleRewardActive, deleteReward,
   } = useSubscriptionManagement();
 
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -59,7 +62,7 @@ export default function SubscriptionsManagement() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold">Gestão de Assinaturas</h1>
-            <p className="text-muted-foreground text-sm">Gerencie planos, assinaturas ativas e cobranças recorrentes</p>
+            <p className="text-muted-foreground text-sm">Gerencie planos, assinaturas ativas, cobranças e recompensas</p>
           </div>
           <Button onClick={openNew}>
             <Plus className="h-4 w-4 mr-2" /> Novo Plano
@@ -73,6 +76,7 @@ export default function SubscriptionsManagement() {
             <TabsTrigger value="plans">Planos</TabsTrigger>
             <TabsTrigger value="active">Assinaturas Ativas</TabsTrigger>
             <TabsTrigger value="payments">Cobranças</TabsTrigger>
+            <TabsTrigger value="rewards">Recompensas</TabsTrigger>
           </TabsList>
 
           <TabsContent value="plans">
@@ -111,6 +115,14 @@ export default function SubscriptionsManagement() {
                       <span className="text-muted-foreground">Auto-renovar</span>
                       <span>{plan.auto_renew ? "Sim" : "Não"}</span>
                     </div>
+
+                    {/* Benefits & Points */}
+                    {(plan.benefits && plan.benefits.length > 0) || plan.points_config ? (
+                      <div className="pt-2 border-t">
+                        <PlanBenefitsList benefits={plan.benefits || []} pointsConfig={plan.points_config} />
+                      </div>
+                    ) : null}
+
                     <div className="flex gap-2 pt-2 border-t">
                       <Button size="sm" variant="outline" className="flex-1" onClick={() => openEdit(plan)}>
                         <Edit className="h-3 w-3 mr-1" /> Editar
@@ -146,6 +158,16 @@ export default function SubscriptionsManagement() {
 
           <TabsContent value="payments">
             <PaymentHistoryTable payments={payments} onMarkPaid={markPaymentPaid} />
+          </TabsContent>
+
+          <TabsContent value="rewards">
+            <RewardsManager
+              rewards={rewards}
+              onCreate={createReward}
+              onUpdate={updateReward}
+              onToggle={toggleRewardActive}
+              onDelete={deleteReward}
+            />
           </TabsContent>
         </Tabs>
       </div>
