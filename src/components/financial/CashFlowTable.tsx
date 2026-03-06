@@ -204,13 +204,15 @@ export const CashFlowTable = ({ transactions, onEdit, onDelete }: CashFlowTableP
             <TableFooter>
               <TableRow>
                 <TableCell colSpan={5} className="text-right font-medium text-xs sm:text-sm">
-                  Entradas: <span className="text-green-600">R$ {totalIncome.toFixed(2)}</span>
-                  {' | '}
-                  Saídas: <span className="text-destructive">R$ {totalExpense.toFixed(2)}</span>
-                  {' | '}
-                  Saldo: <span className={totalIncome - totalExpense >= 0 ? 'text-green-600' : 'text-destructive'}>
-                    R$ {(totalIncome - totalExpense).toFixed(2)}
-                  </span>
+                  <div className="flex flex-col sm:flex-row sm:justify-end sm:gap-2 gap-1">
+                    <span>Entradas: <span className="text-green-600">R$ {totalIncome.toFixed(2)}</span></span>
+                    <span className="hidden sm:inline">|</span>
+                    <span>Saídas: <span className="text-destructive">R$ {totalExpense.toFixed(2)}</span></span>
+                    <span className="hidden sm:inline">|</span>
+                    <span>Saldo: <span className={totalIncome - totalExpense >= 0 ? 'text-green-600' : 'text-destructive'}>
+                      R$ {(totalIncome - totalExpense).toFixed(2)}
+                    </span></span>
+                  </div>
                 </TableCell>
                 <TableCell colSpan={2} />
               </TableRow>

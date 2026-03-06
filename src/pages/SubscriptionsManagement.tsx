@@ -59,12 +59,12 @@ export default function SubscriptionsManagement() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="container mx-auto px-4 py-6 space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl font-bold">Gestão de Assinaturas</h1>
             <p className="text-muted-foreground text-sm">Gerencie planos, assinaturas ativas, cobranças e recompensas</p>
           </div>
-          <Button onClick={openNew}>
+          <Button onClick={openNew} className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" /> Novo Plano
           </Button>
         </div>
@@ -72,9 +72,9 @@ export default function SubscriptionsManagement() {
         <SubscriptionDashboard metrics={metrics} />
 
         <Tabs defaultValue="plans" className="space-y-4">
-          <TabsList>
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4">
             <TabsTrigger value="plans">Planos</TabsTrigger>
-            <TabsTrigger value="active">Assinaturas Ativas</TabsTrigger>
+            <TabsTrigger value="active">Ativas</TabsTrigger>
             <TabsTrigger value="payments">Cobranças</TabsTrigger>
             <TabsTrigger value="rewards">Recompensas</TabsTrigger>
           </TabsList>

@@ -37,9 +37,9 @@ export function ActiveSubscriptionsList({ subscriptions, onRenew, onCancel }: Pr
             <TableHead>Cliente</TableHead>
             <TableHead>Plano</TableHead>
             <TableHead>Status</TableHead>
-            <TableHead>Créditos</TableHead>
-            <TableHead>Recorrência</TableHead>
-            <TableHead>Expira em</TableHead>
+            <TableHead className="hidden sm:table-cell">Créditos</TableHead>
+            <TableHead className="hidden sm:table-cell">Recorrência</TableHead>
+            <TableHead className="hidden md:table-cell">Expira em</TableHead>
             <TableHead className="text-right">Ações</TableHead>
           </TableRow>
         </TableHeader>
@@ -56,21 +56,21 @@ export function ActiveSubscriptionsList({ subscriptions, onRenew, onCancel }: Pr
                 </TableCell>
                 <TableCell>{sub.plan?.name || "—"}</TableCell>
                 <TableCell><Badge variant={st.variant}>{st.label}</Badge></TableCell>
-                <TableCell>{sub.credits_remaining}</TableCell>
-                <TableCell>{intervalMap[sub.billing_interval] || sub.billing_interval}</TableCell>
-                <TableCell>
+                <TableCell className="hidden sm:table-cell">{sub.credits_remaining}</TableCell>
+                <TableCell className="hidden sm:table-cell">{intervalMap[sub.billing_interval] || sub.billing_interval}</TableCell>
+                <TableCell className="hidden md:table-cell">
                   {sub.expires_at ? format(new Date(sub.expires_at), "dd/MM/yyyy", { locale: ptBR }) : "—"}
                 </TableCell>
-                <TableCell className="text-right space-x-1">
+                <TableCell className="text-right">
                   {sub.status === "active" && (
-                    <>
+                    <div className="flex flex-col sm:flex-row gap-1 justify-end">
                       <Button size="sm" variant="outline" onClick={() => onRenew(sub.id)}>
                         <RefreshCw className="h-3 w-3 mr-1" /> Renovar
                       </Button>
                       <Button size="sm" variant="destructive" onClick={() => onCancel(sub.id)}>
                         <XCircle className="h-3 w-3 mr-1" /> Cancelar
                       </Button>
-                    </>
+                    </div>
                   )}
                 </TableCell>
               </TableRow>
