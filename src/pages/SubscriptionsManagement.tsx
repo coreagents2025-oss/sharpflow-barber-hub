@@ -23,6 +23,7 @@ export default function SubscriptionsManagement() {
     createPlan, updatePlan, togglePlanActive, deletePlan,
     markPaymentPaid, renewSubscription, cancelSubscription,
     createReward, updateReward, toggleRewardActive, deleteReward,
+    refetch,
   } = useSubscriptionManagement();
 
   const [dialogOpen, setDialogOpen] = useState(false);
