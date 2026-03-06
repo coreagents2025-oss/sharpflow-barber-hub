@@ -218,6 +218,20 @@ const Settings = () => {
               custom_domain: barbershop.custom_domain || '',
             });
 
+            // Carregar horários de funcionamento
+            if (barbershop.operating_hours) {
+              const oh = barbershop.operating_hours as any;
+              setOperatingHours({
+                monday:    oh.monday    ?? null,
+                tuesday:   oh.tuesday   ?? null,
+                wednesday: oh.wednesday ?? null,
+                thursday:  oh.thursday  ?? null,
+                friday:    oh.friday    ?? null,
+                saturday:  oh.saturday  ?? null,
+                sunday:    oh.sunday    ?? null,
+              });
+            }
+
             // Carregar credenciais da tabela barbershop_credentials
             const { data: credentials } = await supabase
               .from('barbershop_credentials')
