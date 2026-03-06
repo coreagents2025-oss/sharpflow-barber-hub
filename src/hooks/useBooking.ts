@@ -61,72 +61,25 @@ export const useBooking = (barbershopId: string | null) => {
       // Normalizar telefone (remover formatação)
       const normalizedPhone = data.clientPhone.replace(/\D/g, '');
       
-      console.log('[BOOKING] Buscando lead por telefone:', normalizedPhone);
+      console.log('[BOOKING] Buscando/criando lead via RPC:', normalizedPhone);
 
-      // Buscar lead existente na barbearia
-      const { data: existingLead, error: searchError } = await supabase
-        .from('leads')
-        .select('id, full_name')
-        .eq('barbershop_id', barbershopId)
-        .eq('phone', normalizedPhone)
-        .maybeSingle();
+      // Use secure RPC to find or create lead
+      const { data: leadId, error: leadError } = await supabase
+        .rpc('find_or_create_lead', {
+          _barbershop_id: barbershopId,
+          _phone: normalizedPhone,
+          _full_name: data.clientName,
+          _email: data.clientEmail || null,
+          _source: 'public_booking',
+        });
 
-      if (searchError) {
-        console.error('[BOOKING] Erro ao buscar lead:', searchError);
-      } else {
-        console.log('[BOOKING] Lead encontrado:', existingLead);
+      if (leadError) {
+        console.error('[BOOKING] Erro ao buscar/criar lead:', leadError);
+        toast.error(`Erro ao registrar cliente: ${leadError.message}`);
+        return false;
       }
 
-      let leadId = existingLead?.id;
-
-      // Se não encontrou, criar novo lead
-      if (!leadId) {
-        console.log('[BOOKING] Lead não encontrado, criando novo...');
-        
-        const { data: newLead, error: insertError } = await supabase
-          .from('leads')
-          .insert([{
-            barbershop_id: barbershopId,
-            full_name: data.clientName,
-            phone: normalizedPhone,
-            email: data.clientEmail || null,
-            source: 'public_booking',
-            status: 'new',
-            last_interaction_at: new Date().toISOString(),
-          }])
-          .select('id')
-          .single();
-
-        if (insertError) {
-          console.error('[BOOKING] Erro ao criar lead:', insertError);
-          
-          // Se for duplicata, buscar novamente
-          if (insertError.code === '23505') {
-            console.log('[BOOKING] Lead já existe, buscando novamente...');
-            const { data: retryLead } = await supabase
-              .from('leads')
-              .select('id')
-              .eq('barbershop_id', barbershopId)
-              .eq('phone', normalizedPhone)
-              .maybeSingle();
-            
-            if (retryLead) {
-              leadId = retryLead.id;
-              console.log('[BOOKING] Lead encontrado após retry:', leadId);
-            } else {
-              toast.error('Erro: telefone já cadastrado mas lead não encontrado.');
-              return false;
-            }
-          } else {
-            console.error('[BOOKING] Erro inesperado ao criar lead:', insertError.message);
-            toast.error(`Erro ao criar lead: ${insertError.message}`);
-            return false;
-          }
-        } else {
-          leadId = newLead.id;
-          console.log('[BOOKING] Lead criado com sucesso:', leadId);
-        }
-      }
+      console.log('[BOOKING] Lead ID:', leadId);
 
       // Validar se não é data/hora passada
       const now = new Date();
