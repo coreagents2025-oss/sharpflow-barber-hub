@@ -349,14 +349,26 @@ export function useSubscriptionManagement() {
 
     if (updateError) { toast.error('Erro ao renovar'); return false; }
 
-    await supabase.from('subscription_payments').insert({
-      subscription_id: subscriptionId,
-      barbershop_id: sub.barbershop_id,
-      amount: sub.plan.price,
-      due_date: new Date().toISOString().split('T')[0],
-      payment_method: plan?.billing_method || 'pix',
-      status: 'pending',
-    } as any);
+    // Verificar se já existe cobrança pendente para esta renovação antes de inserir
+    const todayStr = new Date().toISOString().split('T')[0];
+    const { data: existingPayment } = await supabase
+      .from('subscription_payments')
+      .select('id')
+      .eq('subscription_id', subscriptionId)
+      .eq('status', 'pending')
+      .eq('due_date', todayStr)
+      .maybeSingle();
+
+    if (!existingPayment) {
+      await supabase.from('subscription_payments').insert({
+        subscription_id: subscriptionId,
+        barbershop_id: sub.barbershop_id,
+        amount: sub.plan.price,
+        due_date: todayStr,
+        payment_method: plan?.billing_method || 'pix',
+        status: 'pending',
+      } as any);
+    }
 
     toast.success('Assinatura renovada!');
     await Promise.all([fetchActiveSubscriptions(), fetchPayments()]);
