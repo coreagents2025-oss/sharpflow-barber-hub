@@ -97,7 +97,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     const settings = (credentials?.email_credentials || {}) as Record<string, any>;
 
-    if (!settings.notifications_enabled) {
+    // notifications_enabled defaults to true when not explicitly set to false
+    if (settings.notifications_enabled === false) {
       console.log("Notifications disabled for this barbershop");
       return new Response(
         JSON.stringify({ message: "Notifications disabled" }),
