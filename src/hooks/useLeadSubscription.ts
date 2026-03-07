@@ -111,10 +111,25 @@ export function useLeadSubscription(leadId: string | undefined, barbershopId: st
         return false;
       }
 
+      // Verificar se já existe assinatura ativa para este lead neste plano (evitar duplicata)
+      const { data: existingSub } = await supabase
+        .from('client_subscriptions')
+        .select('id')
+        .eq('lead_id', leadId)
+        .eq('plan_id', planId)
+        .eq('barbershop_id', barbershopId)
+        .eq('status', 'active')
+        .maybeSingle();
+
+      if (existingSub) {
+        toast.error('Este cliente já possui uma assinatura ativa neste plano.');
+        return false;
+      }
+
       const expiresAt = new Date(startDate);
       expiresAt.setDate(expiresAt.getDate() + plan.subscription_duration_days);
 
-      const { error } = await supabase
+      const { data: subData, error } = await supabase
         .from('client_subscriptions')
         .insert({
           lead_id: leadId,
@@ -125,9 +140,33 @@ export function useLeadSubscription(leadId: string | undefined, barbershopId: st
           credits_remaining: plan.credits_per_month,
           started_at: startDate.toISOString(),
           expires_at: expiresAt.toISOString(),
-        });
+        })
+        .select('id')
+        .single();
 
       if (error) throw error;
+
+      // Criar cobrança inicial — verificar se já existe antes de inserir
+      if (subData) {
+        const dueDateStr = startDate.toISOString().split('T')[0];
+        const { data: existingPayment } = await supabase
+          .from('subscription_payments')
+          .select('id')
+          .eq('subscription_id', subData.id)
+          .eq('due_date', dueDateStr)
+          .maybeSingle();
+
+        if (!existingPayment) {
+          await supabase.from('subscription_payments').insert({
+            subscription_id: subData.id,
+            barbershop_id: barbershopId,
+            amount: plan.price,
+            due_date: dueDateStr,
+            payment_method: 'pix',
+            status: 'pending',
+          });
+        }
+      }
 
       toast.success('Assinatura criada com sucesso!');
       await fetchSubscription();
