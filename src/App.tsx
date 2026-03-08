@@ -53,9 +53,12 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             {/* Catálogo Público Mobile-First */}
             <Route path="/catalogo" element={<PublicCatalog />} />
-            <Route path="/:slug" element={<PublicCatalog />} />
+            {/* Client Portal Routes — must come before /:slug */}
+            <Route path="/:slug/cliente" element={<ClientAuth />} />
+            <Route path="/:slug/cliente/dashboard" element={<ProtectedClientRoute><ClientDashboard /></ProtectedClientRoute>} />
             <Route path="/:slug/privacidade" element={<PrivacyPolicy />} />
             <Route path="/:slug/termos" element={<TermsOfService />} />
+            <Route path="/:slug" element={<PublicCatalog />} />
             {/* Painel do Dono da Barbearia - Rotas Protegidas */}
             <Route path="/pdv" element={<ProtectedRoute><PDV /></ProtectedRoute>} />
             <Route path="/services-management" element={<ProtectedRoute><ServicesManagement /></ProtectedRoute>} />
