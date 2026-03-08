@@ -28,10 +28,15 @@ const intervalMap: Record<string, string> = {
   monthly: "Mensal",
 };
 
-export function ActiveSubscriptionsList({ subscriptions, onRenew, onCancel }: Props) {
+export function ActiveSubscriptionsList({ subscriptions, onRenew, onCancel, onInvite }: Props) {
   const isMobile = useIsMobile();
+  const [inviting, setInviting] = useState<string | null>(null);
 
-  if (subscriptions.length === 0) {
+  const handleInvite = async (id: string) => {
+    setInviting(id);
+    await onInvite(id);
+    setInviting(null);
+  };
     return <p className="text-muted-foreground text-center py-8">Nenhuma assinatura encontrada.</p>;
   }
 
