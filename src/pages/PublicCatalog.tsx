@@ -5,7 +5,7 @@ import { ServiceCard } from '@/components/ServiceCard';
 import { BookingModal } from '@/components/BookingModal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { MapPin, Phone, Clock, MessageCircle, Facebook, Instagram } from 'lucide-react';
+import { MapPin, Phone, Clock, MessageCircle, Facebook, Instagram, Crown } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Service {
