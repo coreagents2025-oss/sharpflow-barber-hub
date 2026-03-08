@@ -304,6 +304,14 @@ const PublicCatalog = () => {
             )}
             
             <div className="flex flex-wrap justify-center gap-4 text-sm">
+              {slug && (
+                <Link 
+                  to={`/${slug}/cliente`}
+                  className="text-muted-foreground hover:text-foreground transition-colors font-medium flex items-center gap-1"
+                >
+                  🔒 Área do Assinante
+                </Link>
+              )}
               <Link 
                 to={`/${slug}/privacidade`} 
                 className="text-muted-foreground hover:text-foreground transition-colors"
