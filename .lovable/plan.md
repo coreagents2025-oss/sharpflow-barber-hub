@@ -1,23 +1,53 @@
 
+## Situação atual e o que construir
 
-## Problema identificado
+**Problema real:** O administrador cadastra assinantes pelo CRM/painel, mas esses clientes nunca criaram uma senha. Sem senha, eles não conseguem acessar a área do assinante mesmo que o painel já exista.
 
-O PWA está configurado com `navigateFallback: "/offline.html"`, o que significa que **qualquer navegação offline mostra a página estática de "Sem conexão"** em vez de carregar o app cacheado. Além disso, o `main.tsx` registra manualmente o service worker (`/sw.js`), conflitando com o registro automático do `vite-plugin-pwa`.
+**Solução em 2 partes:**
 
-## Correções
+### Parte 1 — Botão "Enviar acesso" na lista de assinaturas ativas
 
-### 1. Alterar `navigateFallback` para `/index.html` (vite.config.ts)
-- Trocar `"/offline.html"` por `"/index.html"` para que o service worker sirva o shell do app (SPA) quando offline
-- Adicionar `"/index.html"` e `"/offline.html"` ao `globPatterns` para garantir que sejam pré-cacheados
+Na aba "Ativas" da página de Assinaturas, adicionar um botão **"Enviar Acesso"** por assinante. Ao clicar, o sistema:
+1. Chama `supabase.auth.admin.inviteUserByEmail()` via **Edge Function** (pois a API admin não pode ser chamada do frontend com a chave anon)
+2. A Edge Function usa a `SERVICE_ROLE_KEY` para convidar o email do lead
+3. O cliente recebe um email com link mágico que define senha e já cai no dashboard dele `/:slug/cliente/dashboard`
+4. Se o cliente já tem conta (já foi convidado antes), o botão muda para "Reenviar acesso"
 
-### 2. Remover registro manual do SW (main.tsx)
-- O `vite-plugin-pwa` com `registerType: "autoUpdate"` já gera e registra o service worker automaticamente
-- O registro manual de `/sw.js` conflita e pode impedir o cache correto
+**Edge Function:** `supabase/functions/invite-client/index.ts`
+- Recebe: `{ email, full_name, slug, barbershop_id }`
+- Usa `supabase.auth.admin.inviteUserByEmail(email, { data: { role: 'client', barbershop_id }, redirectTo: ... })`
+- O convite já inclui `role: 'client'` e `barbershop_id` no metadata → o trigger `handle_new_user` vai criar o `client_barbershop_link` automaticamente
 
-### 3. Adicionar `globPatterns` para pré-cachear os assets do app (vite.config.ts)
-- Incluir `*.html`, `*.js`, `*.css`, e ícones no precache do workbox para que o app funcione offline de verdade
+### Parte 2 — Link de acesso mais visível no catálogo público
 
-### Resultado esperado
-- App carrega normalmente mesmo sem internet (usando cache do SPA)
-- A página `offline.html` só apareceria se o cache do index.html falhasse (cenário extremo)
+Atualmente o link "🔒 Área do Assinante" aparece apenas no rodapé (pequeno, misturado com links de privacidade). Melhorar a visibilidade adicionando:
+- **Banner/card flutuante** abaixo do hero section do catálogo, com destaque visual separado do rodapé
 
+---
+
+## Arquivos a modificar/criar
+
+| Arquivo | Ação |
+|---|---|
+| `supabase/functions/invite-client/index.ts` | Criar — Edge Function de convite |
+| `src/components/subscriptions/ActiveSubscriptionsList.tsx` | Adicionar botão "Enviar/Reenviar Acesso" por linha |
+| `src/hooks/useSubscriptionManagement.ts` | Adicionar função `inviteSubscriber(leadId)` |
+| `src/pages/PublicCatalog.tsx` | Melhorar visibilidade do link da área do assinante |
+
+---
+
+## Fluxo completo
+
+```text
+Admin vê assinante na lista → clica "Enviar Acesso"
+       ↓
+Edge Function convida email do lead
+       ↓
+Cliente recebe email "Você foi convidado"
+       ↓
+Clica no link → define senha → acessa /:slug/cliente/dashboard
+       ↓
+Vê plano ativo, créditos, cobranças pendentes
+```
+
+**Sem migração de banco** — reutiliza o trigger `handle_new_user` existente e o fluxo de convite nativo do Supabase Auth.
