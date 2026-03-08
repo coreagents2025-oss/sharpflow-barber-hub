@@ -188,6 +188,7 @@ export default function SubscriptionsManagement() {
                 subscriptions={activeSubscriptions}
                 onRenew={renewSubscription}
                 onCancel={cancelSubscription}
+                onInvite={inviteSubscriber}
               />
             </div>
           </TabsContent>
