@@ -25,6 +25,7 @@ export default function SubscriptionsManagement() {
     plans, activeSubscriptions, payments, rewards, loading, metrics,
     createPlan, updatePlan, togglePlanActive, deletePlan,
     markPaymentPaid, renewSubscription, cancelSubscription,
+    inviteSubscriber,
     createReward, updateReward, toggleRewardActive, deleteReward,
     refetch,
   } = useSubscriptionManagement();
@@ -188,6 +189,7 @@ export default function SubscriptionsManagement() {
                 subscriptions={activeSubscriptions}
                 onRenew={renewSubscription}
                 onCancel={cancelSubscription}
+                onInvite={inviteSubscriber}
               />
             </div>
           </TabsContent>

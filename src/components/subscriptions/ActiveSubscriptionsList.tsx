@@ -1,8 +1,9 @@
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { RefreshCw, XCircle, User, CreditCard, Calendar } from "lucide-react";
+import { RefreshCw, XCircle, User, CreditCard, Calendar, Send, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -12,6 +13,7 @@ interface Props {
   subscriptions: ActiveSubscription[];
   onRenew: (id: string) => void;
   onCancel: (id: string) => void;
+  onInvite: (id: string) => Promise<boolean>;
 }
 
 const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -26,8 +28,15 @@ const intervalMap: Record<string, string> = {
   monthly: "Mensal",
 };
 
-export function ActiveSubscriptionsList({ subscriptions, onRenew, onCancel }: Props) {
+export function ActiveSubscriptionsList({ subscriptions, onRenew, onCancel, onInvite }: Props) {
   const isMobile = useIsMobile();
+  const [inviting, setInviting] = useState<string | null>(null);
+
+  const handleInvite = async (id: string) => {
+    setInviting(id);
+    await onInvite(id);
+    setInviting(null);
+  };
 
   if (subscriptions.length === 0) {
     return <p className="text-muted-foreground text-center py-8">Nenhuma assinatura encontrada.</p>;
@@ -39,12 +48,18 @@ export function ActiveSubscriptionsList({ subscriptions, onRenew, onCancel }: Pr
       <div className="space-y-2">
         {subscriptions.map((sub) => {
           const st = statusMap[sub.status] || { label: sub.status, variant: "outline" as const };
+          const hasEmail = !!sub.lead?.email;
           return (
             <Card key={sub.id} className="p-3">
               <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="flex items-center gap-2 min-w-0">
                   <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                  <span className="font-medium text-sm truncate">{sub.lead?.full_name || "—"}</span>
+                  <div className="min-w-0">
+                    <span className="font-medium text-sm truncate block">{sub.lead?.full_name || "—"}</span>
+                    {sub.lead?.email && (
+                      <span className="text-[10px] text-muted-foreground truncate block">{sub.lead.email}</span>
+                    )}
+                  </div>
                 </div>
                 <Badge variant={st.variant} className="shrink-0 text-[10px] h-5">
                   {st.label}
@@ -70,7 +85,22 @@ export function ActiveSubscriptionsList({ subscriptions, onRenew, onCancel }: Pr
                 </div>
               </div>
               {sub.status === "active" && (
-                <div className="flex gap-1.5 pt-2 border-t">
+                <div className="flex gap-1.5 pt-2 border-t flex-wrap">
+                  {hasEmail && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 h-7 text-xs border-primary/40 text-primary hover:bg-primary/10"
+                      onClick={() => handleInvite(sub.id)}
+                      disabled={inviting === sub.id}
+                    >
+                      {inviting === sub.id
+                        ? <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                        : <Send className="h-3 w-3 mr-1" />
+                      }
+                      Enviar Acesso
+                    </Button>
+                  )}
                   <Button size="sm" variant="outline" className="flex-1 h-7 text-xs" onClick={() => onRenew(sub.id)}>
                     <RefreshCw className="h-3 w-3 mr-1" /> Renovar
                   </Button>
@@ -104,12 +134,16 @@ export function ActiveSubscriptionsList({ subscriptions, onRenew, onCancel }: Pr
         <TableBody>
           {subscriptions.map((sub) => {
             const st = statusMap[sub.status] || { label: sub.status, variant: "outline" as const };
+            const hasEmail = !!sub.lead?.email;
             return (
               <TableRow key={sub.id}>
                 <TableCell>
                   <div>
                     <p className="font-medium">{sub.lead?.full_name || "—"}</p>
                     <p className="text-xs text-muted-foreground">{sub.lead?.phone || ""}</p>
+                    {sub.lead?.email && (
+                      <p className="text-xs text-muted-foreground">{sub.lead.email}</p>
+                    )}
                   </div>
                 </TableCell>
                 <TableCell>{sub.plan?.name || "—"}</TableCell>
@@ -122,6 +156,22 @@ export function ActiveSubscriptionsList({ subscriptions, onRenew, onCancel }: Pr
                 <TableCell className="text-right">
                   {sub.status === "active" && (
                     <div className="flex gap-1 justify-end">
+                      {hasEmail && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-primary/40 text-primary hover:bg-primary/10"
+                          onClick={() => handleInvite(sub.id)}
+                          disabled={inviting === sub.id}
+                          title="Enviar link de acesso ao painel do assinante"
+                        >
+                          {inviting === sub.id
+                            ? <Loader2 className="h-3 w-3 mr-1 animate-spin" />
+                            : <Send className="h-3 w-3 mr-1" />
+                          }
+                          Enviar Acesso
+                        </Button>
+                      )}
                       <Button size="sm" variant="outline" onClick={() => onRenew(sub.id)}>
                         <RefreshCw className="h-3 w-3 mr-1" /> Renovar
                       </Button>

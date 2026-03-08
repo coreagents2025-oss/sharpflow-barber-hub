@@ -5,7 +5,7 @@ import { ServiceCard } from '@/components/ServiceCard';
 import { BookingModal } from '@/components/BookingModal';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
-import { MapPin, Phone, Clock, MessageCircle, Facebook, Instagram } from 'lucide-react';
+import { MapPin, Phone, Clock, MessageCircle, Facebook, Instagram, Crown } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface Service {
@@ -207,6 +207,31 @@ const PublicCatalog = () => {
           </div>
         </div>
       </div>
+
+      {/* Subscriber Area Banner */}
+      {slug && (
+        <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-transparent border-b">
+          <div className="container mx-auto px-4 py-3">
+            <Link
+              to={`/${slug}/cliente`}
+              className="flex items-center justify-between gap-3 group"
+            >
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded-full bg-primary/15 flex items-center justify-center shrink-0">
+                  <Crown className="h-4 w-4 text-primary" />
+                </div>
+                <div>
+                  <p className="font-semibold text-sm text-foreground">Área do Assinante</p>
+                  <p className="text-xs text-muted-foreground">Acesse seu plano, créditos e cobranças</p>
+                </div>
+              </div>
+              <Button size="sm" variant="outline" className="border-primary text-primary hover:bg-primary hover:text-primary-foreground shrink-0">
+                Entrar
+              </Button>
+            </Link>
+          </div>
+        </div>
+      )}
 
       {/* Services Section */}
       <div className="container mx-auto px-4 py-8">

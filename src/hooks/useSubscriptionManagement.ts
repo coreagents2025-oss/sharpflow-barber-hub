@@ -67,7 +67,7 @@ export interface ActiveSubscription {
   auto_renew: boolean;
   next_billing_date: string | null;
   billing_interval: string;
-  lead?: { full_name: string; phone: string } | null;
+  lead?: { full_name: string; phone: string; email?: string | null } | null;
   plan?: { name: string; price: number } | null;
 }
 
@@ -172,7 +172,7 @@ export function useSubscriptionManagement() {
     if (!barbershopId) return;
     const { data, error } = await supabase
       .from('client_subscriptions')
-      .select(`*, leads:lead_id (full_name, phone), subscription_plans:plan_id (name, price)`)
+      .select(`*, leads:lead_id (full_name, phone, email), subscription_plans:plan_id (name, price)`)
       .eq('barbershop_id', barbershopId)
       .order('created_at', { ascending: false });
     if (error) { console.error(error); return; }
@@ -442,6 +442,47 @@ export function useSubscriptionManagement() {
     return true;
   };
 
+  const inviteSubscriber = async (subscriptionId: string) => {
+    const sub = activeSubscriptions.find(s => s.id === subscriptionId);
+    if (!sub?.lead?.email) {
+      toast.error('Este assinante não possui email cadastrado');
+      return false;
+    }
+
+    const barbershop = await supabase
+      .from('barbershops')
+      .select('slug')
+      .eq('id', sub.barbershop_id)
+      .single();
+
+    if (!barbershop.data?.slug) {
+      toast.error('Erro ao buscar dados da barbearia');
+      return false;
+    }
+
+    const { data, error } = await supabase.functions.invoke('invite-client', {
+      body: {
+        email: sub.lead.email,
+        full_name: sub.lead.full_name,
+        slug: barbershop.data.slug,
+        barbershop_id: sub.barbershop_id,
+      },
+    });
+
+    if (error) {
+      toast.error('Erro ao enviar convite');
+      console.error(error);
+      return false;
+    }
+
+    if (data?.type === 'recovery') {
+      toast.success('Link de acesso reenviado para o email do assinante!');
+    } else {
+      toast.success('Convite enviado! O assinante receberá um email para criar sua senha.');
+    }
+    return true;
+  };
+
   // Metrics
   const totalActive = activeSubscriptions.filter(s => s.status === 'active').length;
   const mrr = activeSubscriptions
@@ -472,6 +513,7 @@ export function useSubscriptionManagement() {
     updateReward,
     toggleRewardActive,
     deleteReward,
+    inviteSubscriber,
     refetch: () => Promise.all([fetchPlans(), fetchActiveSubscriptions(), fetchPayments(), fetchRewards()]),
   };
 }
