@@ -513,6 +513,7 @@ export function useSubscriptionManagement() {
     updateReward,
     toggleRewardActive,
     deleteReward,
+    inviteSubscriber,
     refetch: () => Promise.all([fetchPlans(), fetchActiveSubscriptions(), fetchPayments(), fetchRewards()]),
   };
 }
