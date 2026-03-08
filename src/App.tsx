@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./hooks/useAuth";
 import { AuthRedirect } from "./components/AuthRedirect";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import { ProtectedClientRoute } from "./components/ProtectedClientRoute";
 import Index from "./pages/Index";
 import Services from "./pages/Services";
 import Booking from "./pages/Booking";
@@ -15,6 +16,8 @@ import PDV from "./pages/PDV";
 import ServicesManagement from "./pages/ServicesManagement";
 import Catalog from "./pages/Catalog";
 import PublicCatalog from "./pages/PublicCatalog";
+import ClientAuth from "./pages/ClientAuth";
+import ClientDashboard from "./pages/ClientDashboard";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import ScheduleManagement from "./pages/ScheduleManagement";
@@ -50,9 +53,12 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             {/* Catálogo Público Mobile-First */}
             <Route path="/catalogo" element={<PublicCatalog />} />
-            <Route path="/:slug" element={<PublicCatalog />} />
+            {/* Client Portal Routes — must come before /:slug */}
+            <Route path="/:slug/cliente" element={<ClientAuth />} />
+            <Route path="/:slug/cliente/dashboard" element={<ProtectedClientRoute><ClientDashboard /></ProtectedClientRoute>} />
             <Route path="/:slug/privacidade" element={<PrivacyPolicy />} />
             <Route path="/:slug/termos" element={<TermsOfService />} />
+            <Route path="/:slug" element={<PublicCatalog />} />
             {/* Painel do Dono da Barbearia - Rotas Protegidas */}
             <Route path="/pdv" element={<ProtectedRoute><PDV /></ProtectedRoute>} />
             <Route path="/services-management" element={<ProtectedRoute><ServicesManagement /></ProtectedRoute>} />
