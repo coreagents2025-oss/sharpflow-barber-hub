@@ -21,6 +21,12 @@ import { SubscriptionPlan } from '@/hooks/useLeadSubscription';
 import { CreditCard, Calendar as CalendarLucide, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+const INTERVAL_LABEL: Record<string, string> = {
+  weekly: 'Semanal',
+  biweekly: 'Quinzenal',
+  monthly: 'Mensal',
+};
+
 interface SellSubscriptionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -73,7 +79,7 @@ export function SellSubscriptionDialog({
           <div className="py-8 text-center text-muted-foreground">
             <p>Nenhum plano de assinatura disponível.</p>
             <p className="text-sm mt-2">
-              Crie planos em Gerenciar Serviços marcando "Plano de Assinatura".
+              Crie planos em Gerenciar Assinaturas antes de vender.
             </p>
           </div>
         ) : (
@@ -113,7 +119,7 @@ export function SellSubscriptionDialog({
                           </span>
                           <span className="flex items-center gap-1">
                             <CalendarLucide className="h-3 w-3" />
-                            {plan.subscription_duration_days} dias
+                            {INTERVAL_LABEL[plan.billing_interval] ?? plan.billing_interval}
                           </span>
                         </div>
                       </Label>
