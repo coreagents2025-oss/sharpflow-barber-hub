@@ -25,6 +25,7 @@ export default function SubscriptionsManagement() {
     plans, activeSubscriptions, payments, rewards, loading, metrics,
     createPlan, updatePlan, togglePlanActive, deletePlan,
     markPaymentPaid, renewSubscription, cancelSubscription,
+    inviteSubscriber,
     createReward, updateReward, toggleRewardActive, deleteReward,
     refetch,
   } = useSubscriptionManagement();
