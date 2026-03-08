@@ -172,7 +172,7 @@ export function useSubscriptionManagement() {
     if (!barbershopId) return;
     const { data, error } = await supabase
       .from('client_subscriptions')
-      .select(`*, leads:lead_id (full_name, phone), subscription_plans:plan_id (name, price)`)
+      .select(`*, leads:lead_id (full_name, phone, email), subscription_plans:plan_id (name, price)`)
       .eq('barbershop_id', barbershopId)
       .order('created_at', { ascending: false });
     if (error) { console.error(error); return; }
