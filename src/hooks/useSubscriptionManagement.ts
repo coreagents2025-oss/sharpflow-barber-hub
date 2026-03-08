@@ -67,7 +67,7 @@ export interface ActiveSubscription {
   auto_renew: boolean;
   next_billing_date: string | null;
   billing_interval: string;
-  lead?: { full_name: string; phone: string } | null;
+  lead?: { full_name: string; phone: string; email?: string | null } | null;
   plan?: { name: string; price: number } | null;
 }
 
