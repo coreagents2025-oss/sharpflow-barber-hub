@@ -199,7 +199,7 @@ export function LeadDetailsPanel({ lead }: LeadDetailsPanelProps) {
               {hasActiveSubscription && (
                 <SubscriptionBadge 
                   creditsRemaining={creditsRemaining}
-                  totalCredits={subscription?.service?.credits_per_month}
+                  totalCredits={subscription?.plan?.credits_per_month}
                   expiresAt={subscription?.expires_at}
                 />
               )}

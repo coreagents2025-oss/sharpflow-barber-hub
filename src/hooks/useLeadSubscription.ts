@@ -5,18 +5,18 @@ import { toast } from 'sonner';
 export interface LeadSubscription {
   id: string;
   lead_id: string;
-  service_id: string;
   plan_id: string;
   barbershop_id: string;
   status: string;
   credits_remaining: number;
   started_at: string;
   expires_at: string | null;
-  service?: {
+  billing_interval: string;
+  plan?: {
     name: string;
     price: number;
     credits_per_month: number;
-    subscription_duration_days: number;
+    billing_interval: string;
   };
 }
 
@@ -26,9 +26,17 @@ export interface SubscriptionPlan {
   price: number;
   description: string | null;
   credits_per_month: number;
-  subscription_duration_days: number;
-  is_subscription_plan: boolean;
+  billing_interval: string;
+  is_active: boolean | null;
+  auto_renew: boolean;
+  billing_method: string;
 }
+
+const INTERVAL_DAYS: Record<string, number> = {
+  weekly: 7,
+  biweekly: 14,
+  monthly: 30,
+};
 
 export function useLeadSubscription(leadId: string | undefined, barbershopId: string | undefined) {
   const [subscription, setSubscription] = useState<LeadSubscription | null>(null);
@@ -52,11 +60,11 @@ export function useLeadSubscription(leadId: string | undefined, barbershopId: st
         .from('client_subscriptions')
         .select(`
           *,
-          services:service_id (
+          subscription_plans:plan_id (
             name,
             price,
             credits_per_month,
-            subscription_duration_days
+            billing_interval
           )
         `)
         .eq('lead_id', leadId)
@@ -68,7 +76,7 @@ export function useLeadSubscription(leadId: string | undefined, barbershopId: st
       if (data) {
         setSubscription({
           ...data,
-          service: data.services as any
+          plan: data.subscription_plans as any
         });
       } else {
         setSubscription(null);
@@ -85,10 +93,9 @@ export function useLeadSubscription(leadId: string | undefined, barbershopId: st
 
     try {
       const { data, error } = await supabase
-        .from('services')
-        .select('id, name, price, description, credits_per_month, subscription_duration_days, is_subscription_plan')
+        .from('subscription_plans')
+        .select('id, name, price, description, credits_per_month, billing_interval, is_active, auto_renew, billing_method')
         .eq('barbershop_id', barbershopId)
-        .eq('is_subscription_plan', true)
         .eq('is_active', true);
 
       if (error) throw error;
@@ -126,20 +133,25 @@ export function useLeadSubscription(leadId: string | undefined, barbershopId: st
         return false;
       }
 
+      const durationDays = INTERVAL_DAYS[plan.billing_interval] ?? 30;
       const expiresAt = new Date(startDate);
-      expiresAt.setDate(expiresAt.getDate() + plan.subscription_duration_days);
+      expiresAt.setDate(expiresAt.getDate() + durationDays);
+
+      const nextBillingDate = new Date(expiresAt);
 
       const { data: subData, error } = await supabase
         .from('client_subscriptions')
         .insert({
           lead_id: leadId,
-          service_id: planId,
           plan_id: planId,
           barbershop_id: barbershopId,
           status: 'active',
           credits_remaining: plan.credits_per_month,
           started_at: startDate.toISOString(),
           expires_at: expiresAt.toISOString(),
+          billing_interval: plan.billing_interval,
+          auto_renew: plan.auto_renew,
+          next_billing_date: nextBillingDate.toISOString(),
         })
         .select('id')
         .single();
@@ -185,7 +197,6 @@ export function useLeadSubscription(leadId: string | undefined, barbershopId: st
     }
 
     try {
-      // Registrar uso do crédito
       const { error: usageError } = await supabase
         .from('subscription_credit_usage')
         .insert({
@@ -195,7 +206,6 @@ export function useLeadSubscription(leadId: string | undefined, barbershopId: st
 
       if (usageError) throw usageError;
 
-      // Decrementar créditos
       const { error: updateError } = await supabase
         .from('client_subscriptions')
         .update({ credits_remaining: subscription.credits_remaining - 1 })
@@ -220,20 +230,22 @@ export function useLeadSubscription(leadId: string | undefined, barbershopId: st
     }
 
     try {
-      const plan = subscription.service;
+      const plan = subscription.plan;
       if (!plan) {
         toast.error('Plano não encontrado');
         return false;
       }
 
+      const durationDays = INTERVAL_DAYS[plan.billing_interval] ?? 30;
       const newExpiresAt = new Date();
-      newExpiresAt.setDate(newExpiresAt.getDate() + plan.subscription_duration_days);
+      newExpiresAt.setDate(newExpiresAt.getDate() + durationDays);
 
       const { error } = await supabase
         .from('client_subscriptions')
         .update({
           credits_remaining: plan.credits_per_month,
           expires_at: newExpiresAt.toISOString(),
+          next_billing_date: newExpiresAt.toISOString(),
           status: 'active',
         })
         .eq('id', subscription.id);

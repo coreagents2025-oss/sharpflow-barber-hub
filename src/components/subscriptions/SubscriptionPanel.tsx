@@ -67,7 +67,7 @@ export function SubscriptionPanel({
     );
   }
 
-  const plan = subscription.service;
+  const plan = subscription.plan;
   const totalCredits = plan?.credits_per_month ?? 0;
   const usedCredits = totalCredits - subscription.credits_remaining;
   const progressPercent = totalCredits > 0 ? (subscription.credits_remaining / totalCredits) * 100 : 0;
