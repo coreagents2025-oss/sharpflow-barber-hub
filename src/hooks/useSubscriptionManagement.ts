@@ -442,6 +442,47 @@ export function useSubscriptionManagement() {
     return true;
   };
 
+  const inviteSubscriber = async (subscriptionId: string) => {
+    const sub = activeSubscriptions.find(s => s.id === subscriptionId);
+    if (!sub?.lead?.email) {
+      toast.error('Este assinante não possui email cadastrado');
+      return false;
+    }
+
+    const barbershop = await supabase
+      .from('barbershops')
+      .select('slug')
+      .eq('id', sub.barbershop_id)
+      .single();
+
+    if (!barbershop.data?.slug) {
+      toast.error('Erro ao buscar dados da barbearia');
+      return false;
+    }
+
+    const { data, error } = await supabase.functions.invoke('invite-client', {
+      body: {
+        email: sub.lead.email,
+        full_name: sub.lead.full_name,
+        slug: barbershop.data.slug,
+        barbershop_id: sub.barbershop_id,
+      },
+    });
+
+    if (error) {
+      toast.error('Erro ao enviar convite');
+      console.error(error);
+      return false;
+    }
+
+    if (data?.type === 'recovery') {
+      toast.success('Link de acesso reenviado para o email do assinante!');
+    } else {
+      toast.success('Convite enviado! O assinante receberá um email para criar sua senha.');
+    }
+    return true;
+  };
+
   // Metrics
   const totalActive = activeSubscriptions.filter(s => s.status === 'active').length;
   const mrr = activeSubscriptions
