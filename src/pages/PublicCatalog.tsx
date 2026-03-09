@@ -270,6 +270,7 @@ const PublicCatalog = () => {
         }}
         service={selectedService}
         barbershopId={barbershopId}
+        allServices={services}
       />
 
       {/* WhatsApp Floating Button */}

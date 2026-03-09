@@ -1,94 +1,23 @@
 
-## Objetivo
-Permitir que o cliente, ao abrir o modal de agendamento (clicando "Agendar Agora" em um serviço), possa **adicionar outros serviços** à mesma sessão antes de confirmar.
 
-## Análise do fluxo atual
-- `PublicCatalog.tsx`: passa **um único serviço** ao `BookingModal` via `service: Service | null`
-- `BookingModal.tsx`: recebe `service` (singular), exibe nome/preço/duração no header, e envia `serviceId` único ao `useBooking`
-- `useBooking.ts`: cria **um appointment por chamada** com `service_id` único
-- A duração calculada para verificar conflitos e slots usa apenas o serviço principal
+## Problema identificado
 
-## O que será construído
+O PWA está configurado com `navigateFallback: "/offline.html"`, o que significa que **qualquer navegação offline mostra a página estática de "Sem conexão"** em vez de carregar o app cacheado. Além disso, o `main.tsx` registra manualmente o service worker (`/sw.js`), conflitando com o registro automático do `vite-plugin-pwa`.
 
-### Comportamento esperado
-```
-Cliente clica "Agendar" em "Corte" (30min, R$45)
-  ↓
-Modal abre com "Corte" pré-selecionado
-  ↓
-Seção "+ Adicionar serviços" lista outros serviços como checkboxes
-  ↓
-Cliente marca "Barba" (30min, R$35)
-  ↓
-Header atualiza: "2 serviços · R$ 80,00 · 60 min"
-  ↓
-Duração total = 60min → slots bloqueados calculados com duração somada
-  ↓
-Confirmar → cria 2 appointments (um por serviço) sequencialmente
-```
+## Correções
 
-### Estratégia para múltiplos serviços
-Criar **um appointment por serviço**, agendados sequencialmente:
-- Serviço 1: horário selecionado (ex: 10:00, 30min → ocupa 10:00-10:30)
-- Serviço 2: horário = horário anterior + duração do serviço anterior (ex: 10:30, 30min)
-- Assim o sistema de conflitos existente funciona sem alterações no banco
+### 1. Alterar `navigateFallback` para `/index.html` (vite.config.ts)
+- Trocar `"/offline.html"` por `"/index.html"` para que o service worker sirva o shell do app (SPA) quando offline
+- Adicionar `"/index.html"` e `"/offline.html"` ao `globPatterns` para garantir que sejam pré-cacheados
 
-### Arquivos a modificar
+### 2. Remover registro manual do SW (main.tsx)
+- O `vite-plugin-pwa` com `registerType: "autoUpdate"` já gera e registra o service worker automaticamente
+- O registro manual de `/sw.js` conflita e pode impedir o cache correto
 
-| Arquivo | Mudança |
-|---|---|
-| `src/components/BookingModal.tsx` | Adicionar estado `additionalServices`, seção de checkboxes para serviços extras, calcular duração total no header e nos slots ocupados |
-| `src/hooks/useBooking.ts` | Aceitar `additionalServices[]` e criar múltiplos appointments sequencialmente |
-| `src/pages/PublicCatalog.tsx` | Passar lista completa de `services` ao `BookingModal` para exibir opções de adicionais |
+### 3. Adicionar `globPatterns` para pré-cachear os assets do app (vite.config.ts)
+- Incluir `*.html`, `*.js`, `*.css`, e ícones no precache do workbox para que o app funcione offline de verdade
 
-### Detalhes da UI no `BookingModal`
+### Resultado esperado
+- App carrega normalmente mesmo sem internet (usando cache do SPA)
+- A página `offline.html` só apareceria se o cache do index.html falhasse (cenário extremo)
 
-Nova seção entre "Serviço principal" (já exibido no header) e a seleção de data:
-
-```
-┌─────────────────────────────────┐
-│ Agendar Corte Clássico          │
-│ R$ 45,00 · 30 min               │
-├─────────────────────────────────┤
-│ + Adicionar serviços            │
-│ □ Barba Completa  R$35  30min   │
-│ □ Tratamento Cap. R$40  40min   │
-│ ─────────────────────────────── │
-│ Total: R$ 80,00 · 60 min        │
-├─────────────────────────────────┤
-│ Escolha a Data ...              │
-└─────────────────────────────────┘
-```
-
-- Serviço principal não aparece na lista de adicionais
-- Seleção de tempo recalcula slots bloqueados com duração total
-- Resumo dinâmico mostra total de serviços, valor e duração
-
-### Mudança no `useBooking`
-
-```typescript
-interface BookingData {
-  serviceId: string;
-  additionalServiceIds?: string[]; // novo
-  barberId: string;
-  date: Date;
-  time: string;
-  // ...
-}
-```
-
-Para cada serviço adicional, calcula `scheduledAt = scheduledAt_anterior + duration_anterior` e cria um novo appointment. Todas as validações (expediente, overlap) já existem e continuam funcionando.
-
-### Mudança no `PublicCatalog`
-
-`BookingModal` receberá nova prop `allServices: Service[]`:
-
-```typescript
-<BookingModal
-  ...
-  allServices={services}
-/>
-```
-
-### Impacto no banco
-Nenhuma mudança de schema necessária. Múltiplos appointments na mesma tabela, com `barber_id` e `barbershop_id` iguais, horários sequenciais.
