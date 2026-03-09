@@ -172,6 +172,12 @@ const Auth = () => {
           </Link>
         </div>
       </div>
+
+      <ForgotPasswordDialog
+        open={forgotOpen}
+        onOpenChange={setForgotOpen}
+        defaultEmail={loginEmail}
+      />
     </div>;
 };
 export default Auth;
