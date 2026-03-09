@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useClientPortal } from '@/hooks/useClientPortal';
@@ -5,21 +6,33 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import {
   Scissors,
   Calendar,
   CreditCard,
   Clock,
   LogOut,
-  ChevronRight,
   AlertCircle,
-  CheckCircle2,
   Star,
   Loader2,
-  ArrowLeft,
+  Shield,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { format, parseISO, isAfter } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const intervalLabel: Record<string, string> = {
   weekly: 'Semanal',
