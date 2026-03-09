@@ -1,16 +1,22 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
 
 interface BookingData {
   serviceId: string;
+  additionalServiceIds?: string[];
   barberId: string;
   date: Date;
   time: string;
   clientName: string;
   clientPhone: string;
   clientEmail: string;
+}
+
+interface ServiceInfo {
+  id: string;
+  duration_minutes: number;
+  name: string;
 }
 
 export const useBooking = (barbershopId: string | null) => {
@@ -50,7 +56,7 @@ export const useBooking = (barbershopId: string | null) => {
         return false;
       }
 
-      // Determinar horários de funcionamento: daily_schedule tem prioridade, senão usar operating_hours da barbearia
+      // Determinar horários de funcionamento
       let workingHoursStart: string | null = schedule?.working_hours_start ?? null;
       let workingHoursEnd: string | null = schedule?.working_hours_end ?? null;
 
@@ -70,31 +76,36 @@ export const useBooking = (barbershopId: string | null) => {
             workingHoursStart = dayHours.open;
             workingHoursEnd = dayHours.close;
           } else {
-            // Dia sem expediente configurado
             toast.error('A barbearia não tem expediente neste dia.');
             return false;
           }
         }
       }
 
+      const toMinutes = (t: string) => {
+        const [h, m] = t.split(':').map(Number);
+        return h * 60 + m;
+      };
+
       // Validar horário dentro do expediente
-      // Comparar como minutos totais para precisão (evitar string comparison fraca)
       if (workingHoursStart && workingHoursEnd) {
-        const toMinutes = (t: string) => {
-          const [h, m] = t.split(':').map(Number);
-          return h * 60 + m;
-        };
         const startMinutes = toMinutes(workingHoursStart);
         const endMinutes = toMinutes(workingHoursEnd);
         const bookingStartMinutes = toMinutes(data.time);
-        // bookingEndMinutes calculado após buscar duração do serviço abaixo
         if (bookingStartMinutes < startMinutes || bookingStartMinutes >= endMinutes) {
           toast.error('Horário fora do expediente de trabalho.');
           return false;
         }
       }
 
-      // Normalizar telefone (remover formatação)
+      // Validar se não é data/hora passada
+      const now = new Date();
+      if (scheduledAt <= now) {
+        toast.error('Não é possível agendar para datas passadas.');
+        return false;
+      }
+
+      // Normalizar telefone
       const normalizedPhone = data.clientPhone.replace(/\D/g, '');
       
       console.log('[BOOKING] Buscando/criando lead via RPC:', normalizedPhone);
@@ -117,48 +128,51 @@ export const useBooking = (barbershopId: string | null) => {
 
       console.log('[BOOKING] Lead ID:', leadId);
 
-      // Validar se não é data/hora passada
-      const now = new Date();
-      if (scheduledAt <= now) {
-        toast.error('Não é possível agendar para datas passadas.');
-        return false;
+      // Buscar todos os serviços (principal + adicionais) para obter durações e nomes
+      const allServiceIds = [data.serviceId, ...(data.additionalServiceIds || [])];
+      
+      const { data: servicesData } = await supabase
+        .from('services')
+        .select('id, duration_minutes, name')
+        .in('id', allServiceIds);
+
+      const servicesMap = new Map<string, ServiceInfo>();
+      servicesData?.forEach(s => servicesMap.set(s.id, s));
+
+      // Build ordered list of services to book
+      const servicesToBook: ServiceInfo[] = [];
+      const mainService = servicesMap.get(data.serviceId);
+      if (mainService) servicesToBook.push(mainService);
+      
+      for (const svcId of (data.additionalServiceIds || [])) {
+        const svc = servicesMap.get(svcId);
+        if (svc) servicesToBook.push(svc);
       }
 
-      // Buscar serviço para pegar duração
-      const { data: serviceData } = await supabase
-        .from('services')
-        .select('duration_minutes')
-        .eq('id', data.serviceId)
-        .single();
+      // Calcular duração total para validação de expediente
+      const totalDurationMinutes = servicesToBook.reduce((acc, s) => acc + s.duration_minutes, 0);
+      const totalEndTime = new Date(scheduledAt);
+      totalEndTime.setMinutes(totalEndTime.getMinutes() + totalDurationMinutes);
 
-      const durationMinutes = serviceData?.duration_minutes || 30;
-      const endTime = new Date(scheduledAt);
-      endTime.setMinutes(endTime.getMinutes() + durationMinutes);
-
-      // Validar que o TÉRMINO do serviço também está dentro do expediente
+      // Validar que o TÉRMINO de todos os serviços está dentro do expediente
       if (workingHoursEnd) {
-        const toMinutes = (t: string) => {
-          const [h, m] = t.split(':').map(Number);
-          return h * 60 + m;
-        };
         const endMinutes = toMinutes(workingHoursEnd);
-        const serviceEndMinutes = endTime.getHours() * 60 + endTime.getMinutes();
+        const serviceEndMinutes = totalEndTime.getHours() * 60 + totalEndTime.getMinutes();
         if (serviceEndMinutes > endMinutes) {
-          toast.error(`Este serviço ultrapassa o horário de funcionamento (fechamento: ${workingHoursEnd}). Escolha um horário mais cedo.`);
+          toast.error(`Os serviços selecionados ultrapassam o horário de funcionamento (fechamento: ${workingHoursEnd}). Escolha um horário mais cedo ou menos serviços.`);
           return false;
         }
       }
 
-      // Verificar se HÁ OVERLAP com agendamentos existentes (excluindo cancelled, no_show, completed)
+      // Verificar conflito para o bloco total
       const { data: existingAppointments } = await supabase
         .from('appointments')
         .select('scheduled_at, status, services(duration_minutes)')
         .eq('barber_id', data.barberId)
         .gte('scheduled_at', scheduledAt.toISOString())
-        .lt('scheduled_at', endTime.toISOString())
+        .lt('scheduled_at', totalEndTime.toISOString())
         .not('status', 'in', '(cancelled,no_show,completed)');
 
-      // Também verificar agendamentos que COMEÇAM ANTES mas TERMINAM DURANTE
       const { data: overlappingBefore } = await supabase
         .from('appointments')
         .select('scheduled_at, status, services(duration_minutes)')
@@ -166,7 +180,6 @@ export const useBooking = (barbershopId: string | null) => {
         .lt('scheduled_at', scheduledAt.toISOString())
         .not('status', 'in', '(cancelled,no_show,completed)');
 
-      // Validar overlaps
       let hasOverlap = existingAppointments && existingAppointments.length > 0;
 
       if (!hasOverlap && overlappingBefore) {
@@ -176,7 +189,6 @@ export const useBooking = (barbershopId: string | null) => {
           const aptEnd = new Date(aptStart);
           aptEnd.setMinutes(aptStart.getMinutes() + aptDuration);
           
-          // Se o agendamento anterior termina DEPOIS do novo começar, há overlap
           if (aptEnd > scheduledAt) {
             hasOverlap = true;
           }
@@ -188,49 +200,56 @@ export const useBooking = (barbershopId: string | null) => {
         return false;
       }
 
-      // Criar appointment com lead_id
-      console.log('[BOOKING] Criando appointment com lead_id:', leadId);
+      // Criar appointments sequencialmente para cada serviço
+      console.log(`[BOOKING] Criando ${servicesToBook.length} appointment(s) sequencialmente`);
       
-      const { error: appointmentError } = await supabase
-        .from('appointments')
-        .insert({
-          barbershop_id: barbershopId,
-          service_id: data.serviceId,
-          barber_id: data.barberId,
-          lead_id: leadId,        // ✅ Usar lead_id
-          client_id: null,        // ✅ Explicitamente null
-          scheduled_at: scheduledAt.toISOString(),
-          status: 'scheduled',
-        });
+      let currentStartTime = new Date(scheduledAt);
+      const firstServiceName = servicesToBook[0]?.name || 'Serviço';
 
-      if (appointmentError) {
-        console.error('[BOOKING] Erro ao criar appointment:', appointmentError);
-        throw appointmentError;
+      for (const svc of servicesToBook) {
+        const { error: appointmentError } = await supabase
+          .from('appointments')
+          .insert({
+            barbershop_id: barbershopId,
+            service_id: svc.id,
+            barber_id: data.barberId,
+            lead_id: leadId,
+            client_id: null,
+            scheduled_at: currentStartTime.toISOString(),
+            status: 'scheduled',
+          });
+
+        if (appointmentError) {
+          console.error('[BOOKING] Erro ao criar appointment:', appointmentError);
+          throw appointmentError;
+        }
+
+        // Avançar para o próximo horário
+        currentStartTime = new Date(currentStartTime);
+        currentStartTime.setMinutes(currentStartTime.getMinutes() + svc.duration_minutes);
       }
       
-      console.log('[BOOKING] Appointment criado com sucesso!');
+      console.log('[BOOKING] Todos os appointments criados com sucesso!');
 
-      // Buscar informações do serviço e barbeiro para o email
-      const { data: service } = await supabase
-        .from('services')
-        .select('name')
-        .eq('id', data.serviceId)
-        .single();
-
+      // Buscar nome do barbeiro para notificações
       const { data: barber } = await supabase
         .from('barbers')
         .select('name')
         .eq('id', data.barberId)
         .single();
 
-      // Enviar email de confirmação (se configurado)
+      const serviceNameForNotification = servicesToBook.length > 1
+        ? `${firstServiceName} + ${servicesToBook.length - 1} outro(s)`
+        : firstServiceName;
+
+      // Enviar email de confirmação
       try {
         const { data: emailResult, error: emailError } = await supabase.functions.invoke('send-booking-confirmation', {
           body: {
             barbershop_id: barbershopId,
             client_email: data.clientEmail,
             client_name: data.clientName,
-            service_name: service?.name || 'Serviço',
+            service_name: serviceNameForNotification,
             barber_name: barber?.name || 'Barbeiro',
             scheduled_at: scheduledAt.toISOString(),
           },
@@ -247,14 +266,14 @@ export const useBooking = (barbershopId: string | null) => {
         console.error('❌ Email exception:', err);
       }
 
-      // Enviar notificação WhatsApp (se configurado)
+      // Enviar notificação WhatsApp
       try {
         const { data: whatsappResult, error: whatsappError } = await supabase.functions.invoke('send-whatsapp-notification', {
           body: {
             barbershop_id: barbershopId,
-            client_phone: normalizedPhone, // ✅ Enviar telefone normalizado
+            client_phone: normalizedPhone,
             client_name: data.clientName,
-            service_name: service?.name || 'Serviço',
+            service_name: serviceNameForNotification,
             barber_name: barber?.name || 'Barbeiro',
             scheduled_at: scheduledAt.toISOString(),
           },
@@ -276,10 +295,9 @@ export const useBooking = (barbershopId: string | null) => {
     } catch (error: any) {
       console.error('Error creating booking:', error);
       
-      // Mensagens específicas por tipo de erro
       if (error.message?.includes('CONFLITO_AGENDAMENTO')) {
         toast.error('Este horário já está ocupado. Por favor, escolha outro horário ou barbeiro.');
-      } else if (error.code === '23505') { // Unique violation
+      } else if (error.code === '23505') {
         toast.error('Já existe um agendamento neste horário.');
       } else if (error.message?.includes('RLS') || error.message?.includes('policy')) {
         toast.error('Erro de permissão. Entre em contato com a barbearia.');
