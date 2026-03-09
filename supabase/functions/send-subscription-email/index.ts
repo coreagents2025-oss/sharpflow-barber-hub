@@ -103,7 +103,7 @@ function wrapEmail(rows: string): string {
 
 function buildWelcomeEmail(
   clientName: string, planName: string, planPrice: number, planCredits: number,
-  expiresAt: string | null, barbershop: { name: string; logo_url?: string | null }, contactBlock: string,
+  expiresAt: string | null, barbershop: { name: string; logo_url?: string | null; slug?: string | null }, contactBlock: string,
 ): string {
   const expiresFormatted = expiresAt
     ? new Date(expiresAt).toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" })
@@ -129,7 +129,8 @@ function buildWelcomeEmail(
           <p style="margin:0;font-size:15px;color:#1a1a1a;"><strong>📅 Válido até:</strong> ${expiresFormatted}</p>
         </td></tr>
       </table>
-      <p style="margin:0 0 16px 0;font-size:14px;color:#666;line-height:1.6;">
+      ${barbershop.slug ? portalButtonBlock(barbershop.slug) : ""}
+      <p style="margin:16px 0 0 0;font-size:14px;color:#666;line-height:1.6;">
         Em caso de dúvidas, entre em contato diretamente com <strong>${barbershop.name}</strong>.
       </p>
       ${contactBlock}
@@ -140,7 +141,7 @@ function buildWelcomeEmail(
 
 function buildRenewalEmail(
   clientName: string, planName: string, planCredits: number, newExpiresAt: string | null,
-  barbershop: { name: string; logo_url?: string | null }, contactBlock: string,
+  barbershop: { name: string; logo_url?: string | null; slug?: string | null }, contactBlock: string,
 ): string {
   const expiresFormatted = newExpiresAt
     ? new Date(newExpiresAt).toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" })
@@ -165,6 +166,7 @@ function buildRenewalEmail(
           <p style="margin:0;font-size:15px;color:#1a1a1a;"><strong>📅 Novo vencimento:</strong> ${expiresFormatted}</p>
         </td></tr>
       </table>
+      ${barbershop.slug ? portalButtonBlock(barbershop.slug) : ""}
       ${contactBlock}
     </td></tr>
     ${footerBlock(barbershop.name)}
@@ -173,7 +175,7 @@ function buildRenewalEmail(
 
 function buildCancellationEmail(
   clientName: string, planName: string,
-  barbershop: { name: string; logo_url?: string | null }, contactBlock: string,
+  barbershop: { name: string; logo_url?: string | null; slug?: string | null }, contactBlock: string,
 ): string {
   return wrapEmail(`
     ${headerBlock(barbershop)}
@@ -205,7 +207,7 @@ function buildCancellationEmail(
 
 function buildPaymentConfirmedEmail(
   clientName: string, amount: number, paymentMethod: string,
-  barbershop: { name: string; logo_url?: string | null }, contactBlock: string,
+  barbershop: { name: string; logo_url?: string | null; slug?: string | null }, contactBlock: string,
 ): string {
   const methodMap: Record<string, string> = { pix: "PIX", card: "Cartão", boleto: "Boleto", cash: "Dinheiro" };
   const methodLabel = methodMap[paymentMethod] || paymentMethod;
@@ -230,6 +232,7 @@ function buildPaymentConfirmedEmail(
           <p style="margin:0;font-size:15px;color:#1a1a1a;"><strong>📅 Data:</strong> ${now}</p>
         </td></tr>
       </table>
+      ${barbershop.slug ? portalButtonBlock(barbershop.slug) : ""}
       ${contactBlock}
     </td></tr>
     ${footerBlock(barbershop.name)}
