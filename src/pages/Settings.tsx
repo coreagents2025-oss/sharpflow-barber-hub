@@ -593,7 +593,7 @@ const Settings = () => {
         <Tabs defaultValue="profile" className="space-y-4 sm:space-y-6">
           <div className="relative">
             <div className="w-full overflow-x-auto pb-2 sm:pb-0 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
-              <TabsList className="flex sm:grid sm:grid-cols-3 lg:grid-cols-6 gap-2 w-full sm:w-auto">
+              <TabsList className="flex sm:grid sm:grid-cols-3 lg:grid-cols-7 gap-2 w-full sm:w-auto">
                 <TabsTrigger value="profile" className="flex items-center gap-2 text-xs sm:text-sm flex-shrink-0 snap-start min-w-[100px] sm:min-w-0 touch-target">
                   <User className="h-4 w-4" />
                   <span>Perfil</span>
