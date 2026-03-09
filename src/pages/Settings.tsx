@@ -618,6 +618,10 @@ const Settings = () => {
                   <Shield className="h-4 w-4" />
                   <span>Segurança</span>
                 </TabsTrigger>
+                <TabsTrigger value="payments" className="flex items-center gap-2 text-xs sm:text-sm flex-shrink-0 snap-start min-w-[120px] sm:min-w-0 touch-target">
+                  <CreditCard className="h-4 w-4" />
+                  <span>Pagamentos</span>
+                </TabsTrigger>
               </TabsList>
             </div>
             <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none sm:hidden" />
