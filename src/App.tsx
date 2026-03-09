@@ -36,6 +36,7 @@ import SuperAdminUsers from "./pages/SuperAdmin/Users";
 import SuperAdminMetrics from "./pages/SuperAdmin/Metrics";
 import SuperAdminSupport from "./pages/SuperAdmin/Support";
 import SuperAdminAuditLogs from "./pages/SuperAdmin/AuditLogs";
+import SuperAdminSaasBilling from "./pages/SuperAdmin/SaasBilling";
 
 const queryClient = new QueryClient();
 

@@ -25,3 +25,7 @@ project_id = "jgpffcjktwsohfyljtsg"
     verify_jwt = false
   [functions.asaas-webhook]
     verify_jwt = false
+  [functions.asaas-platform-subscribe]
+    verify_jwt = false
+  [functions.asaas-platform-webhook]
+    verify_jwt = false
