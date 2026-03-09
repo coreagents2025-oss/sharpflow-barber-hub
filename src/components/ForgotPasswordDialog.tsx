@@ -11,9 +11,11 @@ interface ForgotPasswordDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   defaultEmail?: string;
+  /** Where the user lands after clicking the reset link (defaults to /reset-password) */
+  redirectBackTo?: string;
 }
 
-export const ForgotPasswordDialog = ({ open, onOpenChange, defaultEmail = '' }: ForgotPasswordDialogProps) => {
+export const ForgotPasswordDialog = ({ open, onOpenChange, defaultEmail = '', redirectBackTo }: ForgotPasswordDialogProps) => {
   const [email, setEmail] = useState(defaultEmail);
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);

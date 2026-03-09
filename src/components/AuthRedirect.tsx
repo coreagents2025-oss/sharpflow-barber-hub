@@ -9,6 +9,9 @@ export const AuthRedirect = () => {
   const location = useLocation();
 
   useEffect(() => {
+    // Never redirect away from the password reset page
+    if (location.pathname === '/reset-password') return;
+
     if (!loading && user && userRole) {
       const currentPath = location.pathname;
 
