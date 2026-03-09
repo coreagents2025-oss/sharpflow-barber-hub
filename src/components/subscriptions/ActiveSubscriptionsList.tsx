@@ -146,7 +146,14 @@ export function ActiveSubscriptionsList({ subscriptions, onRenew, onCancel, onIn
               <TableRow key={sub.id}>
                 <TableCell>
                   <div>
-                    <p className="font-medium">{sub.lead?.full_name || "—"}</p>
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <p className="font-medium">{sub.lead?.full_name || "—"}</p>
+                      {sub.asaas_subscription_id && (
+                        <Badge variant="outline" className="text-[10px] h-4 px-1 border-primary/40 text-primary gap-0.5">
+                          <Zap className="h-2.5 w-2.5" />Auto
+                        </Badge>
+                      )}
+                    </div>
                     <p className="text-xs text-muted-foreground">{sub.lead?.phone || ""}</p>
                     {sub.lead?.email && (
                       <p className="text-xs text-muted-foreground">{sub.lead.email}</p>
