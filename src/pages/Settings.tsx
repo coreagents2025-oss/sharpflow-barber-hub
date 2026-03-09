@@ -86,6 +86,8 @@ const whatsappSettingsSchema = z.object({
 
 const Settings = () => {
   const { user, barbershopId } = useAuth();
+  const [searchParams] = useSearchParams();
+  const defaultTab = searchParams.get('tab') || 'profile';
   const [loading, setLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
 
