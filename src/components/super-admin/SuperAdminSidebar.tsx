@@ -1,4 +1,4 @@
-import { LayoutDashboard, Building2, Users, BarChart3, LogOut, MessageSquare, FileText } from 'lucide-react';
+import { LayoutDashboard, Building2, Users, BarChart3, LogOut, MessageSquare, FileText, CreditCard } from 'lucide-react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
@@ -8,6 +8,7 @@ const menuItems = [
   { title: 'Barbearias', url: '/super-admin/barbershops', icon: Building2 },
   { title: 'Usuários', url: '/super-admin/users', icon: Users },
   { title: 'Métricas', url: '/super-admin/metrics', icon: BarChart3 },
+  { title: 'Assinaturas SaaS', url: '/super-admin/saas-billing', icon: CreditCard },
   { title: 'Suporte', url: '/super-admin/support', icon: MessageSquare },
   { title: 'Auditoria', url: '/super-admin/audit-logs', icon: FileText },
 ];

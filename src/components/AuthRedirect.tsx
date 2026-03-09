@@ -23,6 +23,32 @@ export const AuthRedirect = () => {
         if (currentPath === '/auth' || currentPath === '/') {
           navigate('/pdv', { replace: true });
         }
+        // Check plan status: redirect to subscription settings if overdue or trial expired
+        if (currentPath !== '/settings' && !currentPath.startsWith('/super-admin')) {
+          // Only check if user has a barbershop
+          supabase
+            .from('barbershop_staff')
+            .select('barbershop_id')
+            .eq('user_id', user.id)
+            .single()
+            .then(({ data: staffData }) => {
+              if (!staffData?.barbershop_id) return;
+              supabase
+                .from('barbershops')
+                .select('plan_type, plan_status, trial_ends_at')
+                .eq('id', staffData.barbershop_id)
+                .single()
+                .then(({ data: shop }) => {
+                  if (!shop) return;
+                  const isTrialExpired = shop.plan_type === 'trial' && new Date((shop as any).trial_ends_at) < new Date();
+                  const isOverdue = (shop as any).plan_status === 'overdue';
+                  const isCancelled = (shop as any).plan_status === 'cancelled';
+                  if ((isTrialExpired || isOverdue || isCancelled) && currentPath !== '/settings') {
+                    navigate('/settings?tab=subscription', { replace: true });
+                  }
+                });
+            });
+        }
       } else if (userRole === 'client') {
         // Redirect clients back to their barbershop dashboard
         if (currentPath === '/auth' || currentPath === '/') {
