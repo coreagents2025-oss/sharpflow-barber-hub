@@ -10,6 +10,9 @@ import { Scissors, Lock, Loader2, CheckCircle2 } from 'lucide-react';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  // ?next= is set by ForgotPasswordDialog when coming from the client portal
+  const nextPath = searchParams.get('next') || '/auth';
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [loading, setLoading] = useState(false);
