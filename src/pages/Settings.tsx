@@ -244,7 +244,7 @@ const Settings = () => {
             // Carregar credenciais da tabela barbershop_credentials
             const { data: credentials } = await supabase
               .from('barbershop_credentials')
-              .select('whatsapp_credentials, email_credentials')
+              .select('whatsapp_credentials, email_credentials, asaas_credentials')
               .eq('barbershop_id', barbershopId)
               .single();
             
@@ -274,6 +274,13 @@ const Settings = () => {
               uazapi_instance_id: whatsappCreds.uazapi_instance_id || '',
               uazapi_token: whatsappCreds.uazapi_token || '',
               uazapi_account_id: whatsappCreds.uazapi_account_id || '',
+            });
+
+            const asaasCreds = (credentials?.asaas_credentials || {}) as any;
+            setAsaasSettings({
+              enabled: asaasCreds.enabled || false,
+              api_key: asaasCreds.api_key || '',
+              environment: asaasCreds.environment || 'sandbox',
             });
           }
         }
