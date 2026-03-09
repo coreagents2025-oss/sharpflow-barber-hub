@@ -82,7 +82,10 @@ Deno.serve(async (req) => {
       });
     }
 
-    const ASAAS_BASE_URL = 'https://api.asaas.com/v3';
+    const ASAAS_SANDBOX = Deno.env.get('ASAAS_SANDBOX') === 'true';
+    const ASAAS_BASE_URL = ASAAS_SANDBOX
+      ? 'https://sandbox.asaas.com/api/v3'
+      : 'https://api.asaas.com/v3';
     const asaasHeaders = {
       'access_token': ASAAS_API_KEY,
       'Content-Type': 'application/json',
