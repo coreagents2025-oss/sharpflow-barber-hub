@@ -52,7 +52,7 @@ export function ActiveSubscriptionsList({ subscriptions, onRenew, onCancel, onIn
           return (
             <Card key={sub.id} className="p-3">
               <div className="flex items-center justify-between gap-2 mb-2">
-                <div className="flex items-center gap-2 min-w-0">
+              <div className="flex items-center gap-2 min-w-0">
                   <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                   <div className="min-w-0">
                     <span className="font-medium text-sm truncate block">{sub.lead?.full_name || "—"}</span>
@@ -61,9 +61,16 @@ export function ActiveSubscriptionsList({ subscriptions, onRenew, onCancel, onIn
                     )}
                   </div>
                 </div>
-                <Badge variant={st.variant} className="shrink-0 text-[10px] h-5">
-                  {st.label}
-                </Badge>
+                <div className="flex items-center gap-1 shrink-0">
+                  {sub.asaas_subscription_id && (
+                    <Badge variant="outline" className="text-[9px] h-4 px-1 border-primary/40 text-primary gap-0.5">
+                      <Zap className="h-2.5 w-2.5" />Auto
+                    </Badge>
+                  )}
+                  <Badge variant={st.variant} className="shrink-0 text-[10px] h-5">
+                    {st.label}
+                  </Badge>
+                </div>
               </div>
               <div className="grid grid-cols-3 gap-2 text-xs text-muted-foreground mb-2">
                 <div>
