@@ -67,6 +67,8 @@ export interface ActiveSubscription {
   auto_renew: boolean;
   next_billing_date: string | null;
   billing_interval: string;
+  asaas_subscription_id?: string | null;
+  asaas_customer_id?: string | null;
   lead?: { full_name: string; phone: string; email?: string | null } | null;
   plan?: { name: string; price: number } | null;
 }

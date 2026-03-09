@@ -294,6 +294,7 @@ export type Database = {
       }
       barbershop_credentials: {
         Row: {
+          asaas_credentials: Json
           barbershop_id: string
           created_at: string
           email_credentials: Json
@@ -303,6 +304,7 @@ export type Database = {
           whatsapp_phone: string | null
         }
         Insert: {
+          asaas_credentials?: Json
           barbershop_id: string
           created_at?: string
           email_credentials?: Json
@@ -312,6 +314,7 @@ export type Database = {
           whatsapp_phone?: string | null
         }
         Update: {
+          asaas_credentials?: Json
           barbershop_id?: string
           created_at?: string
           email_credentials?: Json
@@ -702,6 +705,8 @@ export type Database = {
       }
       client_subscriptions: {
         Row: {
+          asaas_customer_id: string | null
+          asaas_subscription_id: string | null
           auto_renew: boolean
           barbershop_id: string
           billing_interval: string
@@ -719,6 +724,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          asaas_customer_id?: string | null
+          asaas_subscription_id?: string | null
           auto_renew?: boolean
           barbershop_id: string
           billing_interval?: string
@@ -736,6 +743,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          asaas_customer_id?: string | null
+          asaas_subscription_id?: string | null
           auto_renew?: boolean
           barbershop_id?: string
           billing_interval?: string

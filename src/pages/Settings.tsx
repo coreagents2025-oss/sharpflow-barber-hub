@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { User, Building2, Bell, Shield, Globe, Eye, ExternalLink, MessageCircle, Facebook, Instagram, Clock } from 'lucide-react';
+import { User, Building2, Bell, Shield, Globe, Eye, ExternalLink, MessageCircle, Facebook, Instagram, Clock, CreditCard, CheckCircle2, AlertCircle, Copy, ExternalLink as LinkIcon, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
@@ -144,6 +144,15 @@ const Settings = () => {
 
   const [showDomainGuide, setShowDomainGuide] = useState(false);
 
+  // Asaas state
+  const [asaasSettings, setAsaasSettings] = useState({
+    enabled: false,
+    api_key: '',
+    environment: 'sandbox' as 'sandbox' | 'production',
+  });
+  const [testingAsaas, setTestingAsaas] = useState(false);
+  const [asaasStatus, setAsaasStatus] = useState<'idle' | 'ok' | 'error'>('idle');
+
   const DAYS = [
     { key: 'monday',    label: 'Segunda-feira' },
     { key: 'tuesday',   label: 'Terça-feira' },
@@ -235,7 +244,7 @@ const Settings = () => {
             // Carregar credenciais da tabela barbershop_credentials
             const { data: credentials } = await supabase
               .from('barbershop_credentials')
-              .select('whatsapp_credentials, email_credentials')
+              .select('whatsapp_credentials, email_credentials, asaas_credentials')
               .eq('barbershop_id', barbershopId)
               .single();
             
@@ -265,6 +274,13 @@ const Settings = () => {
               uazapi_instance_id: whatsappCreds.uazapi_instance_id || '',
               uazapi_token: whatsappCreds.uazapi_token || '',
               uazapi_account_id: whatsappCreds.uazapi_account_id || '',
+            });
+
+            const asaasCreds = (credentials?.asaas_credentials || {}) as any;
+            setAsaasSettings({
+              enabled: asaasCreds.enabled || false,
+              api_key: asaasCreds.api_key || '',
+              environment: asaasCreds.environment || 'sandbox',
             });
           }
         }
@@ -514,6 +530,56 @@ const Settings = () => {
     }
   };
 
+  const handleSaveAsaasSettings = async () => {
+    if (!barbershopId) return;
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('barbershop_credentials')
+        .update({ asaas_credentials: asaasSettings } as any)
+        .eq('barbershop_id', barbershopId);
+      if (error) throw error;
+      toast.success('Configurações Asaas salvas!');
+      setAsaasStatus('idle');
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Erro ao salvar configurações Asaas');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTestAsaasConnection = async () => {
+    if (!asaasSettings.api_key) {
+      toast.error('Informe a API Key antes de testar.');
+      return;
+    }
+    setTestingAsaas(true);
+    setAsaasStatus('idle');
+    try {
+      const baseUrl = asaasSettings.environment === 'production'
+        ? 'https://api.asaas.com/v3'
+        : 'https://sandbox.asaas.com/api/v3';
+      const resp = await fetch(`${baseUrl}/myAccount`, {
+        headers: { 'access_token': asaasSettings.api_key, 'Content-Type': 'application/json' },
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        toast.success(`Conexão OK! Conta: ${data.name || data.email || 'Asaas'}`);
+        setAsaasStatus('ok');
+      } else {
+        toast.error('Falha na conexão. Verifique a API Key e o ambiente.');
+        setAsaasStatus('error');
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Erro ao testar conexão com Asaas');
+      setAsaasStatus('error');
+    } finally {
+      setTestingAsaas(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
       <Navbar />
@@ -527,7 +593,7 @@ const Settings = () => {
         <Tabs defaultValue="profile" className="space-y-4 sm:space-y-6">
           <div className="relative">
             <div className="w-full overflow-x-auto pb-2 sm:pb-0 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
-              <TabsList className="flex sm:grid sm:grid-cols-3 lg:grid-cols-6 gap-2 w-full sm:w-auto">
+              <TabsList className="flex sm:grid sm:grid-cols-3 lg:grid-cols-7 gap-2 w-full sm:w-auto">
                 <TabsTrigger value="profile" className="flex items-center gap-2 text-xs sm:text-sm flex-shrink-0 snap-start min-w-[100px] sm:min-w-0 touch-target">
                   <User className="h-4 w-4" />
                   <span>Perfil</span>
@@ -551,6 +617,10 @@ const Settings = () => {
                 <TabsTrigger value="security" className="flex items-center gap-2 text-xs sm:text-sm flex-shrink-0 snap-start min-w-[120px] sm:min-w-0 touch-target">
                   <Shield className="h-4 w-4" />
                   <span>Segurança</span>
+                </TabsTrigger>
+                <TabsTrigger value="payments" className="flex items-center gap-2 text-xs sm:text-sm flex-shrink-0 snap-start min-w-[120px] sm:min-w-0 touch-target">
+                  <CreditCard className="h-4 w-4" />
+                  <span>Pagamentos</span>
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -1405,6 +1475,144 @@ const Settings = () => {
                       >
                         {savingHours ? 'Salvando...' : 'Salvar Horários'}
                       </Button>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="payments">
+            <Card className="border-0 sm:border shadow-sm">
+              <CardHeader className="px-4 sm:px-6 py-4 sm:py-6">
+                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                  <CreditCard className="h-5 w-5 text-accent" />
+                  Integração Asaas — Cobrança Recorrente
+                </CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
+                  Conecte sua conta Asaas para cobrar assinaturas automaticamente via PIX, Boleto ou Cartão.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="px-4 sm:px-6 space-y-4">
+                {!barbershopId ? (
+                  <p className="text-muted-foreground">Você não está vinculado a nenhuma barbearia.</p>
+                ) : (
+                  <>
+                    {/* Toggle */}
+                    <div className="flex items-center justify-between py-2 border-b">
+                      <div>
+                        <Label className="text-sm font-medium">Ativar cobrança automática via Asaas</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Quando ativado, novas assinaturas gerarão cobranças automáticas na Asaas
+                        </p>
+                      </div>
+                      <Switch
+                        checked={asaasSettings.enabled}
+                        onCheckedChange={(checked) => setAsaasSettings({ ...asaasSettings, enabled: checked })}
+                        disabled={loading}
+                      />
+                    </div>
+
+                    {/* Environment */}
+                    <div className="space-y-2">
+                      <Label htmlFor="asaas-env">Ambiente</Label>
+                      <Select
+                        value={asaasSettings.environment}
+                        onValueChange={(v) => setAsaasSettings({ ...asaasSettings, environment: v as any })}
+                        disabled={loading}
+                      >
+                        <SelectTrigger id="asaas-env">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="sandbox">Sandbox (Testes)</SelectItem>
+                          <SelectItem value="production">Produção</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Use Sandbox para testar antes de cobrar clientes reais.
+                      </p>
+                    </div>
+
+                    {/* API Key */}
+                    <div className="space-y-2">
+                      <Label htmlFor="asaas-key">API Key</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="asaas-key"
+                          type="password"
+                          placeholder={asaasSettings.environment === 'production' ? '$aact_...' : '$aact_sandbox_...'}
+                          value={asaasSettings.api_key}
+                          onChange={(e) => setAsaasSettings({ ...asaasSettings, api_key: e.target.value })}
+                          disabled={loading}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleTestAsaasConnection}
+                          disabled={testingAsaas || !asaasSettings.api_key}
+                          className="shrink-0"
+                        >
+                          {testingAsaas ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : asaasStatus === 'ok' ? (
+                            <CheckCircle2 className="h-4 w-4 text-green-600" />
+                          ) : asaasStatus === 'error' ? (
+                            <AlertCircle className="h-4 w-4 text-destructive" />
+                          ) : null}
+                          <span className="ml-1 text-xs">Testar</span>
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Encontre sua API Key em: <a href="https://www.asaas.com/config/index" target="_blank" rel="noopener noreferrer" className="text-primary underline">Asaas → Configurações → Integrações</a>
+                      </p>
+                    </div>
+
+                    {/* Webhook URL */}
+                    {asaasSettings.enabled && barbershopId && (
+                      <div className="space-y-2 p-4 rounded-lg border bg-muted/40">
+                        <Label className="text-sm font-semibold">URL do Webhook</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Cole esta URL em{' '}
+                          <a href="https://www.asaas.com/config/index#notification" target="_blank" rel="noopener noreferrer" className="text-primary underline">
+                            Asaas → Configurações → Notificações → Webhooks
+                          </a>
+                        </p>
+                        <div className="flex gap-2">
+                          <Input
+                            readOnly
+                            value={`https://jgpffcjktwsohfyljtsg.supabase.co/functions/v1/asaas-webhook?barbershop_id=${barbershopId}`}
+                            className="font-mono text-xs"
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              navigator.clipboard.writeText(`https://jgpffcjktwsohfyljtsg.supabase.co/functions/v1/asaas-webhook?barbershop_id=${barbershopId}`);
+                              toast.success('URL copiada!');
+                            }}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Eventos a habilitar: <strong>PAYMENT_RECEIVED, PAYMENT_CONFIRMED, PAYMENT_OVERDUE, SUBSCRIPTION_DELETED</strong>
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="pt-2 flex gap-2">
+                      <Button onClick={handleSaveAsaasSettings} disabled={loading} className="bg-accent hover:bg-accent/90">
+                        {loading ? 'Salvando...' : 'Salvar Configurações'}
+                      </Button>
+                    </div>
+
+                    <div className="rounded-lg border border-border bg-muted/30 p-4 text-xs text-muted-foreground space-y-1">
+                      <p className="font-semibold text-foreground text-sm">Como funciona?</p>
+                      <p>1. Configure sua API Key e ative a integração acima.</p>
+                      <p>2. Ao criar uma nova assinatura, o sistema cria automaticamente o cliente e a cobrança recorrente na Asaas.</p>
+                      <p>3. A Asaas cobra o cliente automaticamente (PIX, Boleto ou Cartão) a cada ciclo.</p>
+                      <p>4. Quando o pagamento é confirmado, o webhook atualiza os créditos do assinante automaticamente.</p>
                     </div>
                   </>
                 )}
