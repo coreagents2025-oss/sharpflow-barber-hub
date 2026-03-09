@@ -622,6 +622,10 @@ const Settings = () => {
                   <CreditCard className="h-4 w-4" />
                   <span>Pagamentos</span>
                 </TabsTrigger>
+                <TabsTrigger value="subscription" className="flex items-center gap-2 text-xs sm:text-sm flex-shrink-0 snap-start min-w-[140px] sm:min-w-0 touch-target">
+                  <Sparkles className="h-4 w-4" />
+                  <span>Minha Assinatura</span>
+                </TabsTrigger>
               </TabsList>
             </div>
             <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-background to-transparent pointer-events-none sm:hidden" />
