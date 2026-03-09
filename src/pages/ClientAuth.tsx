@@ -272,12 +272,11 @@ const ClientAuth = () => {
         </CardContent>
       </Card>
     </div>
-
-      <ForgotPasswordDialog
-        open={forgotOpen}
-        onOpenChange={setForgotOpen}
-        defaultEmail={loginEmail}
-      />
+    <ForgotPasswordDialog
+      open={forgotOpen}
+      onOpenChange={setForgotOpen}
+      defaultEmail={loginEmail}
+    />
   );
 };
 
