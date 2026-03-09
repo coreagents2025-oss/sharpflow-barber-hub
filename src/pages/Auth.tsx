@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
 import { Scissors, Lock, Mail, User } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { ForgotPasswordDialog } from '@/components/ForgotPasswordDialog';
 const Auth = () => {
   const {
     signIn,
@@ -21,6 +22,7 @@ const Auth = () => {
   const [signupPassword, setSignupPassword] = useState('');
   const [signupName, setSignupName] = useState('');
   const [loading, setLoading] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
 
   // Redirecionar se já estiver logado
   useEffect(() => {
@@ -103,6 +105,16 @@ const Auth = () => {
                     </div>
                   </div>
 
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setForgotOpen(true)}
+                      className="text-xs text-muted-foreground hover:text-accent transition-colors"
+                    >
+                      Esqueci minha senha
+                    </button>
+                  </div>
+
                   <Button type="submit" className="w-full bg-accent hover:bg-accent/90 h-11 min-h-[44px]" disabled={loading}>
                     {loading ? 'Entrando...' : 'Entrar'}
                   </Button>
@@ -160,6 +172,12 @@ const Auth = () => {
           </Link>
         </div>
       </div>
+
+      <ForgotPasswordDialog
+        open={forgotOpen}
+        onOpenChange={setForgotOpen}
+        defaultEmail={loginEmail}
+      />
     </div>;
 };
 export default Auth;

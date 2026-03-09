@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Scissors, Loader2, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
+import { ForgotPasswordDialog } from '@/components/ForgotPasswordDialog';
 
 const ClientAuth = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -22,6 +23,7 @@ const ClientAuth = () => {
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
 
   // Signup state
   const [signupName, setSignupName] = useState('');
@@ -127,7 +129,8 @@ const ClientAuth = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-10">
+    <>
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-10">
       {/* Back to catalog */}
       <div className="w-full max-w-md mb-4">
         <Link
@@ -189,6 +192,15 @@ const ClientAuth = () => {
                     required
                     autoComplete="current-password"
                   />
+                </div>
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setForgotOpen(true)}
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Esqueci minha senha
+                  </button>
                 </div>
                 <Button type="submit" className="w-full mt-2" disabled={loginLoading}>
                   {loginLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
@@ -261,6 +273,12 @@ const ClientAuth = () => {
         </CardContent>
       </Card>
     </div>
+    <ForgotPasswordDialog
+      open={forgotOpen}
+      onOpenChange={setForgotOpen}
+      defaultEmail={loginEmail}
+    />
+    </>
   );
 };
 

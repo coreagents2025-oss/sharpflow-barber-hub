@@ -12,6 +12,7 @@ import Index from "./pages/Index";
 import Services from "./pages/Services";
 import Booking from "./pages/Booking";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import PDV from "./pages/PDV";
 import ServicesManagement from "./pages/ServicesManagement";
 import Catalog from "./pages/Catalog";
@@ -51,6 +52,7 @@ const App = () => (
             <Route path="/services" element={<Services />} />
             <Route path="/booking" element={<Booking />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             {/* Catálogo Público Mobile-First */}
             <Route path="/catalogo" element={<PublicCatalog />} />
             {/* Client Portal Routes — must come before /:slug */}
