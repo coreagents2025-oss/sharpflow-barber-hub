@@ -87,6 +87,23 @@ const Settings = () => {
   const { user, barbershopId } = useAuth();
   const [loading, setLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
+
+  // SaaS subscription state
+  const [planInfo, setPlanInfo] = useState<{
+    plan_type: string;
+    plan_status: string;
+    trial_ends_at: string;
+    platform_asaas_customer_id: string | null;
+    platform_asaas_subscription_id: string | null;
+  } | null>(null);
+  const [subscribing, setSubscribing] = useState(false);
+  const [subscribeForm, setSubscribeForm] = useState({
+    name: '',
+    cpf_cnpj: '',
+    email: '',
+    phone: '',
+    plan_type: 'monthly' as 'monthly' | 'annual',
+  });
   
   const [profileData, setProfileData] = useState({
     full_name: '',
