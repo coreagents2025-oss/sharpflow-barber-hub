@@ -192,6 +192,15 @@ const ClientAuth = () => {
                     autoComplete="current-password"
                   />
                 </div>
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => setForgotOpen(true)}
+                    className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                  >
+                    Esqueci minha senha
+                  </button>
+                </div>
                 <Button type="submit" className="w-full mt-2" disabled={loginLoading}>
                   {loginLoading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
                   Entrar
