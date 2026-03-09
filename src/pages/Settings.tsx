@@ -299,6 +299,22 @@ const Settings = () => {
               api_key: asaasCreds.api_key || '',
               environment: asaasCreds.environment || 'sandbox',
             });
+
+            // Load SaaS billing info
+            setPlanInfo({
+              plan_type: (barbershop as any).plan_type ?? 'trial',
+              plan_status: (barbershop as any).plan_status ?? 'active',
+              trial_ends_at: (barbershop as any).trial_ends_at ?? new Date().toISOString(),
+              platform_asaas_customer_id: (barbershop as any).platform_asaas_customer_id ?? null,
+              platform_asaas_subscription_id: (barbershop as any).platform_asaas_subscription_id ?? null,
+            });
+            // Pre-fill subscribe form with barbershop data
+            setSubscribeForm(prev => ({
+              ...prev,
+              name: barbershop.name || '',
+              email: barbershop.email || '',
+              phone: barbershop.phone || '',
+            }));
           }
         }
       } catch (error) {
