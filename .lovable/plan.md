@@ -1,75 +1,23 @@
 
-## Diagnóstico do Problema
 
-Os logs de autenticação mostram exatamente o erro:
+## Problema identificado
 
-```
-"Session not found" - session id doesn't exist
-status: 403 on POST /logout
-referer: https://www.barberplus.shop/
-```
+O PWA está configurado com `navigateFallback: "/offline.html"`, o que significa que **qualquer navegação offline mostra a página estática de "Sem conexão"** em vez de carregar o app cacheado. Além disso, o `main.tsx` registra manualmente o service worker (`/sw.js`), conflitando com o registro automático do `vite-plugin-pwa`.
 
-O problema é claro: o código atual em `signOut()` faz `throw error` quando o logout falha. Quando a sessão já expirou ou não existe no servidor (mas o estado local ainda tem dados), o Supabase retorna 403 — e o `throw error` faz o toast aparecer e **interrompe o fluxo**, impedindo que o estado local seja limpo e o usuário seja redirecionado.
+## Correções
 
-## Causa raiz
+### 1. Alterar `navigateFallback` para `/index.html` (vite.config.ts)
+- Trocar `"/offline.html"` por `"/index.html"` para que o service worker sirva o shell do app (SPA) quando offline
+- Adicionar `"/index.html"` e `"/offline.html"` ao `globPatterns` para garantir que sejam pré-cacheados
 
-```typescript
-const signOut = async () => {
-  try {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;           // ← lança exceção mesmo em "session not found"
-    toast.success('Logout realizado');
-  } catch (error: any) {
-    toast.error(error.message);       // ← mostra erro ao usuário
-    throw error;                      // ← relança, nunca limpa o estado
-  }
-};
-```
+### 2. Remover registro manual do SW (main.tsx)
+- O `vite-plugin-pwa` com `registerType: "autoUpdate"` já gera e registra o service worker automaticamente
+- O registro manual de `/sw.js` conflita e pode impedir o cache correto
 
-Quando a sessão não existe no servidor, o `signOut()` falha mas a sessão local no `localStorage` permanece intacta. O usuário fica "preso" logado.
+### 3. Adicionar `globPatterns` para pré-cachear os assets do app (vite.config.ts)
+- Incluir `*.html`, `*.js`, `*.css`, e ícones no precache do workbox para que o app funcione offline de verdade
 
-## Solução
+### Resultado esperado
+- App carrega normalmente mesmo sem internet (usando cache do SPA)
+- A página `offline.html` só apareceria se o cache do index.html falhasse (cenário extremo)
 
-### 1. Tornar o logout tolerante a falhas de sessão
-
-Se `signOut()` falhar com "Session not found" (ou qualquer 403), deve:
-- Ignorar o erro (sessão já não existe no servidor, está tudo bem)
-- Limpar o estado local manualmente: `setUser(null)`, `setSession(null)`, `setUserRole(null)`
-- Limpar o localStorage da sessão do Supabase
-- Redirecionar normalmente
-
-### 2. Adicionar redirecionamento direto no signOut
-
-O `AuthRedirect` depende de `user` e `userRole` mudando para redirecionar. Mas se o estado não limpa (por causa do throw), o redirect nunca ocorre. Vamos garantir que o redirecionamento aconteça diretamente no `signOut`.
-
-## Arquivo a modificar
-
-| Arquivo | Mudança |
-|---|---|
-| `src/hooks/useAuth.tsx` | Refatorar `signOut()` para usar `{ scope: 'local' }` e nunca relançar o erro — mesmo em caso de falha no servidor, limpar estado local e redirecionar |
-
-## Código da correção
-
-```typescript
-const signOut = async () => {
-  try {
-    // scope: 'local' garante que mesmo sem sessão no servidor,
-    // o estado local é limpo
-    await supabase.auth.signOut({ scope: 'local' });
-  } catch (error: any) {
-    // Silencia erros de "session not found" — sessão já expirou,
-    // basta limpar o estado local
-    console.warn('signOut error (ignorado):', error?.message);
-  } finally {
-    // Sempre limpar estado local independente de erro no servidor
-    setUser(null);
-    setSession(null);
-    setUserRole(null);
-    setBarbershopId(null);
-  }
-  toast.success('Logout realizado com sucesso!');
-  window.location.href = '/auth';
-};
-```
-
-O `scope: 'local'` do Supabase limpa o localStorage e o estado interno do cliente mesmo quando o servidor retorna 403. O `finally` garante que os estados React também sejam zerados. O `window.location.href` força o redirecionamento sem depender do `AuthRedirect`.
