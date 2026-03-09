@@ -286,7 +286,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Fetch barbershop
     const { data: barbershop } = await supabase
       .from("public_barbershops")
-      .select("id, name, logo_url, phone")
+      .select("id, name, logo_url, phone, slug")
       .eq("id", sub.barbershop_id)
       .single();
 
