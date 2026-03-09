@@ -278,6 +278,7 @@ const ClientAuth = () => {
       onOpenChange={setForgotOpen}
       defaultEmail={loginEmail}
     />
+    </>
   );
 };
 
