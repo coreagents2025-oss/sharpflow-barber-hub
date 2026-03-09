@@ -662,7 +662,7 @@ const Settings = () => {
           <p className="text-sm sm:text-base text-muted-foreground">Gerencie sua conta e preferências</p>
         </div>
 
-        <Tabs defaultValue="profile" className="space-y-4 sm:space-y-6">
+        <Tabs defaultValue={defaultTab} className="space-y-4 sm:space-y-6">
           <div className="relative">
             <div className="w-full overflow-x-auto pb-2 sm:pb-0 scrollbar-thin scrollbar-thumb-gray-300 dark:scrollbar-thumb-gray-600">
               <TabsList className="flex sm:grid sm:grid-cols-3 lg:grid-cols-7 gap-2 w-full sm:w-auto">
