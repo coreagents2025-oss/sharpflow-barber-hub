@@ -1692,6 +1692,159 @@ const Settings = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* ===== MINHA ASSINATURA TAB ===== */}
+          <TabsContent value="subscription">
+            <Card className="border-0 sm:border shadow-sm">
+              <CardHeader className="px-4 sm:px-6 py-4 sm:py-6">
+                <CardTitle className="text-lg sm:text-xl flex items-center gap-2">
+                  <Sparkles className="h-5 w-5 text-primary" />
+                  Minha Assinatura
+                </CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
+                  Gerencie seu plano na plataforma BarberPlus
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="px-4 sm:px-6 space-y-6">
+                {dataLoading ? (
+                  <div className="space-y-4">
+                    <div className="h-20 bg-muted animate-pulse rounded" />
+                    <div className="h-10 bg-muted animate-pulse rounded" />
+                  </div>
+                ) : (
+                  <>
+                    {/* Current Plan Status */}
+                    <div className="rounded-lg border border-border p-4 space-y-3">
+                      <p className="text-sm font-semibold text-foreground">Status atual</p>
+                      <div className="flex flex-wrap gap-3 items-center">
+                        {planInfo?.plan_type === 'trial' ? (
+                          <>
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 px-3 py-1 text-xs font-medium">
+                              <Clock className="h-3 w-3" /> Trial
+                            </span>
+                            {planInfo?.trial_ends_at && (() => {
+                              const daysLeft = Math.ceil((new Date(planInfo.trial_ends_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+                              return daysLeft > 0 ? (
+                                <span className="text-sm text-muted-foreground">{daysLeft} dia{daysLeft !== 1 ? 's' : ''} restante{daysLeft !== 1 ? 's' : ''}</span>
+                              ) : (
+                                <span className="text-sm text-destructive font-medium">Trial expirado — assine para continuar</span>
+                              );
+                            })()}
+                          </>
+                        ) : planInfo?.plan_status === 'active' ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 px-3 py-1 text-xs font-medium">
+                            <CheckCircle2 className="h-3 w-3" />
+                            {planInfo.plan_type === 'monthly' ? 'Plano Mensal Ativo' : 'Plano Anual Ativo'}
+                          </span>
+                        ) : planInfo?.plan_status === 'overdue' ? (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-destructive/10 text-destructive px-3 py-1 text-xs font-medium">
+                            <AlertCircle className="h-3 w-3" /> Pagamento pendente — regularize para não perder acesso
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-muted text-muted-foreground px-3 py-1 text-xs font-medium">
+                            {planInfo?.plan_status ?? '—'}
+                          </span>
+                        )}
+                      </div>
+                      {planInfo?.platform_asaas_subscription_id && (
+                        <p className="text-xs text-muted-foreground font-mono">ID: {planInfo.platform_asaas_subscription_id}</p>
+                      )}
+                    </div>
+
+                    {/* Subscribe Form — shown if no active paid plan */}
+                    {(!planInfo?.platform_asaas_subscription_id || planInfo.plan_type === 'trial') && (
+                      <div className="space-y-4">
+                        <p className="text-sm font-semibold text-foreground">Assinar um plano</p>
+
+                        {/* Plan selection */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          {[
+                            { type: 'monthly' as const, label: 'Plano Mensal', price: 'R$ 89,90/mês', desc: 'Faturado mensalmente por PIX' },
+                            { type: 'annual' as const, label: 'Plano Anual', price: 'R$ 828,00/ano', desc: 'R$ 69,00/mês — Economize 23%' },
+                          ].map(plan => (
+                            <button
+                              key={plan.type}
+                              type="button"
+                              onClick={() => setSubscribeForm(prev => ({ ...prev, plan_type: plan.type }))}
+                              className={`rounded-lg border-2 p-4 text-left transition-colors ${
+                                subscribeForm.plan_type === plan.type
+                                  ? 'border-primary bg-primary/5'
+                                  : 'border-border hover:border-muted-foreground'
+                              }`}
+                            >
+                              <p className="font-semibold text-foreground text-sm">{plan.label}</p>
+                              <p className="text-lg font-bold text-primary mt-1">{plan.price}</p>
+                              <p className="text-xs text-muted-foreground mt-1">{plan.desc}</p>
+                            </button>
+                          ))}
+                        </div>
+
+                        {/* Billing info */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="space-y-1.5">
+                            <Label className="text-xs">Nome completo / Razão social *</Label>
+                            <Input
+                              value={subscribeForm.name}
+                              onChange={e => setSubscribeForm(prev => ({ ...prev, name: e.target.value }))}
+                              placeholder="Nome da empresa ou responsável"
+                              disabled={subscribing}
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs">CPF ou CNPJ *</Label>
+                            <Input
+                              value={subscribeForm.cpf_cnpj}
+                              onChange={e => setSubscribeForm(prev => ({ ...prev, cpf_cnpj: e.target.value }))}
+                              placeholder="000.000.000-00 ou 00.000.000/0001-00"
+                              disabled={subscribing}
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs">E-mail para cobrança *</Label>
+                            <Input
+                              type="email"
+                              value={subscribeForm.email}
+                              onChange={e => setSubscribeForm(prev => ({ ...prev, email: e.target.value }))}
+                              placeholder="email@empresa.com"
+                              disabled={subscribing}
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-xs">Telefone / WhatsApp *</Label>
+                            <Input
+                              value={subscribeForm.phone}
+                              onChange={e => setSubscribeForm(prev => ({ ...prev, phone: e.target.value }))}
+                              placeholder="(00) 00000-0000"
+                              disabled={subscribing}
+                            />
+                          </div>
+                        </div>
+
+                        <Button
+                          onClick={handleSubscribePlatformPlan}
+                          disabled={subscribing}
+                          className="bg-primary hover:bg-primary/90 w-full sm:w-auto"
+                        >
+                          {subscribing ? (
+                            <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Criando assinatura...</>
+                          ) : (
+                            <><CreditCard className="h-4 w-4 mr-2" /> Assinar {subscribeForm.plan_type === 'monthly' ? 'Plano Mensal' : 'Plano Anual'}</>
+                          )}
+                        </Button>
+
+                        <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs text-muted-foreground space-y-1">
+                          <p className="font-medium text-foreground">Como funciona a cobrança?</p>
+                          <p>• Após assinar, você receberá um link de pagamento PIX por email.</p>
+                          <p>• A cobrança se repete automaticamente a cada ciclo (mensal ou anual).</p>
+                          <p>• Em caso de inadimplência, o acesso é suspenso automaticamente.</p>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </main>
 
