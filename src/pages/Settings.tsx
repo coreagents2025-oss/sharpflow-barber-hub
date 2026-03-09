@@ -530,6 +530,56 @@ const Settings = () => {
     }
   };
 
+  const handleSaveAsaasSettings = async () => {
+    if (!barbershopId) return;
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('barbershop_credentials')
+        .update({ asaas_credentials: asaasSettings } as any)
+        .eq('barbershop_id', barbershopId);
+      if (error) throw error;
+      toast.success('Configurações Asaas salvas!');
+      setAsaasStatus('idle');
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Erro ao salvar configurações Asaas');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTestAsaasConnection = async () => {
+    if (!asaasSettings.api_key) {
+      toast.error('Informe a API Key antes de testar.');
+      return;
+    }
+    setTestingAsaas(true);
+    setAsaasStatus('idle');
+    try {
+      const baseUrl = asaasSettings.environment === 'production'
+        ? 'https://api.asaas.com/v3'
+        : 'https://sandbox.asaas.com/api/v3';
+      const resp = await fetch(`${baseUrl}/myAccount`, {
+        headers: { 'access_token': asaasSettings.api_key, 'Content-Type': 'application/json' },
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        toast.success(`Conexão OK! Conta: ${data.name || data.email || 'Asaas'}`);
+        setAsaasStatus('ok');
+      } else {
+        toast.error('Falha na conexão. Verifique a API Key e o ambiente.');
+        setAsaasStatus('error');
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error('Erro ao testar conexão com Asaas');
+      setAsaasStatus('error');
+    } finally {
+      setTestingAsaas(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-secondary/20">
       <Navbar />
