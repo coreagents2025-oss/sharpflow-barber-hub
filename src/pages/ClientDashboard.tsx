@@ -57,9 +57,40 @@ const ClientDashboard = () => {
   const navigate = useNavigate();
   const { barbershop, subscription, pendingPayments, appointments, loading, hasAccess } = useClientPortal(slug);
 
+  // Password change state
+  const [pwDialogOpen, setPwDialogOpen] = useState(false);
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPw, setShowPw] = useState(false);
+  const [changingPw, setChangingPw] = useState(false);
+
   const handleSignOut = async () => {
     await signOut();
     navigate(`/${slug}/cliente`, { replace: true });
+  };
+
+  const handleChangePassword = async () => {
+    if (newPassword.length < 6) {
+      toast.error('A senha deve ter no mínimo 6 caracteres.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error('As senhas não coincidem.');
+      return;
+    }
+    setChangingPw(true);
+    try {
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
+      if (error) throw error;
+      toast.success('Senha alterada com sucesso!');
+      setPwDialogOpen(false);
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao alterar senha');
+    } finally {
+      setChangingPw(false);
+    }
   };
 
   if (loading) {
