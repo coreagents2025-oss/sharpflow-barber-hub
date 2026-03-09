@@ -69,7 +69,7 @@ const ResetPassword = () => {
       if (error) throw error;
       setDone(true);
       toast.success('Senha redefinida com sucesso!');
-      setTimeout(() => navigate('/auth', { replace: true }), 2500);
+      setTimeout(() => navigate(nextPath, { replace: true }), 2500);
     } catch (error: any) {
       toast.error(error.message || 'Erro ao redefinir senha');
     } finally {
