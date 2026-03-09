@@ -396,9 +396,14 @@ export type Database = {
           name: string
           operating_hours: Json | null
           phone: string | null
+          plan_status: string
+          plan_type: string
+          platform_asaas_customer_id: string | null
+          platform_asaas_subscription_id: string | null
           slug: string
           suspended_at: string | null
           suspended_reason: string | null
+          trial_ends_at: string
           updated_at: string
         }
         Insert: {
@@ -414,9 +419,14 @@ export type Database = {
           name: string
           operating_hours?: Json | null
           phone?: string | null
+          plan_status?: string
+          plan_type?: string
+          platform_asaas_customer_id?: string | null
+          platform_asaas_subscription_id?: string | null
           slug?: string
           suspended_at?: string | null
           suspended_reason?: string | null
+          trial_ends_at?: string
           updated_at?: string
         }
         Update: {
@@ -432,9 +442,14 @@ export type Database = {
           name?: string
           operating_hours?: Json | null
           phone?: string | null
+          plan_status?: string
+          plan_type?: string
+          platform_asaas_customer_id?: string | null
+          platform_asaas_subscription_id?: string | null
           slug?: string
           suspended_at?: string | null
           suspended_reason?: string | null
+          trial_ends_at?: string
           updated_at?: string
         }
         Relationships: []
