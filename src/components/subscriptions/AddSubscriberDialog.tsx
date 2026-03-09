@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { CalendarIcon, Search, UserPlus, CreditCard, Calendar as CalendarLucide } from 'lucide-react';
+import { CalendarIcon, Search, UserPlus, CreditCard, Calendar as CalendarLucide, Eye, EyeOff, KeyRound } from 'lucide-react';
 import {
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
 } from '@/components/ui/dialog';
@@ -14,6 +14,7 @@ import { Card } from '@/components/ui/card';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -53,6 +54,13 @@ export function AddSubscriberDialog({ open, onOpenChange, plans, onSuccess }: Pr
   const [newEmail, setNewEmail] = useState('');
   const [creatingLead, setCreatingLead] = useState(false);
 
+  // Portal access fields
+  const [accessEmail, setAccessEmail] = useState('');
+  const [accessPassword, setAccessPassword] = useState('');
+  const [accessPasswordConfirm, setAccessPasswordConfirm] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [createAccess, setCreateAccess] = useState(false);
+
   const activePlans = plans.filter(p => p.is_active);
 
   useEffect(() => {
@@ -68,8 +76,20 @@ export function AddSubscriberDialog({ open, onOpenChange, plans, onSuccess }: Pr
       setNewName('');
       setNewPhone('');
       setNewEmail('');
+      setAccessEmail('');
+      setAccessPassword('');
+      setAccessPasswordConfirm('');
+      setShowPassword(false);
+      setCreateAccess(false);
     }
   }, [open, barbershopId]);
+
+  // Pre-fill access email when lead is selected
+  useEffect(() => {
+    if (selectedLead?.email) {
+      setAccessEmail(selectedLead.email);
+    }
+  }, [selectedLead]);
 
   const fetchLeads = async (q: string) => {
     if (!barbershopId) return;
@@ -139,6 +159,22 @@ export function AddSubscriberDialog({ open, onOpenChange, plans, onSuccess }: Pr
     const plan = activePlans.find(p => p.id === selectedPlanId);
     if (!plan) return;
 
+    // Validate portal access fields if enabled
+    if (createAccess) {
+      if (!accessEmail.trim()) {
+        toast.error('Informe o email de acesso do cliente.');
+        return;
+      }
+      if (accessPassword.length < 6) {
+        toast.error('A senha deve ter no mínimo 6 caracteres.');
+        return;
+      }
+      if (accessPassword !== accessPasswordConfirm) {
+        toast.error('As senhas não coincidem.');
+        return;
+      }
+    }
+
     setIsSubmitting(true);
     try {
       const intervalDays: Record<string, number> = { weekly: 7, biweekly: 14, monthly: 30 };
@@ -199,7 +235,32 @@ export function AddSubscriberDialog({ open, onOpenChange, plans, onSuccess }: Pr
         });
       }
 
-      toast.success(`Assinatura criada para ${selectedLead.full_name}!`);
+      // Create portal access if requested
+      if (createAccess && accessEmail.trim() && accessPassword) {
+        const { data: session } = await supabase.auth.getSession();
+        const accessToken = session?.session?.access_token;
+
+        const { data: accessResult, error: accessError } = await supabase.functions.invoke('create-client-account', {
+          body: {
+            email: accessEmail.trim(),
+            password: accessPassword,
+            full_name: selectedLead.full_name,
+            barbershop_id: barbershopId,
+            lead_id: selectedLead.id,
+            subscription_id: subData.id,
+          },
+        });
+
+        if (accessError || accessResult?.error) {
+          const msg = accessResult?.error || accessError?.message || 'Erro ao criar acesso';
+          toast.warning(`Assinatura criada, mas houve erro no acesso: ${msg}`);
+        } else {
+          toast.success(`Assinatura criada! Acesso ao portal gerado para ${accessEmail}.`);
+        }
+      } else {
+        toast.success(`Assinatura criada para ${selectedLead.full_name}!`);
+      }
+
       onSuccess();
       onOpenChange(false);
 
@@ -225,7 +286,7 @@ export function AddSubscriberDialog({ open, onOpenChange, plans, onSuccess }: Pr
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <UserPlus className="h-5 w-5 text-primary" />
@@ -390,6 +451,86 @@ export function AddSubscriberDialog({ open, onOpenChange, plans, onSuccess }: Pr
               <p className="text-xs text-muted-foreground">
                 Use data passada para migrar assinantes existentes.
               </p>
+            </div>
+
+            {/* Portal Access Section */}
+            <Separator />
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={() => setCreateAccess(!createAccess)}
+                className={cn(
+                  "w-full flex items-center gap-3 p-3 rounded-lg border-2 text-left transition-all",
+                  createAccess
+                    ? "border-primary bg-primary/5"
+                    : "border-dashed border-border hover:border-primary/50"
+                )}
+              >
+                <div className={cn(
+                  "h-8 w-8 rounded-full flex items-center justify-center shrink-0 transition-colors",
+                  createAccess ? "bg-primary text-primary-foreground" : "bg-muted"
+                )}>
+                  <KeyRound className="h-4 w-4" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">
+                    {createAccess ? 'Acesso ao portal ativado' : 'Criar acesso ao portal do cliente'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {createAccess
+                      ? 'O cliente poderá acessar com email e senha'
+                      : 'Defina email e senha para acesso imediato sem email'}
+                  </p>
+                </div>
+              </button>
+
+              {createAccess && (
+                <div className="space-y-3 pl-1">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="access-email">Email de acesso</Label>
+                    <Input
+                      id="access-email"
+                      type="email"
+                      placeholder="email@exemplo.com"
+                      value={accessEmail}
+                      onChange={(e) => setAccessEmail(e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="access-password">Senha padrão</Label>
+                    <div className="relative">
+                      <Input
+                        id="access-password"
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="Mínimo 6 caracteres"
+                        value={accessPassword}
+                        onChange={(e) => setAccessPassword(e.target.value)}
+                        className="pr-10"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="access-password-confirm">Confirmar senha</Label>
+                    <Input
+                      id="access-password-confirm"
+                      type={showPassword ? 'text' : 'password'}
+                      placeholder="Repita a senha"
+                      value={accessPasswordConfirm}
+                      onChange={(e) => setAccessPasswordConfirm(e.target.value)}
+                    />
+                    {accessPasswordConfirm && accessPassword !== accessPasswordConfirm && (
+                      <p className="text-xs text-destructive">As senhas não coincidem</p>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {selectedPlan && (
