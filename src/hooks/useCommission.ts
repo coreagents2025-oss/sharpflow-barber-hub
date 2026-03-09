@@ -167,7 +167,7 @@ export const useCommission = (barbershopId: string) => {
         reference_type: 'commission',
         payment_method: 'cash',
         transaction_date: new Date().toISOString().split('T')[0],
-        created_by: user.user?.id
+        created_by: session?.user?.id
       });
 
       toast.success('Pagamento de comissão registrado');
