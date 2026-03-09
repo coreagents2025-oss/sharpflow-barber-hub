@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { User, Building2, Bell, Shield, Globe, Eye, ExternalLink, MessageCircle, Facebook, Instagram, Clock } from 'lucide-react';
+import { User, Building2, Bell, Shield, Globe, Eye, ExternalLink, MessageCircle, Facebook, Instagram, Clock, CreditCard, CheckCircle2, AlertCircle, Copy, ExternalLink as LinkIcon, Loader2 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
