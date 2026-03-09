@@ -277,6 +277,7 @@ const ClientAuth = () => {
       open={forgotOpen}
       onOpenChange={setForgotOpen}
       defaultEmail={loginEmail}
+      redirectBackTo={`/${slug}/cliente`}
     />
     </>
   );

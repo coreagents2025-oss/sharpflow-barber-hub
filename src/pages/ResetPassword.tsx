@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,9 @@ import { Scissors, Lock, Loader2, CheckCircle2 } from 'lucide-react';
 
 const ResetPassword = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  // ?next= is set by ForgotPasswordDialog when coming from the client portal
+  const nextPath = searchParams.get('next') || '/auth';
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [loading, setLoading] = useState(false);
@@ -18,23 +21,36 @@ const ResetPassword = () => {
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    // Supabase sets the session automatically from the URL hash on recovery
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+    let settled = false;
+
+    // onAuthStateChange must be set up BEFORE getSession so the PASSWORD_RECOVERY
+    // event (fired from the URL hash) is never missed.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === 'PASSWORD_RECOVERY') {
         setValidSession(true);
-      }
-      setChecking(false);
-    });
-
-    // Also check if already have session from hash
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
+        settled = true;
+        setChecking(false);
+      } else if (event === 'SIGNED_IN' && session && !settled) {
+        // Fallback: already signed-in session (e.g. link already consumed once)
         setValidSession(true);
+        settled = true;
+        setChecking(false);
       }
-      setChecking(false);
     });
 
-    return () => subscription.unsubscribe();
+    // Give the PASSWORD_RECOVERY event up to 1.5 s to arrive before we
+    // fall back to getSession — this prevents the "link inválido" flash.
+    const fallback = setTimeout(async () => {
+      if (settled) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) setValidSession(true);
+      setChecking(false);
+    }, 1500);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(fallback);
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -53,7 +69,7 @@ const ResetPassword = () => {
       if (error) throw error;
       setDone(true);
       toast.success('Senha redefinida com sucesso!');
-      setTimeout(() => navigate('/auth', { replace: true }), 2500);
+      setTimeout(() => navigate(nextPath, { replace: true }), 2500);
     } catch (error: any) {
       toast.error(error.message || 'Erro ao redefinir senha');
     } finally {
