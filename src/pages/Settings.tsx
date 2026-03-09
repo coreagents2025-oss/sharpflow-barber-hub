@@ -144,6 +144,15 @@ const Settings = () => {
 
   const [showDomainGuide, setShowDomainGuide] = useState(false);
 
+  // Asaas state
+  const [asaasSettings, setAsaasSettings] = useState({
+    enabled: false,
+    api_key: '',
+    environment: 'sandbox' as 'sandbox' | 'production',
+  });
+  const [testingAsaas, setTestingAsaas] = useState(false);
+  const [asaasStatus, setAsaasStatus] = useState<'idle' | 'ok' | 'error'>('idle');
+
   const DAYS = [
     { key: 'monday',    label: 'Segunda-feira' },
     { key: 'tuesday',   label: 'Terça-feira' },
