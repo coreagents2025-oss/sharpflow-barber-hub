@@ -161,15 +161,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      
-      toast.success('Logout realizado com sucesso!');
-      // Redirecionamento será feito pelo AuthRedirect component
+      await supabase.auth.signOut({ scope: 'local' });
     } catch (error: any) {
-      toast.error(error.message || 'Erro ao fazer logout');
-      throw error;
+      console.warn('signOut error (ignorado):', error?.message);
+    } finally {
+      setUser(null);
+      setSession(null);
+      setUserRole(null);
+      setBarbershopId(null);
     }
+    toast.success('Logout realizado com sucesso!');
+    window.location.href = '/auth';
   };
 
   return (
