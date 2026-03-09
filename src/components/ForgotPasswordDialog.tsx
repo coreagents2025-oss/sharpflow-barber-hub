@@ -24,9 +24,12 @@ export const ForgotPasswordDialog = ({ open, onOpenChange, defaultEmail = '', re
     e.preventDefault();
     if (!email) return;
     setLoading(true);
+    const destination = redirectBackTo
+      ? `${window.location.origin}/reset-password?next=${encodeURIComponent(redirectBackTo)}`
+      : `${window.location.origin}/reset-password`;
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: destination,
       });
       if (error) throw error;
       setSent(true);
