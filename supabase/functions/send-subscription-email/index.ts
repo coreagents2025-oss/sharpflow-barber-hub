@@ -286,7 +286,7 @@ const handler = async (req: Request): Promise<Response> => {
       .single();
 
     const emailSettings = (credentials?.email_credentials || {}) as Record<string, any>;
-    if (!emailSettings.notifications_enabled) {
+    if (emailSettings.notifications_enabled === false) {
       console.log("Notifications disabled for barbershop", sub.barbershop_id);
       return new Response(JSON.stringify({ skipped: true, reason: "notifications_disabled" }), {
         status: 200,
