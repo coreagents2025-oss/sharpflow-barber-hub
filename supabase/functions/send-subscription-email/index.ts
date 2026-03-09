@@ -44,19 +44,35 @@ async function sendEmail(apiKey: string, from: string, to: string[], subject: st
   return data;
 }
 
+function getInitials(name: string): string {
+  return name.split(" ").slice(0, 2).map(w => w[0]?.toUpperCase() || "").join("");
+}
+
 function headerBlock(barbershop: { name: string; logo_url?: string | null }): string {
+  const logoHtml = barbershop.logo_url
+    ? `<img src="${barbershop.logo_url}" alt="${barbershop.name}" style="height:60px;width:auto;max-width:160px;border-radius:8px;margin-bottom:12px;display:block;margin-left:auto;margin-right:auto;object-fit:contain;">`
+    : `<div style="width:60px;height:60px;background:rgba(255,255,255,0.25);border-radius:14px;margin:0 auto 12px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;color:#ffffff;letter-spacing:0.05em;line-height:60px;text-align:center;">${getInitials(barbershop.name)}</div>`;
   return `
-    <tr><td style="background-color:#18181b;padding:16px 28px;text-align:center;">
+    <tr><td style="background-color:#18181b;padding:14px 28px;text-align:center;">
       <span style="color:#ffffff;font-size:13px;font-weight:600;letter-spacing:0.05em;">✂️ BarberPLUS</span>
     </td></tr>
     <tr><td style="background:linear-gradient(135deg,#B45309 0%,#D97706 100%);padding:28px 28px 20px 28px;text-align:center;">
-      ${barbershop.logo_url
-        ? `<img src="${barbershop.logo_url}" alt="${barbershop.name}" style="height:56px;width:auto;border-radius:8px;margin-bottom:12px;display:block;margin-left:auto;margin-right:auto;">`
-        : `<div style="width:56px;height:56px;background:rgba(255,255,255,0.2);border-radius:12px;margin:0 auto 12px;font-size:24px;line-height:56px;text-align:center;">✂️</div>`
-      }
+      ${logoHtml}
       <p style="margin:0 0 4px 0;color:rgba(255,255,255,0.85);font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;">Mensagem de</p>
       <h1 style="margin:0;color:#ffffff;font-size:22px;font-weight:700;">${barbershop.name}</h1>
     </td></tr>
+  `;
+}
+
+function portalButtonBlock(slug: string): string {
+  const portalUrl = `https://sharpflow-barber-hub.lovable.app/${slug}/cliente`;
+  return `
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-top:20px;margin-bottom:8px;">
+      <tr><td style="text-align:center;">
+        <a href="${portalUrl}" target="_blank" style="display:inline-block;background:linear-gradient(135deg,#B45309 0%,#D97706 100%);color:#ffffff;font-size:15px;font-weight:700;padding:14px 32px;border-radius:8px;text-decoration:none;letter-spacing:0.02em;">Acessar Minha Área →</a>
+      </td></tr>
+    </table>
+    <p style="margin:8px 0 0 0;font-size:13px;color:#888;text-align:center;">Acompanhe seus créditos, benefícios e histórico de visitas.</p>
   `;
 }
 
@@ -87,7 +103,7 @@ function wrapEmail(rows: string): string {
 
 function buildWelcomeEmail(
   clientName: string, planName: string, planPrice: number, planCredits: number,
-  expiresAt: string | null, barbershop: { name: string; logo_url?: string | null }, contactBlock: string,
+  expiresAt: string | null, barbershop: { name: string; logo_url?: string | null; slug?: string | null }, contactBlock: string,
 ): string {
   const expiresFormatted = expiresAt
     ? new Date(expiresAt).toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" })
@@ -113,7 +129,8 @@ function buildWelcomeEmail(
           <p style="margin:0;font-size:15px;color:#1a1a1a;"><strong>📅 Válido até:</strong> ${expiresFormatted}</p>
         </td></tr>
       </table>
-      <p style="margin:0 0 16px 0;font-size:14px;color:#666;line-height:1.6;">
+      ${barbershop.slug ? portalButtonBlock(barbershop.slug) : ""}
+      <p style="margin:16px 0 0 0;font-size:14px;color:#666;line-height:1.6;">
         Em caso de dúvidas, entre em contato diretamente com <strong>${barbershop.name}</strong>.
       </p>
       ${contactBlock}
@@ -124,7 +141,7 @@ function buildWelcomeEmail(
 
 function buildRenewalEmail(
   clientName: string, planName: string, planCredits: number, newExpiresAt: string | null,
-  barbershop: { name: string; logo_url?: string | null }, contactBlock: string,
+  barbershop: { name: string; logo_url?: string | null; slug?: string | null }, contactBlock: string,
 ): string {
   const expiresFormatted = newExpiresAt
     ? new Date(newExpiresAt).toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" })
@@ -149,6 +166,7 @@ function buildRenewalEmail(
           <p style="margin:0;font-size:15px;color:#1a1a1a;"><strong>📅 Novo vencimento:</strong> ${expiresFormatted}</p>
         </td></tr>
       </table>
+      ${barbershop.slug ? portalButtonBlock(barbershop.slug) : ""}
       ${contactBlock}
     </td></tr>
     ${footerBlock(barbershop.name)}
@@ -157,7 +175,7 @@ function buildRenewalEmail(
 
 function buildCancellationEmail(
   clientName: string, planName: string,
-  barbershop: { name: string; logo_url?: string | null }, contactBlock: string,
+  barbershop: { name: string; logo_url?: string | null; slug?: string | null }, contactBlock: string,
 ): string {
   return wrapEmail(`
     ${headerBlock(barbershop)}
@@ -189,7 +207,7 @@ function buildCancellationEmail(
 
 function buildPaymentConfirmedEmail(
   clientName: string, amount: number, paymentMethod: string,
-  barbershop: { name: string; logo_url?: string | null }, contactBlock: string,
+  barbershop: { name: string; logo_url?: string | null; slug?: string | null }, contactBlock: string,
 ): string {
   const methodMap: Record<string, string> = { pix: "PIX", card: "Cartão", boleto: "Boleto", cash: "Dinheiro" };
   const methodLabel = methodMap[paymentMethod] || paymentMethod;
@@ -214,6 +232,7 @@ function buildPaymentConfirmedEmail(
           <p style="margin:0;font-size:15px;color:#1a1a1a;"><strong>📅 Data:</strong> ${now}</p>
         </td></tr>
       </table>
+      ${barbershop.slug ? portalButtonBlock(barbershop.slug) : ""}
       ${contactBlock}
     </td></tr>
     ${footerBlock(barbershop.name)}
@@ -267,7 +286,7 @@ const handler = async (req: Request): Promise<Response> => {
     // Fetch barbershop
     const { data: barbershop } = await supabase
       .from("public_barbershops")
-      .select("id, name, logo_url, phone")
+      .select("id, name, logo_url, phone, slug")
       .eq("id", sub.barbershop_id)
       .single();
 
