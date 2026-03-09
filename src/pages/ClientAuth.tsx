@@ -23,6 +23,7 @@ const ClientAuth = () => {
   const [loginEmail, setLoginEmail] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [loginLoading, setLoginLoading] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
 
   // Signup state
   const [signupName, setSignupName] = useState('');
