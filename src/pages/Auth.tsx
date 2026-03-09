@@ -105,6 +105,16 @@ const Auth = () => {
                     </div>
                   </div>
 
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      onClick={() => setForgotOpen(true)}
+                      className="text-xs text-muted-foreground hover:text-accent transition-colors"
+                    >
+                      Esqueci minha senha
+                    </button>
+                  </div>
+
                   <Button type="submit" className="w-full bg-accent hover:bg-accent/90 h-11 min-h-[44px]" disabled={loading}>
                     {loading ? 'Entrando...' : 'Entrar'}
                   </Button>
