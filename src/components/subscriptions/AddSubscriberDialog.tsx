@@ -237,9 +237,6 @@ export function AddSubscriberDialog({ open, onOpenChange, plans, onSuccess }: Pr
 
       // Create portal access if requested
       if (createAccess && accessEmail.trim() && accessPassword) {
-        const { data: session } = await supabase.auth.getSession();
-        const accessToken = session?.session?.access_token;
-
         const { data: accessResult, error: accessError } = await supabase.functions.invoke('create-client-account', {
           body: {
             email: accessEmail.trim(),
@@ -260,6 +257,21 @@ export function AddSubscriberDialog({ open, onOpenChange, plans, onSuccess }: Pr
       } else {
         toast.success(`Assinatura criada para ${selectedLead.full_name}!`);
       }
+
+      // Fire-and-forget: integrate with Asaas if enabled for this barbershop
+      supabase.functions.invoke('asaas-create-subscription', {
+        body: {
+          subscription_id: subData.id,
+          barbershop_id: barbershopId,
+          lead_id: selectedLead.id,
+          plan_id: plan.id,
+        },
+      }).then(({ data: asaasResult, error: asaasError }) => {
+        if (!asaasError && asaasResult?.success) {
+          toast.success('Cobrança automática criada na Asaas!', { duration: 3000 });
+        }
+        // silently ignore if Asaas not configured
+      }).catch(console.error);
 
       onSuccess();
       onOpenChange(false);
