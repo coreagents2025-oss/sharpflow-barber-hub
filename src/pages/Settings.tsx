@@ -1481,6 +1481,144 @@ const Settings = () => {
               </CardContent>
             </Card>
           </TabsContent>
+
+          <TabsContent value="payments">
+            <Card className="border-0 sm:border shadow-sm">
+              <CardHeader className="px-4 sm:px-6 py-4 sm:py-6">
+                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                  <CreditCard className="h-5 w-5 text-accent" />
+                  Integração Asaas — Cobrança Recorrente
+                </CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
+                  Conecte sua conta Asaas para cobrar assinaturas automaticamente via PIX, Boleto ou Cartão.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="px-4 sm:px-6 space-y-4">
+                {!barbershopId ? (
+                  <p className="text-muted-foreground">Você não está vinculado a nenhuma barbearia.</p>
+                ) : (
+                  <>
+                    {/* Toggle */}
+                    <div className="flex items-center justify-between py-2 border-b">
+                      <div>
+                        <Label className="text-sm font-medium">Ativar cobrança automática via Asaas</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Quando ativado, novas assinaturas gerarão cobranças automáticas na Asaas
+                        </p>
+                      </div>
+                      <Switch
+                        checked={asaasSettings.enabled}
+                        onCheckedChange={(checked) => setAsaasSettings({ ...asaasSettings, enabled: checked })}
+                        disabled={loading}
+                      />
+                    </div>
+
+                    {/* Environment */}
+                    <div className="space-y-2">
+                      <Label htmlFor="asaas-env">Ambiente</Label>
+                      <Select
+                        value={asaasSettings.environment}
+                        onValueChange={(v) => setAsaasSettings({ ...asaasSettings, environment: v as any })}
+                        disabled={loading}
+                      >
+                        <SelectTrigger id="asaas-env">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="sandbox">Sandbox (Testes)</SelectItem>
+                          <SelectItem value="production">Produção</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-xs text-muted-foreground">
+                        Use Sandbox para testar antes de cobrar clientes reais.
+                      </p>
+                    </div>
+
+                    {/* API Key */}
+                    <div className="space-y-2">
+                      <Label htmlFor="asaas-key">API Key</Label>
+                      <div className="flex gap-2">
+                        <Input
+                          id="asaas-key"
+                          type="password"
+                          placeholder={asaasSettings.environment === 'production' ? '$aact_...' : '$aact_sandbox_...'}
+                          value={asaasSettings.api_key}
+                          onChange={(e) => setAsaasSettings({ ...asaasSettings, api_key: e.target.value })}
+                          disabled={loading}
+                        />
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={handleTestAsaasConnection}
+                          disabled={testingAsaas || !asaasSettings.api_key}
+                          className="shrink-0"
+                        >
+                          {testingAsaas ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : asaasStatus === 'ok' ? (
+                            <CheckCircle2 className="h-4 w-4 text-green-600" />
+                          ) : asaasStatus === 'error' ? (
+                            <AlertCircle className="h-4 w-4 text-destructive" />
+                          ) : null}
+                          <span className="ml-1 text-xs">Testar</span>
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Encontre sua API Key em: <a href="https://www.asaas.com/config/index" target="_blank" rel="noopener noreferrer" className="text-primary underline">Asaas → Configurações → Integrações</a>
+                      </p>
+                    </div>
+
+                    {/* Webhook URL */}
+                    {asaasSettings.enabled && barbershopId && (
+                      <div className="space-y-2 p-4 rounded-lg border bg-muted/40">
+                        <Label className="text-sm font-semibold">URL do Webhook</Label>
+                        <p className="text-xs text-muted-foreground">
+                          Cole esta URL em{' '}
+                          <a href="https://www.asaas.com/config/index#notification" target="_blank" rel="noopener noreferrer" className="text-primary underline">
+                            Asaas → Configurações → Notificações → Webhooks
+                          </a>
+                        </p>
+                        <div className="flex gap-2">
+                          <Input
+                            readOnly
+                            value={`https://jgpffcjktwsohfyljtsg.supabase.co/functions/v1/asaas-webhook?barbershop_id=${barbershopId}`}
+                            className="font-mono text-xs"
+                          />
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              navigator.clipboard.writeText(`https://jgpffcjktwsohfyljtsg.supabase.co/functions/v1/asaas-webhook?barbershop_id=${barbershopId}`);
+                              toast.success('URL copiada!');
+                            }}
+                          >
+                            <Copy className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Eventos a habilitar: <strong>PAYMENT_RECEIVED, PAYMENT_CONFIRMED, PAYMENT_OVERDUE, SUBSCRIPTION_DELETED</strong>
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="pt-2 flex gap-2">
+                      <Button onClick={handleSaveAsaasSettings} disabled={loading} className="bg-accent hover:bg-accent/90">
+                        {loading ? 'Salvando...' : 'Salvar Configurações'}
+                      </Button>
+                    </div>
+
+                    <div className="rounded-lg border border-border bg-muted/30 p-4 text-xs text-muted-foreground space-y-1">
+                      <p className="font-semibold text-foreground text-sm">Como funciona?</p>
+                      <p>1. Configure sua API Key e ative a integração acima.</p>
+                      <p>2. Ao criar uma nova assinatura, o sistema cria automaticamente o cliente e a cobrança recorrente na Asaas.</p>
+                      <p>3. A Asaas cobra o cliente automaticamente (PIX, Boleto ou Cartão) a cada ciclo.</p>
+                      <p>4. Quando o pagamento é confirmado, o webhook atualiza os créditos do assinante automaticamente.</p>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
         </Tabs>
       </main>
 
