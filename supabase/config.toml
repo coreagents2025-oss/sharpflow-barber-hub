@@ -21,3 +21,7 @@ project_id = "jgpffcjktwsohfyljtsg"
     verify_jwt = false
   [functions.create-client-account]
     verify_jwt = false
+  [functions.asaas-create-subscription]
+    verify_jwt = false
+  [functions.asaas-webhook]
+    verify_jwt = false
