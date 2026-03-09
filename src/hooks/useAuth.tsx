@@ -63,9 +63,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             setRoleLoading(false);
           }, 0);
         } else {
+          // SIGNED_OUT or session expired — always clear local state
           setUserRole(null);
           setBarbershopId(null);
           setRoleLoading(false);
+          setLoading(false);
         }
       }
     );
