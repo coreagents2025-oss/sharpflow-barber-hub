@@ -145,14 +145,14 @@ export const useCommission = (barbershopId: string) => {
   }) => {
     try {
       setLoading(true);
-      const { data: user } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
 
       const { error } = await supabase.from('commission_records').insert({
         ...data,
         barbershop_id: barbershopId,
         status: 'paid',
         payment_date: new Date().toISOString(),
-        created_by: user.user?.id
+        created_by: session?.user?.id
       });
 
       if (error) throw error;
@@ -167,7 +167,7 @@ export const useCommission = (barbershopId: string) => {
         reference_type: 'commission',
         payment_method: 'cash',
         transaction_date: new Date().toISOString().split('T')[0],
-        created_by: user.user?.id
+        created_by: session?.user?.id
       });
 
       toast.success('Pagamento de comissão registrado');

@@ -66,7 +66,7 @@ const ClientDashboard = () => {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate(`/${slug}/cliente`, { replace: true });
+    // signOut already redirects via window.location.href — no navigate needed
   };
 
   const handleChangePassword = async () => {

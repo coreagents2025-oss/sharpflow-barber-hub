@@ -1,45 +1,23 @@
 
-## Diagnóstico preciso
 
-O erro "Auth session missing" é um erro nativo do Supabase JS (`AuthSessionMissingError`) que aparece quando qualquer operação autenticada é executada sem uma sessão válida ativa. Ele não é originado no logout — aparece **depois** que a sessão expira ou é invalidada, quando componentes continuam fazendo chamadas ao Supabase.
+## Problema identificado
 
-Há três causas identificadas no código:
+O PWA está configurado com `navigateFallback: "/offline.html"`, o que significa que **qualquer navegação offline mostra a página estática de "Sem conexão"** em vez de carregar o app cacheado. Além disso, o `main.tsx` registra manualmente o service worker (`/sw.js`), conflitando com o registro automático do `vite-plugin-pwa`.
 
-**1. `ClientDashboard.handleSignOut` conflita com `signOut`**
-```typescript
-// ClientDashboard.tsx
-const handleSignOut = async () => {
-  await signOut();                                    // dispara window.location.href = '/auth'
-  navigate(`/${slug}/cliente`, { replace: true });   // tenta navegar depois, mas já redirecionou
-};
-```
-O `signOut` no hook já faz `window.location.href = '/auth'` — então o `navigate()` subsequente é desnecessário e pode causar problemas de race condition.
+## Correções
 
-**2. `useCashFlow.ts` e `useCommission.ts` chamam `supabase.auth.getUser()`**
-Esses hooks chamam `supabase.auth.getUser()` diretamente. Se a sessão tiver expirado, isso lança `AuthSessionMissingError` em vez de retornar `null`.
+### 1. Alterar `navigateFallback` para `/index.html` (vite.config.ts)
+- Trocar `"/offline.html"` por `"/index.html"` para que o service worker sirva o shell do app (SPA) quando offline
+- Adicionar `"/index.html"` e `"/offline.html"` ao `globPatterns` para garantir que sejam pré-cacheados
 
-**3. O `onAuthStateChange` no `useAuth` não chama `setLoading(false)` no caso do listener**
-Quando a sessão expira (evento `SIGNED_OUT`), o estado `loading` nunca volta para `false` pelo listener — apenas pelo bloco `getSession`. Isso pode deixar componentes em estado inconsistente.
+### 2. Remover registro manual do SW (main.tsx)
+- O `vite-plugin-pwa` com `registerType: "autoUpdate"` já gera e registra o service worker automaticamente
+- O registro manual de `/sw.js` conflita e pode impedir o cache correto
 
-## Solução
+### 3. Adicionar `globPatterns` para pré-cachear os assets do app (vite.config.ts)
+- Incluir `*.html`, `*.js`, `*.css`, e ícones no precache do workbox para que o app funcione offline de verdade
 
-### 1. Remover `navigate()` após `signOut()` no ClientDashboard
-O `signOut` já gerencia o redirecionamento via `window.location.href`. Chamar `navigate()` depois é redundante e causa conflito.
+### Resultado esperado
+- App carrega normalmente mesmo sem internet (usando cache do SPA)
+- A página `offline.html` só apareceria se o cache do index.html falhasse (cenário extremo)
 
-### 2. Substituir `supabase.auth.getUser()` por `supabase.auth.getSession()` nos hooks
-`getSession()` retorna `null` quando não há sessão, enquanto `getUser()` lança exceção. Essa troca previne o "Auth session missing".
-
-### 3. Garantir `setLoading(false)` no listener `onAuthStateChange`
-Adicionar `setLoading(false)` no bloco `else` do listener (quando não há sessão), para que o estado de loading seja sempre resolvido.
-
-### 4. Tratar `AuthSessionMissingError` globalmente
-Adicionar um handler no listener que, ao receber evento `SIGNED_OUT` ou `TOKEN_REFRESHED` com sessão nula, limpa o estado local — prevenindo que componentes continuem tentando fazer chamadas autenticadas.
-
-## Arquivos a modificar
-
-| Arquivo | Mudança |
-|---|---|
-| `src/hooks/useAuth.tsx` | Adicionar `setLoading(false)` no listener para evento sem sessão; tratar `SIGNED_OUT` explicitamente |
-| `src/pages/ClientDashboard.tsx` | Remover `navigate()` após `signOut()` — o hook já redireciona |
-| `src/hooks/useCashFlow.ts` | Trocar `getUser()` por `getSession()` e verificar se sessão existe antes de inserir |
-| `src/hooks/useCommission.ts` | Trocar `getUser()` por `getSession()` |

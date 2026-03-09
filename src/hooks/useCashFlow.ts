@@ -20,12 +20,12 @@ export const useCashFlow = (barbershopId: string) => {
   const addTransaction = async (transaction: CashFlowTransaction) => {
     try {
       setLoading(true);
-      const { data: user } = await supabase.auth.getUser();
+      const { data: { session } } = await supabase.auth.getSession();
 
       const { error } = await supabase.from('cash_flow').insert({
         ...transaction,
         barbershop_id: barbershopId,
-        created_by: user.user?.id
+        created_by: session?.user?.id
       });
 
       if (error) throw error;
