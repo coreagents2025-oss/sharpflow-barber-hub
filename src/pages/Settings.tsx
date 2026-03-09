@@ -582,6 +582,42 @@ const Settings = () => {
     }
   };
 
+  const handleSubscribePlatformPlan = async () => {
+    if (!barbershopId) return;
+    if (!subscribeForm.name || !subscribeForm.cpf_cnpj || !subscribeForm.email || !subscribeForm.phone) {
+      toast.error('Preencha todos os campos obrigatórios');
+      return;
+    }
+    setSubscribing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('asaas-platform-subscribe', {
+        body: {
+          barbershop_id: barbershopId,
+          plan_type: subscribeForm.plan_type,
+          name: subscribeForm.name,
+          cpf_cnpj: subscribeForm.cpf_cnpj,
+          email: subscribeForm.email,
+          phone: subscribeForm.phone,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast.success('Assinatura criada com sucesso! Em breve você receberá a cobrança por PIX.');
+      // Refresh plan info
+      const { data: updated } = await supabase
+        .from('barbershops')
+        .select('plan_type, plan_status, trial_ends_at, platform_asaas_customer_id, platform_asaas_subscription_id')
+        .eq('id', barbershopId)
+        .single();
+      if (updated) setPlanInfo(updated as any);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || 'Erro ao criar assinatura');
+    } finally {
+      setSubscribing(false);
+    }
+  };
+
   const handleTestAsaasConnection = async () => {
     if (!asaasSettings.api_key) {
       toast.error('Informe a API Key antes de testar.');
