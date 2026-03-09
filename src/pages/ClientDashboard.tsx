@@ -299,6 +299,29 @@ const ClientDashboard = () => {
           )}
         </section>
 
+        {/* Security Section */}
+        <section>
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+            Segurança
+          </h2>
+          <Card>
+            <CardContent className="py-4 px-4 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded-full bg-muted flex items-center justify-center shrink-0">
+                  <Shield className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold">Senha de acesso</p>
+                  <p className="text-xs text-muted-foreground">Altere sua senha a qualquer momento</p>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => setPwDialogOpen(true)}>
+                Alterar senha
+              </Button>
+            </CardContent>
+          </Card>
+        </section>
+
         {/* Actions */}
         <Separator />
         <div className="flex flex-col sm:flex-row gap-3 pb-6">
@@ -314,6 +337,70 @@ const ClientDashboard = () => {
           </Button>
         </div>
       </div>
+
+      {/* Change Password Dialog */}
+      <Dialog open={pwDialogOpen} onOpenChange={(o) => {
+        setPwDialogOpen(o);
+        if (!o) { setNewPassword(''); setConfirmPassword(''); }
+      }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-primary" />
+              Alterar senha
+            </DialogTitle>
+            <DialogDescription>
+              Defina uma nova senha para acessar o portal.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="new-pw">Nova senha</Label>
+              <div className="relative">
+                <Input
+                  id="new-pw"
+                  type={showPw ? 'text' : 'password'}
+                  placeholder="Mínimo 6 caracteres"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPw(!showPw)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  {showPw ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="confirm-pw">Confirmar nova senha</Label>
+              <Input
+                id="confirm-pw"
+                type={showPw ? 'text' : 'password'}
+                placeholder="Repita a senha"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+              />
+              {confirmPassword && newPassword !== confirmPassword && (
+                <p className="text-xs text-destructive">As senhas não coincidem</p>
+              )}
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setPwDialogOpen(false)} disabled={changingPw}>
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleChangePassword}
+              disabled={!newPassword || !confirmPassword || changingPw}
+            >
+              {changingPw ? 'Salvando...' : 'Salvar senha'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
