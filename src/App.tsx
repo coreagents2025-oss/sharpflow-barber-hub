@@ -52,6 +52,7 @@ const App = () => (
             <Route path="/services" element={<Services />} />
             <Route path="/booking" element={<Booking />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             {/* Catálogo Público Mobile-First */}
             <Route path="/catalogo" element={<PublicCatalog />} />
             {/* Client Portal Routes — must come before /:slug */}
