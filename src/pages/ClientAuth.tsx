@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Scissors, Loader2, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
+import { ForgotPasswordDialog } from '@/components/ForgotPasswordDialog';
 
 const ClientAuth = () => {
   const { slug } = useParams<{ slug: string }>();

@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/hooks/useAuth';
 import { Scissors, Lock, Mail, User } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
+import { ForgotPasswordDialog } from '@/components/ForgotPasswordDialog';
 const Auth = () => {
   const {
     signIn,

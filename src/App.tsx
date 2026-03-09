@@ -12,6 +12,7 @@ import Index from "./pages/Index";
 import Services from "./pages/Services";
 import Booking from "./pages/Booking";
 import Auth from "./pages/Auth";
+import ResetPassword from "./pages/ResetPassword";
 import PDV from "./pages/PDV";
 import ServicesManagement from "./pages/ServicesManagement";
 import Catalog from "./pages/Catalog";
