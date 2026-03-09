@@ -129,7 +129,8 @@ const ClientAuth = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-10">
+    <>
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-10">
       {/* Back to catalog */}
       <div className="w-full max-w-md mb-4">
         <Link
