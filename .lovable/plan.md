@@ -1,23 +1,81 @@
 
-
 ## Problema identificado
 
-O PWA está configurado com `navigateFallback: "/offline.html"`, o que significa que **qualquer navegação offline mostra a página estática de "Sem conexão"** em vez de carregar o app cacheado. Além disso, o `main.tsx` registra manualmente o service worker (`/sw.js`), conflitando com o registro automático do `vite-plugin-pwa`.
+O e-mail de boas-vindas enviado ao assinante (`type === "welcome"`) tem dois problemas:
 
-## Correções
+1. **Logo não aparece**: A função busca `logo_url` da view `public_barbershops`, que SIM expõe `logo_url`. Porém o campo pode ser `null` (barbearia sem logo cadastrado), e nesse caso só aparece um emoji `✂️` — que em muitos clientes de e-mail não é renderizado como imagem/bloco visual adequado.
 
-### 1. Alterar `navigateFallback` para `/index.html` (vite.config.ts)
-- Trocar `"/offline.html"` por `"/index.html"` para que o service worker sirva o shell do app (SPA) quando offline
-- Adicionar `"/index.html"` e `"/offline.html"` ao `globPatterns` para garantir que sejam pré-cacheados
+2. **Nenhum link/instrução para o portal do cliente**: O e-mail não informa onde o assinante pode acessar sua área (dashboard de assinante em `/:slug/cliente`), nem fornece um botão de acesso direto. O cliente recebe a confirmação de assinatura mas não sabe como acessar a plataforma.
 
-### 2. Remover registro manual do SW (main.tsx)
-- O `vite-plugin-pwa` com `registerType: "autoUpdate"` já gera e registra o service worker automaticamente
-- O registro manual de `/sw.js` conflita e pode impedir o cache correto
+## O que será corrigido
 
-### 3. Adicionar `globPatterns` para pré-cachear os assets do app (vite.config.ts)
-- Incluir `*.html`, `*.js`, `*.css`, e ícones no precache do workbox para que o app funcione offline de verdade
+### 1. Buscar `slug` da barbearia
 
-### Resultado esperado
-- App carrega normalmente mesmo sem internet (usando cache do SPA)
-- A página `offline.html` só apareceria se o cache do index.html falhasse (cenário extremo)
+A view `public_barbershops` já expõe o campo `slug`. A query na edge function precisa incluir `slug` na seleção:
 
+```typescript
+// Antes
+.select("id, name, logo_url, phone")
+
+// Depois
+.select("id, name, logo_url, phone, slug")
+```
+
+O mesmo ajuste precisa ser feito na função `buildWelcomeEmail` (e outras onde fizer sentido) para receber `slug`.
+
+### 2. Adicionar bloco de acesso ao portal no e-mail de boas-vindas
+
+No `buildWelcomeEmail`, logo após o bloco de detalhes do plano, adicionar:
+
+- Um botão **"Acessar Minha Área"** que aponta para `https://sharpflow-barber-hub.lovable.app/:slug/cliente`
+- Uma linha de texto explicativa: "Acesse sua área exclusiva para acompanhar seus créditos e benefícios"
+
+### 3. Melhorar o fallback quando não há logo
+
+Quando `logo_url` é nulo, melhorar o bloco visual usando as iniciais do nome da barbearia em vez do emoji, tornando-o mais profissional e compatível com clientes de e-mail.
+
+### 4. Adicionar link de acesso também no e-mail de renovação e pagamento confirmado
+
+Os e-mails de renovação (`renewal`) e pagamento confirmado (`payment_confirmed`) também se beneficiam de ter o botão de acesso ao portal, pois o cliente pode querer verificar seus créditos atualizados.
+
+## Arquivos a modificar
+
+| Arquivo | Mudança |
+|---|---|
+| `supabase/functions/send-subscription-email/index.ts` | Adicionar `slug` na query, passar para as funções de build, adicionar botão de acesso + fallback de logo melhorado |
+
+## Como ficará o e-mail de boas-vindas
+
+```
+┌─────────────────────────────────────────┐
+│ ✂️ BarberPLUS (barra preta topo)         │
+├─────────────────────────────────────────┤
+│ [LOGO ou INICIAIS] (fundo amber)         │
+│ Mensagem de: NOME DA BARBEARIA           │
+├─────────────────────────────────────────┤
+│ 🎉 Bem-vindo ao plano [PLANO]!           │
+│                                          │
+│ Olá, [NOME]!                             │
+│ Sua assinatura foi criada com sucesso.   │
+│                                          │
+│ ┌──────────────────────────────────┐    │
+│ │ Seu Plano                        │    │
+│ │ 📋 Plano: [nome]                 │    │
+│ │ 💰 Valor: R$ XX,XX               │    │
+│ │ 🎫 Créditos: X por ciclo         │    │
+│ │ 📅 Válido até: XX de XXX de XXXX │    │
+│ └──────────────────────────────────┘    │
+│                                          │
+│ ┌──────────────────────────────────┐    │
+│ │      [ Acessar Minha Área ]      │    │  ← NOVO botão
+│ └──────────────────────────────────┘    │
+│ "Acesse sua área para ver créditos..."  │  ← NOVA frase
+│                                          │
+│ [contatos da barbearia se houver]        │
+├─────────────────────────────────────────┤
+│ Este email foi enviado por [BARBEARIA]  │
+│ gerenciado via ✂️ BarberPLUS             │
+└─────────────────────────────────────────┘
+```
+
+Nenhuma mudança de banco necessária. A função já tem acesso ao `slug` via `public_barbershops`.
