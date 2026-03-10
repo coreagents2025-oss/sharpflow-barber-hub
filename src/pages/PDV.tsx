@@ -384,7 +384,7 @@ const PDV = () => {
 
       toast.success('Status do barbeiro resetado com sucesso');
       fetchBarberStatuses();
-      fetchTodayAppointments();
+      fetchAppointmentsForDate(selectedDate);
     } catch (error: any) {
       toast.error('Erro ao resetar status: ' + error.message);
     }
