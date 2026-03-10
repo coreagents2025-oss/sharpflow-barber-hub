@@ -806,14 +806,58 @@ const PDV = () => {
           {/* All Today's Appointments */}
           <Card className="lg:col-span-2 min-w-0 overflow-hidden">
             <CardHeader>
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-                <div className="min-w-0">
-                  <CardTitle className="text-sm sm:text-base lg:text-lg">Todos os Agendamentos de Hoje</CardTitle>
-                  <CardDescription>
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center justify-between gap-2">
+                  <CardTitle className="text-sm sm:text-base lg:text-lg">
+                    Agendamentos — {getDateLabel(selectedDate)}
+                  </CardTitle>
+                  <CardDescription className="text-xs">
                     {filteredAppointments.length} agendamento(s)
                   </CardDescription>
                 </div>
-                <div className="relative min-w-0 w-full sm:w-auto">
+
+                {/* Date Navigation */}
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="icon" className="h-8 w-8 flex-shrink-0" onClick={() => navigateDate(-1)}>
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="flex-1 justify-start text-left font-normal h-8 text-xs sm:text-sm gap-1.5"
+                      >
+                        <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                        {getDateLabel(selectedDate)}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={(date) => {
+                          if (date) {
+                            setSelectedDate(date);
+                            setDatePickerOpen(false);
+                          }
+                        }}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <Button variant="outline" size="icon" className="h-8 w-8 flex-shrink-0" onClick={() => navigateDate(1)}>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  {!isToday(selectedDate) && (
+                    <Button variant="secondary" size="sm" className="h-8 text-xs flex-shrink-0" onClick={() => { setSelectedDate(new Date()); setFilterStatus('all'); }}>
+                      Hoje
+                    </Button>
+                  )}
+                </div>
+
+                {/* Status Filter Buttons */}
+                <div className="relative min-w-0 w-full">
                   <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-2 sm:pb-0 snap-x snap-mandatory -mx-1 px-1">
                     <Button 
                       variant={filterStatus === 'all' ? 'default' : 'outline'} 
