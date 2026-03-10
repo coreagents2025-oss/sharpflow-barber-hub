@@ -486,7 +486,7 @@ const PDV = () => {
       if (error) throw error;
       
       toast.success('Cliente marcado como faltou');
-      fetchTodayAppointments();
+      fetchAppointmentsForDate(selectedDate);
     } catch (error: any) {
       console.error('Error marking no-show:', error);
       toast.error('Erro ao marcar falta');
