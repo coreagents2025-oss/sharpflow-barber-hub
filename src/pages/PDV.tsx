@@ -81,9 +81,8 @@ const PDV = () => {
     setFilterStatus('all');
   };
 
-  const refreshAll = (date?: Date) => {
-    const d = date || selectedDate;
-    fetchAppointmentsForDate(d);
+  const refreshAll = () => {
+    fetchAppointmentsForDate(selectedDate);
     fetchStats();
     fetchBarberStatuses();
     fetchPopularServices();
@@ -93,7 +92,12 @@ const PDV = () => {
 
   useEffect(() => {
     if (authBarbershopId) {
-      refreshAll();
+      fetchAppointmentsForDate(selectedDate);
+      fetchStats();
+      fetchBarberStatuses();
+      fetchPopularServices();
+      fetchDailyPayments();
+      setLastUpdated(new Date());
       
       // Real-time updates
       const channel = supabase
@@ -106,7 +110,8 @@ const PDV = () => {
             table: 'appointments'
           },
           () => {
-            refreshAll();
+            fetchAppointmentsForDate(selectedDate);
+            fetchBarberStatuses();
           }
         )
         .subscribe();
@@ -116,6 +121,13 @@ const PDV = () => {
       };
     }
   }, [authBarbershopId]);
+
+  useEffect(() => {
+    if (authBarbershopId) {
+      fetchAppointmentsForDate(selectedDate);
+      setFilterStatus('all');
+    }
+  }, [selectedDate, authBarbershopId]);
 
   const fetchTodayAppointments = async () => {
     if (!authBarbershopId) return;
