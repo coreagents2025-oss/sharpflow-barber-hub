@@ -1,14 +1,19 @@
 import { useState, useEffect } from 'react';
+import { format, isToday, isYesterday, isTomorrow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { Navbar } from '@/components/Navbar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Clock, User, Scissors, CheckCircle2, AlertCircle, Bell, TrendingUp, Users as UsersIcon, Calendar as CalendarIcon, Percent, DollarSign, UserCheck, UserX, CreditCard, RefreshCw } from 'lucide-react';
+import { Clock, User, Scissors, CheckCircle2, AlertCircle, Bell, TrendingUp, Users as UsersIcon, Calendar as CalendarIcon, Percent, DollarSign, UserCheck, UserX, CreditCard, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { PaymentModal } from '@/components/PaymentModal';
 import { SubscriptionBadgeInline } from '@/components/subscriptions/SubscriptionBadgeInline';
+import { cn } from '@/lib/utils';
 
 interface Appointment {
   id: string;
@@ -43,6 +48,7 @@ interface BarberStatus {
 
 const PDV = () => {
   const { user, barbershopId: authBarbershopId } = useAuth();
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([]);
   const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([]);
   const [barberStatuses, setBarberStatuses] = useState<BarberStatus[]>([]);
@@ -59,9 +65,24 @@ const PDV = () => {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+
+  const getDateLabel = (date: Date) => {
+    if (isToday(date)) return `Hoje, ${format(date, "d MMM", { locale: ptBR })}`;
+    if (isYesterday(date)) return `Ontem, ${format(date, "d MMM", { locale: ptBR })}`;
+    if (isTomorrow(date)) return `Amanhã, ${format(date, "d MMM", { locale: ptBR })}`;
+    return format(date, "dd/MM/yyyy", { locale: ptBR });
+  };
+
+  const navigateDate = (days: number) => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() + days);
+    setSelectedDate(newDate);
+    setFilterStatus('all');
+  };
 
   const refreshAll = () => {
-    fetchTodayAppointments();
+    fetchAppointmentsForDate(selectedDate);
     fetchStats();
     fetchBarberStatuses();
     fetchPopularServices();
@@ -71,7 +92,12 @@ const PDV = () => {
 
   useEffect(() => {
     if (authBarbershopId) {
-      refreshAll();
+      fetchAppointmentsForDate(selectedDate);
+      fetchStats();
+      fetchBarberStatuses();
+      fetchPopularServices();
+      fetchDailyPayments();
+      setLastUpdated(new Date());
       
       // Real-time updates
       const channel = supabase
@@ -84,7 +110,8 @@ const PDV = () => {
             table: 'appointments'
           },
           () => {
-            refreshAll();
+            fetchAppointmentsForDate(selectedDate);
+            fetchBarberStatuses();
           }
         )
         .subscribe();
@@ -95,16 +122,22 @@ const PDV = () => {
     }
   }, [authBarbershopId]);
 
-  const fetchTodayAppointments = async () => {
+  useEffect(() => {
+    if (authBarbershopId) {
+      fetchAppointmentsForDate(selectedDate);
+      setFilterStatus('all');
+    }
+  }, [selectedDate, authBarbershopId]);
+
+  const fetchAppointmentsForDate = async (date: Date) => {
     if (!authBarbershopId) return;
     
     try {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
+      const start = new Date(date);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(date);
+      end.setHours(23, 59, 59, 999);
 
-      // Usar view unificada appointments_with_client
       const { data: appointmentsData, error } = await supabase
         .from('appointments_with_client')
         .select(`
@@ -121,8 +154,8 @@ const PDV = () => {
           barbers (name)
         `)
         .eq('barbershop_id', authBarbershopId)
-        .gte('scheduled_at', today.toISOString())
-        .lt('scheduled_at', tomorrow.toISOString())
+        .gte('scheduled_at', start.toISOString())
+        .lte('scheduled_at', end.toISOString())
         .order('scheduled_at', { ascending: true });
 
       if (error) throw error;
@@ -351,7 +384,7 @@ const PDV = () => {
 
       toast.success('Status do barbeiro resetado com sucesso');
       fetchBarberStatuses();
-      fetchTodayAppointments();
+      fetchAppointmentsForDate(selectedDate);
     } catch (error: any) {
       toast.error('Erro ao resetar status: ' + error.message);
     }
@@ -431,7 +464,7 @@ const PDV = () => {
       if (error) throw error;
       
       toast.success('Presença confirmada!');
-      fetchTodayAppointments();
+      fetchAppointmentsForDate(selectedDate);
     } catch (error: any) {
       console.error('Error confirming presence:', error);
       toast.error('Erro ao confirmar presença');
@@ -453,7 +486,7 @@ const PDV = () => {
       if (error) throw error;
       
       toast.success('Cliente marcado como faltou');
-      fetchTodayAppointments();
+      fetchAppointmentsForDate(selectedDate);
     } catch (error: any) {
       console.error('Error marking no-show:', error);
       toast.error('Erro ao marcar falta');
@@ -773,14 +806,58 @@ const PDV = () => {
           {/* All Today's Appointments */}
           <Card className="lg:col-span-2 min-w-0 overflow-hidden">
             <CardHeader>
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-                <div className="min-w-0">
-                  <CardTitle className="text-sm sm:text-base lg:text-lg">Todos os Agendamentos de Hoje</CardTitle>
-                  <CardDescription>
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center justify-between gap-2">
+                  <CardTitle className="text-sm sm:text-base lg:text-lg">
+                    Agendamentos — {getDateLabel(selectedDate)}
+                  </CardTitle>
+                  <CardDescription className="text-xs">
                     {filteredAppointments.length} agendamento(s)
                   </CardDescription>
                 </div>
-                <div className="relative min-w-0 w-full sm:w-auto">
+
+                {/* Date Navigation */}
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="icon" className="h-8 w-8 flex-shrink-0" onClick={() => navigateDate(-1)}>
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Popover open={datePickerOpen} onOpenChange={setDatePickerOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="flex-1 justify-start text-left font-normal h-8 text-xs sm:text-sm gap-1.5"
+                      >
+                        <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                        {getDateLabel(selectedDate)}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={(date) => {
+                          if (date) {
+                            setSelectedDate(date);
+                            setDatePickerOpen(false);
+                          }
+                        }}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <Button variant="outline" size="icon" className="h-8 w-8 flex-shrink-0" onClick={() => navigateDate(1)}>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                  {!isToday(selectedDate) && (
+                    <Button variant="secondary" size="sm" className="h-8 text-xs flex-shrink-0" onClick={() => { setSelectedDate(new Date()); setFilterStatus('all'); }}>
+                      Hoje
+                    </Button>
+                  )}
+                </div>
+
+                {/* Status Filter Buttons */}
+                <div className="relative min-w-0 w-full">
                   <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-2 sm:pb-0 snap-x snap-mandatory -mx-1 px-1">
                     <Button 
                       variant={filterStatus === 'all' ? 'default' : 'outline'} 
@@ -895,8 +972,8 @@ const PDV = () => {
                             </div>
                           </div>
                           
-                          {/* Botões de Ação */}
-                          {(apt.status === 'scheduled' || apt.status === 'in_progress') && (
+                          {/* Botões de Ação — apenas para hoje ou datas futuras */}
+                          {(apt.status === 'scheduled' || apt.status === 'in_progress') && isToday(selectedDate) && (
                             <div className="flex gap-2 flex-wrap pt-2 border-t">
                               {apt.status === 'scheduled' && (
                                 <>
@@ -909,7 +986,7 @@ const PDV = () => {
                                    >
                                      {confirmingId === apt.id ? (
                                        <>
-                                         <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 text-green-400" />
+                                         <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 text-primary" />
                                          Confirmado!
                                        </>
                                      ) : (
@@ -1047,7 +1124,7 @@ const PDV = () => {
           }}
           appointment={selectedAppointment}
           onSuccess={() => {
-            fetchTodayAppointments();
+            fetchAppointmentsForDate(selectedDate);
             fetchStats();
             fetchDailyPayments();
           }}
