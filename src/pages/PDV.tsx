@@ -129,16 +129,15 @@ const PDV = () => {
     }
   }, [selectedDate, authBarbershopId]);
 
-  const fetchTodayAppointments = async () => {
+  const fetchAppointmentsForDate = async (date: Date) => {
     if (!authBarbershopId) return;
     
     try {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const tomorrow = new Date(today);
-      tomorrow.setDate(tomorrow.getDate() + 1);
+      const start = new Date(date);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(date);
+      end.setHours(23, 59, 59, 999);
 
-      // Usar view unificada appointments_with_client
       const { data: appointmentsData, error } = await supabase
         .from('appointments_with_client')
         .select(`
@@ -155,8 +154,8 @@ const PDV = () => {
           barbers (name)
         `)
         .eq('barbershop_id', authBarbershopId)
-        .gte('scheduled_at', today.toISOString())
-        .lt('scheduled_at', tomorrow.toISOString())
+        .gte('scheduled_at', start.toISOString())
+        .lte('scheduled_at', end.toISOString())
         .order('scheduled_at', { ascending: true });
 
       if (error) throw error;
