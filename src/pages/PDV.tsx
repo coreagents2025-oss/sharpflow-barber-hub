@@ -1080,7 +1080,7 @@ const PDV = () => {
           }}
           appointment={selectedAppointment}
           onSuccess={() => {
-            fetchTodayAppointments();
+            fetchAppointmentsForDate(selectedDate);
             fetchStats();
             fetchDailyPayments();
           }}
