@@ -986,7 +986,7 @@ const PDV = () => {
                                    >
                                      {confirmingId === apt.id ? (
                                        <>
-                                         <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 text-green-400" />
+                                         <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1 text-primary" />
                                          Confirmado!
                                        </>
                                      ) : (
