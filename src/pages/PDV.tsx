@@ -48,6 +48,7 @@ interface BarberStatus {
 
 const PDV = () => {
   const { user, barbershopId: authBarbershopId } = useAuth();
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [todayAppointments, setTodayAppointments] = useState<Appointment[]>([]);
   const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([]);
   const [barberStatuses, setBarberStatuses] = useState<BarberStatus[]>([]);
@@ -64,9 +65,25 @@ const PDV = () => {
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
 
-  const refreshAll = () => {
-    fetchTodayAppointments();
+  const getDateLabel = (date: Date) => {
+    if (isToday(date)) return `Hoje, ${format(date, "d MMM", { locale: ptBR })}`;
+    if (isYesterday(date)) return `Ontem, ${format(date, "d MMM", { locale: ptBR })}`;
+    if (isTomorrow(date)) return `Amanhã, ${format(date, "d MMM", { locale: ptBR })}`;
+    return format(date, "dd/MM/yyyy", { locale: ptBR });
+  };
+
+  const navigateDate = (days: number) => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() + days);
+    setSelectedDate(newDate);
+    setFilterStatus('all');
+  };
+
+  const refreshAll = (date?: Date) => {
+    const d = date || selectedDate;
+    fetchAppointmentsForDate(d);
     fetchStats();
     fetchBarberStatuses();
     fetchPopularServices();
