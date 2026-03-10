@@ -464,7 +464,7 @@ const PDV = () => {
       if (error) throw error;
       
       toast.success('Presença confirmada!');
-      fetchTodayAppointments();
+      fetchAppointmentsForDate(selectedDate);
     } catch (error: any) {
       console.error('Error confirming presence:', error);
       toast.error('Erro ao confirmar presença');
