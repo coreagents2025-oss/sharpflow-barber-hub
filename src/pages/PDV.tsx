@@ -972,8 +972,8 @@ const PDV = () => {
                             </div>
                           </div>
                           
-                          {/* Botões de Ação */}
-                          {(apt.status === 'scheduled' || apt.status === 'in_progress') && (
+                          {/* Botões de Ação — apenas para hoje ou datas futuras */}
+                          {(apt.status === 'scheduled' || apt.status === 'in_progress') && isToday(selectedDate) && (
                             <div className="flex gap-2 flex-wrap pt-2 border-t">
                               {apt.status === 'scheduled' && (
                                 <>
