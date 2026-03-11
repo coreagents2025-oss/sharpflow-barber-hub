@@ -64,17 +64,19 @@ export function CreateAppointmentDialog({
     }
   }, [open, barbershopId]);
 
-  // Gerar horários disponíveis quando data for selecionada
+  // Gerar horários disponíveis quando data for selecionada; resetar horário escolhido
   useEffect(() => {
     if (selectedDate && barbershopId) {
       generateAvailableTimes();
+      setSelectedTime('');
     }
   }, [selectedDate, barbershopId]);
 
-  // Buscar horários ocupados quando barbeiro for selecionado
+  // Buscar horários ocupados quando barbeiro for selecionado; resetar horário escolhido
   useEffect(() => {
     if (selectedDate && selectedBarber) {
       fetchOccupiedTimes();
+      setSelectedTime('');
     }
   }, [selectedDate, selectedBarber, selectedService]);
 
