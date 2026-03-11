@@ -588,7 +588,7 @@ const PDV = () => {
     const { data: existing } = await supabase
       .from('appointments')
       .select('scheduled_at, services(duration_minutes)')
-      .eq('barber_id', appt.barbers?.name as any)
+      .eq('barber_id', appt.barber_id || '')
       .neq('id', appt.id)
       .neq('status', 'cancelled')
       .gte('scheduled_at', start.toISOString())
