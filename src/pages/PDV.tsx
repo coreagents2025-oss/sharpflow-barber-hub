@@ -35,6 +35,7 @@ interface Appointment {
   client_name: string;
   client_phone: string;
   barbershop_id: string;
+  barber_id?: string;
   services: {
     name: string;
     duration_minutes: number;
