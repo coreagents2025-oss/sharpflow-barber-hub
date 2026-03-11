@@ -81,12 +81,16 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServic
   useEffect(() => {
     if (selectedDate) {
       generateAvailableTimes();
+      // Reset time when date changes so user re-picks after seeing occupied slots
+      setSelectedTime('');
     }
   }, [selectedDate, barbershopId]);
 
   useEffect(() => {
     if (selectedDate && selectedBarber) {
       fetchOccupiedTimes();
+      // Reset time when barber changes so user re-picks with up-to-date occupied slots
+      setSelectedTime('');
     }
   }, [selectedDate, selectedBarber, totalDuration]);
 
