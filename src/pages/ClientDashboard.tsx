@@ -29,7 +29,8 @@ import {
   Eye,
   EyeOff,
 } from 'lucide-react';
-import { format, parseISO, isAfter } from 'date-fns';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { format, parseISO, isAfter, formatDistanceToNow, isFuture } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
