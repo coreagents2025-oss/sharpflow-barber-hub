@@ -1121,10 +1121,10 @@ const PDV = () => {
                             </div>
                           </div>
                           
-                          {/* Botões de Ação — apenas para hoje ou datas futuras */}
-                          {(apt.status === 'scheduled' || apt.status === 'in_progress') && isToday(selectedDate) && (
+                          {/* Botões de Ação — para hoje e datas futuras */}
+                          {(apt.status === 'scheduled' || apt.status === 'in_progress') && (
                             <div className="flex gap-2 flex-wrap pt-2 border-t">
-                              {apt.status === 'scheduled' && (
+                              {apt.status === 'scheduled' && isToday(selectedDate) && (
                                 <>
                                    <Button 
                                      size="sm" 
@@ -1156,7 +1156,7 @@ const PDV = () => {
                                   </Button>
                                 </>
                               )}
-                              {apt.status === 'in_progress' && (
+                              {apt.status === 'in_progress' && isToday(selectedDate) && (
                                 <Button 
                                   size="sm"
                                   variant="default"
@@ -1175,6 +1175,28 @@ const PDV = () => {
                                 >
                                   <CreditCard className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                                   Finalizar
+                                </Button>
+                              )}
+                              {apt.status === 'scheduled' && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleOpenReschedule(apt)}
+                                  className="touch-target flex-1 sm:flex-none whitespace-nowrap text-xs text-muted-foreground"
+                                >
+                                  <CalendarClock className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                                  Reagendar
+                                </Button>
+                              )}
+                              {(apt.status === 'scheduled' || apt.status === 'in_progress') && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => { setCancelConfirmId(apt.id); setCancelConfirmOpen(true); }}
+                                  className="touch-target flex-1 sm:flex-none whitespace-nowrap text-xs text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+                                >
+                                  <XCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                                  Cancelar
                                 </Button>
                               )}
                             </div>
