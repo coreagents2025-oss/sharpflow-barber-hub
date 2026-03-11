@@ -516,6 +516,29 @@ const ClientDashboard = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Cancel Appointment Dialog */}
+      <Dialog open={cancelDialogOpen} onOpenChange={(o) => { if (!cancelling) { setCancelDialogOpen(o); if (!o) setCancellingId(null); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <XCircle className="h-5 w-5" />
+              Cancelar agendamento
+            </DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja cancelar este agendamento? Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => { setCancelDialogOpen(false); setCancellingId(null); }} disabled={cancelling}>
+              Voltar
+            </Button>
+            <Button variant="destructive" onClick={handleCancelAppointment} disabled={cancelling}>
+              {cancelling ? 'Cancelando...' : 'Confirmar cancelamento'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
