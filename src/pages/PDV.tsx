@@ -23,7 +23,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { PaymentModal } from '@/components/PaymentModal';
 import { SubscriptionBadgeInline } from '@/components/subscriptions/SubscriptionBadgeInline';
 import { cn } from '@/lib/utils';
-import { checkBarberAvailability } from '@/hooks/useBarberAvailability';
 
 interface Appointment {
   id: string;
