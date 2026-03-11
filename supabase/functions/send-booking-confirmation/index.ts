@@ -118,9 +118,11 @@ const handler = async (req: Request): Promise<Response> => {
     const scheduledDate = new Date(scheduled_at);
     const formattedDate = scheduledDate.toLocaleDateString("pt-BR", {
       weekday: "long", year: "numeric", month: "long", day: "numeric",
+      timeZone: "America/Sao_Paulo",
     });
     const formattedTime = scheduledDate.toLocaleTimeString("pt-BR", {
       hour: "2-digit", minute: "2-digit",
+      timeZone: "America/Sao_Paulo",
     });
 
     const contactBlock = buildContactBlock(settings);

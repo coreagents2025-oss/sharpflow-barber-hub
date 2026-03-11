@@ -1,47 +1,23 @@
 
-## Diagnóstico do Problema de Horário no Email
 
-### Causa raiz: fuso horário (timezone)
+## Problema identificado
 
-O `scheduledAt` é construído no frontend assim:
-```typescript
-const scheduledAt = new Date(data.date);
-scheduledAt.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-```
+O PWA está configurado com `navigateFallback: "/offline.html"`, o que significa que **qualquer navegação offline mostra a página estática de "Sem conexão"** em vez de carregar o app cacheado. Além disso, o `main.tsx` registra manualmente o service worker (`/sw.js`), conflitando com o registro automático do `vite-plugin-pwa`.
 
-Isso cria um objeto `Date` no **fuso horário local do browser do cliente** (ex: `America/Sao_Paulo`, UTC-3). Quando `.toISOString()` é chamado, ele converte para UTC — ou seja, um agendamento para `10:00` no Brasil vira `13:00Z` no ISO string.
+## Correções
 
-No Edge Function, o código é:
-```typescript
-const scheduledDate = new Date(scheduled_at); // recebe "2025-03-11T13:00:00.000Z"
-const formattedTime = scheduledDate.toLocaleTimeString("pt-BR", {
-  hour: "2-digit", minute: "2-digit",
-});
-```
+### 1. Alterar `navigateFallback` para `/index.html` (vite.config.ts)
+- Trocar `"/offline.html"` por `"/index.html"` para que o service worker sirva o shell do app (SPA) quando offline
+- Adicionar `"/index.html"` e `"/offline.html"` ao `globPatterns` para garantir que sejam pré-cacheados
 
-**O problema:** Deno (Deno Deploy) roda em servidores com fuso UTC. `toLocaleTimeString("pt-BR")` sem especificar `timeZone` usa o fuso do servidor — que é **UTC, não Brasília**. Então `13:00Z` é formatado como `13:00` em vez de `10:00`.
+### 2. Remover registro manual do SW (main.tsx)
+- O `vite-plugin-pwa` com `registerType: "autoUpdate"` já gera e registra o service worker automaticamente
+- O registro manual de `/sw.js` conflita e pode impedir o cache correto
 
-### Solução
+### 3. Adicionar `globPatterns` para pré-cachear os assets do app (vite.config.ts)
+- Incluir `*.html`, `*.js`, `*.css`, e ícones no precache do workbox para que o app funcione offline de verdade
 
-Passar explicitamente `timeZone: "America/Sao_Paulo"` nos métodos de formatação de data/hora no Edge Function:
+### Resultado esperado
+- App carrega normalmente mesmo sem internet (usando cache do SPA)
+- A página `offline.html` só apareceria se o cache do index.html falhasse (cenário extremo)
 
-```typescript
-const formattedDate = scheduledDate.toLocaleDateString("pt-BR", {
-  weekday: "long", year: "numeric", month: "long", day: "numeric",
-  timeZone: "America/Sao_Paulo",  // ← adicionar
-});
-const formattedTime = scheduledDate.toLocaleTimeString("pt-BR", {
-  hour: "2-digit", minute: "2-digit",
-  timeZone: "America/Sao_Paulo",  // ← adicionar
-});
-```
-
-Isso garante que independentemente do fuso do servidor Deno, o horário exibido no email sempre será convertido corretamente para horário de Brasília (UTC-3).
-
-## Arquivo a modificar
-
-| Arquivo | Mudança |
-|---|---|
-| `supabase/functions/send-booking-confirmation/index.ts` | Adicionar `timeZone: "America/Sao_Paulo"` nas chamadas `toLocaleDateString` e `toLocaleTimeString` (linhas 119-124) |
-
-Nenhuma mudança de banco, nenhum outro arquivo envolvido.
