@@ -77,6 +77,19 @@ const PDV = () => {
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
 
+  // Cancel/Reschedule state
+  const [cancelConfirmId, setCancelConfirmId] = useState<string | null>(null);
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
+  const [cancellingPdv, setCancellingPdv] = useState(false);
+  const [rescheduleOpen, setRescheduleOpen] = useState(false);
+  const [rescheduleAppt, setRescheduleAppt] = useState<Appointment | null>(null);
+  const [rescheduleDate, setRescheduleDate] = useState<Date>(new Date());
+  const [rescheduleDatePickerOpen, setRescheduleDatePickerOpen] = useState(false);
+  const [rescheduleTime, setRescheduleTime] = useState<string>('');
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [rescheduling, setRescheduling] = useState(false);
+
   const getDateLabel = (date: Date) => {
     if (isToday(date)) return `Hoje, ${format(date, "d MMM", { locale: ptBR })}`;
     if (isYesterday(date)) return `Ontem, ${format(date, "d MMM", { locale: ptBR })}`;
