@@ -57,10 +57,15 @@ const ClientDashboard = () => {
   const { slug } = useParams<{ slug: string }>();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const { barbershop, subscription, pendingPayments, appointments, loading, hasAccess } = useClientPortal(slug);
+  const { barbershop, subscription, pendingPayments, appointments, loading, hasAccess, refetch } = useClientPortal(slug);
 
   // Password change state
   const [pwDialogOpen, setPwDialogOpen] = useState(false);
+
+  // Cancel appointment state
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
