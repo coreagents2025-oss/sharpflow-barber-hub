@@ -316,6 +316,7 @@ const ClientDashboard = () => {
                       {upcoming.map((appt) => {
                         const cfg = statusConfig[appt.status] ?? { label: appt.status, variant: 'outline' as const };
                         const apptDate = parseISO(appt.scheduled_at);
+                        const canCancel = appt.status === 'scheduled' && isAfter(apptDate, addHours(new Date(), 1));
                         return (
                           <Card key={appt.id} className="border-primary/20 bg-primary/5">
                             <CardContent className="py-4 px-4">
@@ -341,6 +342,19 @@ const ClientDashboard = () => {
                                 </div>
                                 <Badge variant={cfg.variant} className="text-xs shrink-0">{cfg.label}</Badge>
                               </div>
+                              {canCancel && (
+                                <div className="mt-3 pt-3 border-t border-primary/10 flex justify-end">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive text-xs gap-1.5"
+                                    onClick={() => { setCancellingId(appt.id); setCancelDialogOpen(true); }}
+                                  >
+                                    <XCircle className="h-3.5 w-3.5" />
+                                    Cancelar agendamento
+                                  </Button>
+                                </div>
+                              )}
                             </CardContent>
                           </Card>
                         );
