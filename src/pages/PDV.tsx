@@ -174,6 +174,7 @@ const PDV = () => {
           client_phone,
           client_type,
           barbershop_id,
+          barber_id,
           services (name, duration_minutes, price),
           barbers (name)
         `)
