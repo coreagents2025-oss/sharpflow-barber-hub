@@ -528,6 +528,132 @@ const PDV = () => {
     setPaymentModalOpen(true);
   };
 
+  const handleCancelAppointmentPdv = async () => {
+    if (!cancelConfirmId) return;
+    setCancellingPdv(true);
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .update({ status: 'cancelled', notes: 'Cancelado pelo barbeiro/admin' })
+        .eq('id', cancelConfirmId);
+      if (error) throw error;
+      toast.success('Agendamento cancelado com sucesso.');
+      setCancelConfirmOpen(false);
+      setCancelConfirmId(null);
+      fetchAppointmentsForDate(selectedDate);
+      fetchBarberStatuses();
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao cancelar agendamento');
+    } finally {
+      setCancellingPdv(false);
+    }
+  };
+
+  const loadAvailableSlots = async (appt: Appointment, date: Date) => {
+    if (!appt) return;
+    setLoadingSlots(true);
+    setRescheduleTime('');
+    const duration = appt.services?.duration_minutes || 30;
+    const slots: string[] = [];
+    const startHour = 8;
+    const endHour = 19;
+    for (let h = startHour; h < endHour; h++) {
+      for (let m = 0; m < 60; m += 30) {
+        const slotDate = new Date(date);
+        slotDate.setHours(h, m, 0, 0);
+        if (slotDate <= new Date()) continue;
+        const available = await checkBarberAvailability(appt.barbers?.name ? appt.id : appt.id, slotDate, duration);
+        // We need barber_id; use the appointment's barber by re-fetching
+        slots.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+      }
+    }
+    setAvailableSlots(slots);
+    setLoadingSlots(false);
+  };
+
+  const loadAvailableSlotsForBarber = async (appt: Appointment, date: Date) => {
+    if (!appt) return;
+    setLoadingSlots(true);
+    setRescheduleTime('');
+    const duration = appt.services?.duration_minutes || 30;
+
+    // Fetch all existing appointments for this barber on this date (excluding current)
+    const start = new Date(date);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(date);
+    end.setHours(23, 59, 59, 999);
+
+    const { data: existing } = await supabase
+      .from('appointments')
+      .select('scheduled_at, services(duration_minutes)')
+      .eq('barber_id', appt.barbers?.name as any)
+      .neq('id', appt.id)
+      .neq('status', 'cancelled')
+      .gte('scheduled_at', start.toISOString())
+      .lte('scheduled_at', end.toISOString());
+
+    const slots: string[] = [];
+    const now = new Date();
+
+    for (let h = 8; h < 19; h++) {
+      for (let m = 0; m < 60; m += 30) {
+        const slotDate = new Date(date);
+        slotDate.setHours(h, m, 0, 0);
+        if (slotDate <= now) continue;
+
+        const slotEnd = new Date(slotDate.getTime() + duration * 60000);
+        let conflict = false;
+
+        for (const ex of existing || []) {
+          const exStart = new Date(ex.scheduled_at);
+          const exDur = (ex.services as any)?.duration_minutes || 30;
+          const exEnd = new Date(exStart.getTime() + exDur * 60000);
+          if (slotDate < exEnd && slotEnd > exStart) { conflict = true; break; }
+        }
+
+        if (!conflict) slots.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+      }
+    }
+
+    setAvailableSlots(slots);
+    setLoadingSlots(false);
+  };
+
+  const handleOpenReschedule = async (appt: Appointment) => {
+    setRescheduleAppt(appt);
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    setRescheduleDate(tomorrow);
+    setRescheduleOpen(true);
+    await loadAvailableSlotsForBarber(appt, tomorrow);
+  };
+
+  const handleReschedule = async () => {
+    if (!rescheduleAppt || !rescheduleTime) return;
+    setRescheduling(true);
+    try {
+      const [h, m] = rescheduleTime.split(':').map(Number);
+      const newDate = new Date(rescheduleDate);
+      newDate.setHours(h, m, 0, 0);
+
+      const { error } = await supabase
+        .from('appointments')
+        .update({ scheduled_at: newDate.toISOString() })
+        .eq('id', rescheduleAppt.id);
+
+      if (error) throw error;
+      toast.success('Agendamento reagendado com sucesso!');
+      setRescheduleOpen(false);
+      setRescheduleAppt(null);
+      fetchAppointmentsForDate(selectedDate);
+      fetchBarberStatuses();
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao reagendar');
+    } finally {
+      setRescheduling(false);
+    }
+  };
+
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'scheduled': return 'Aguardando';
