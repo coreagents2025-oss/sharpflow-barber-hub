@@ -100,7 +100,27 @@ const ClientDashboard = () => {
     }
   };
 
-  if (loading) {
+  const handleCancelAppointment = async () => {
+    if (!cancellingId) return;
+    setCancelling(true);
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .update({ status: 'cancelled', notes: 'Cancelado pelo cliente' })
+        .eq('id', cancellingId);
+      if (error) throw error;
+      toast.success('Agendamento cancelado com sucesso.');
+      setCancelDialogOpen(false);
+      setCancellingId(null);
+      refetch();
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao cancelar agendamento');
+    } finally {
+      setCancelling(false);
+    }
+  };
+
+
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
