@@ -551,27 +551,6 @@ const PDV = () => {
     }
   };
 
-  const loadAvailableSlots = async (appt: Appointment, date: Date) => {
-    if (!appt) return;
-    setLoadingSlots(true);
-    setRescheduleTime('');
-    const duration = appt.services?.duration_minutes || 30;
-    const slots: string[] = [];
-    const startHour = 8;
-    const endHour = 19;
-    for (let h = startHour; h < endHour; h++) {
-      for (let m = 0; m < 60; m += 30) {
-        const slotDate = new Date(date);
-        slotDate.setHours(h, m, 0, 0);
-        if (slotDate <= new Date()) continue;
-        const available = await checkBarberAvailability(appt.barbers?.name ? appt.id : appt.id, slotDate, duration);
-        // We need barber_id; use the appointment's barber by re-fetching
-        slots.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
-      }
-    }
-    setAvailableSlots(slots);
-    setLoadingSlots(false);
-  };
 
   const loadAvailableSlotsForBarber = async (appt: Appointment, date: Date) => {
     if (!appt) return;
