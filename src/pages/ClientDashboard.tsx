@@ -28,9 +28,10 @@ import {
   Shield,
   Eye,
   EyeOff,
+  XCircle,
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { format, parseISO, isAfter, formatDistanceToNow, isFuture } from 'date-fns';
+import { format, parseISO, isAfter, formatDistanceToNow, isFuture, addHours } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
