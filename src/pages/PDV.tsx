@@ -1301,6 +1301,104 @@ const PDV = () => {
           }}
         />
       )}
+
+      {/* Cancel Appointment Dialog */}
+      <Dialog open={cancelConfirmOpen} onOpenChange={(o) => { if (!cancellingPdv) { setCancelConfirmOpen(o); if (!o) setCancelConfirmId(null); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <XCircle className="h-5 w-5" />
+              Cancelar agendamento
+            </DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja cancelar este agendamento? O cliente será removido da agenda.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => { setCancelConfirmOpen(false); setCancelConfirmId(null); }} disabled={cancellingPdv}>
+              Voltar
+            </Button>
+            <Button variant="destructive" onClick={handleCancelAppointmentPdv} disabled={cancellingPdv}>
+              {cancellingPdv ? 'Cancelando...' : 'Confirmar cancelamento'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reschedule Dialog */}
+      <Dialog open={rescheduleOpen} onOpenChange={(o) => { if (!rescheduling) { setRescheduleOpen(o); if (!o) setRescheduleAppt(null); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CalendarClock className="h-5 w-5 text-primary" />
+              Reagendar agendamento
+            </DialogTitle>
+            <DialogDescription>
+              {rescheduleAppt && (
+                <span>
+                  <strong>{rescheduleAppt.client_name}</strong> — {rescheduleAppt.services?.name}
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Nova data</label>
+              <Popover open={rescheduleDatePickerOpen} onOpenChange={setRescheduleDatePickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start gap-2 font-normal">
+                    <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                    {format(rescheduleDate, "dd/MM/yyyy", { locale: ptBR })}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={rescheduleDate}
+                    onSelect={async (date) => {
+                      if (date && rescheduleAppt) {
+                        setRescheduleDate(date);
+                        setRescheduleDatePickerOpen(false);
+                        await loadAvailableSlotsForBarber(rescheduleAppt, date);
+                      }
+                    }}
+                    disabled={(date) => date < new Date()}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Novo horário</label>
+              {loadingSlots ? (
+                <p className="text-sm text-muted-foreground">Carregando horários disponíveis...</p>
+              ) : availableSlots.length === 0 ? (
+                <p className="text-sm text-destructive">Nenhum horário disponível nesta data.</p>
+              ) : (
+                <Select value={rescheduleTime} onValueChange={setRescheduleTime}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o horário" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableSlots.map((slot) => (
+                      <SelectItem key={slot} value={slot}>{slot}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => { setRescheduleOpen(false); setRescheduleAppt(null); }} disabled={rescheduling}>
+              Cancelar
+            </Button>
+            <Button onClick={handleReschedule} disabled={!rescheduleTime || rescheduling || loadingSlots}>
+              {rescheduling ? 'Salvando...' : 'Confirmar reagendamento'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
