@@ -190,7 +190,11 @@ export function CreateAppointmentDialog({
   const fetchOccupiedTimes = async () => {
     if (!selectedBarber || !selectedDate || !barbershopId) return;
 
-    const dateStr = selectedDate.toISOString().split('T')[0];
+    // Use local-time boundaries to avoid timezone mismatch (UTC-3 Brazil)
+    const dayStart = new Date(selectedDate);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(selectedDate);
+    dayEnd.setHours(23, 59, 59, 999);
     
     // Buscar appointments COM informações do serviço para calcular duração
     // Excluir status que liberam o horário: cancelled, no_show, completed
@@ -204,8 +208,8 @@ export function CreateAppointmentDialog({
         )
       `)
       .eq('barber_id', selectedBarber)
-      .gte('scheduled_at', `${dateStr}T00:00:00`)
-      .lt('scheduled_at', `${dateStr}T23:59:59`)
+      .gte('scheduled_at', dayStart.toISOString())
+      .lt('scheduled_at', dayEnd.toISOString())
       .not('status', 'in', '(cancelled,no_show,completed)');
 
     // Calcular TODOS os slots ocupados baseado na duração COMPLETA do serviço

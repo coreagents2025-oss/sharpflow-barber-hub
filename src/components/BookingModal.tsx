@@ -215,7 +215,11 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServic
   const fetchOccupiedTimes = async () => {
     if (!selectedBarber || !selectedDate || !barbershopId) return;
 
-    const dateStr = selectedDate.toISOString().split('T')[0];
+    // Use local-time boundaries to avoid timezone mismatch (UTC-3 Brazil)
+    const dayStart = new Date(selectedDate);
+    dayStart.setHours(0, 0, 0, 0);
+    const dayEnd = new Date(selectedDate);
+    dayEnd.setHours(23, 59, 59, 999);
     
     const { data: appointments } = await supabase
       .from('appointments')
@@ -227,8 +231,8 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServic
         )
       `)
       .eq('barber_id', selectedBarber)
-      .gte('scheduled_at', `${dateStr}T00:00:00`)
-      .lt('scheduled_at', `${dateStr}T23:59:59`)
+      .gte('scheduled_at', dayStart.toISOString())
+      .lt('scheduled_at', dayEnd.toISOString())
       .not('status', 'in', '(cancelled,no_show,completed)');
 
     const occupiedSlots: string[] = [];
