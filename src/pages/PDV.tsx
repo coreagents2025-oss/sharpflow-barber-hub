@@ -552,7 +552,7 @@ const PDV = () => {
 
 
   const loadAvailableSlotsForBarber = async (appt: Appointment, date: Date) => {
-    if (!appt) return;
+    if (!appt || !authBarbershopId) return;
     setLoadingSlots(true);
     setRescheduleTime('');
     const duration = appt.services?.duration_minutes || 30;
@@ -563,20 +563,58 @@ const PDV = () => {
     const end = new Date(date);
     end.setHours(23, 59, 59, 999);
 
-    const { data: existing } = await supabase
-      .from('appointments')
-      .select('scheduled_at, services(duration_minutes)')
-      .eq('barber_id', appt.barber_id || '')
-      .neq('id', appt.id)
-      .neq('status', 'cancelled')
-      .gte('scheduled_at', start.toISOString())
-      .lte('scheduled_at', end.toISOString());
+    const [existingResult, scheduleResult, barbershopResult] = await Promise.all([
+      supabase
+        .from('appointments')
+        .select('scheduled_at, services(duration_minutes)')
+        .eq('barber_id', appt.barber_id || '')
+        .neq('id', appt.id)
+        .not('status', 'in', '(cancelled,no_show,completed)')
+        .gte('scheduled_at', start.toISOString())
+        .lte('scheduled_at', end.toISOString()),
+      supabase
+        .from('daily_schedules')
+        .select('working_hours_start, working_hours_end, blocked_slots')
+        .eq('barbershop_id', authBarbershopId)
+        .eq('date', date.toISOString().split('T')[0])
+        .maybeSingle(),
+      supabase
+        .from('public_barbershops')
+        .select('operating_hours')
+        .eq('id', authBarbershopId)
+        .maybeSingle(),
+    ]);
 
+    // Determine working hours from daily_schedule → operating_hours → fallback
+    let startHour = 9;
+    let endHour = 18;
+    const schedule = scheduleResult.data;
+
+    if (schedule?.working_hours_start && schedule?.working_hours_end) {
+      startHour = parseInt(schedule.working_hours_start.split(':')[0]);
+      endHour = parseInt(schedule.working_hours_end.split(':')[0]);
+    } else {
+      const opHours = barbershopResult.data?.operating_hours as any;
+      if (opHours) {
+        const DAY_MAP = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+        const dayName = DAY_MAP[date.getDay()];
+        const dayHours = opHours[dayName];
+        if (dayHours?.open && dayHours?.close) {
+          startHour = parseInt(dayHours.open.split(':')[0]);
+          endHour = parseInt(dayHours.close.split(':')[0]);
+        }
+      }
+    }
+
+    const blockedSlots: string[] = schedule?.blocked_slots || [];
     const slots: string[] = [];
     const now = new Date();
 
-    for (let h = 8; h < 19; h++) {
+    for (let h = startHour; h < endHour; h++) {
       for (let m = 0; m < 60; m += 30) {
+        const timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        if (blockedSlots.includes(timeStr)) continue;
+
         const slotDate = new Date(date);
         slotDate.setHours(h, m, 0, 0);
         if (slotDate <= now) continue;
@@ -584,14 +622,14 @@ const PDV = () => {
         const slotEnd = new Date(slotDate.getTime() + duration * 60000);
         let conflict = false;
 
-        for (const ex of existing || []) {
+        for (const ex of existingResult.data || []) {
           const exStart = new Date(ex.scheduled_at);
           const exDur = (ex.services as any)?.duration_minutes || 30;
           const exEnd = new Date(exStart.getTime() + exDur * 60000);
           if (slotDate < exEnd && slotEnd > exStart) { conflict = true; break; }
         }
 
-        if (!conflict) slots.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+        if (!conflict) slots.push(timeStr);
       }
     }
 
