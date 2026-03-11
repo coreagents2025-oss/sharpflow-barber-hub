@@ -29,7 +29,8 @@ import {
   Eye,
   EyeOff,
 } from 'lucide-react';
-import { format, parseISO, isAfter } from 'date-fns';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { format, parseISO, isAfter, formatDistanceToNow, isFuture } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -258,45 +259,119 @@ const ClientDashboard = () => {
           </section>
         )}
 
-        {/* Recent Appointments */}
+        {/* Appointments Tabs */}
         <section>
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-              Últimos Agendamentos
-            </h2>
-          </div>
-          {appointments.length > 0 ? (
-            <Card>
-              <CardContent className="p-0 divide-y divide-border">
-                {appointments.map((appt, i) => {
-                  const cfg = statusConfig[appt.status] ?? { label: appt.status, variant: 'outline' as const };
-                  return (
-                    <div key={appt.id} className="flex items-center justify-between px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0">
-                          <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">{appt.service_name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            {format(parseISO(appt.scheduled_at), "dd 'de' MMM 'às' HH:mm", { locale: ptBR })}
-                            {appt.barber_name ? ` · ${appt.barber_name}` : ''}
-                          </p>
-                        </div>
-                      </div>
-                      <Badge variant={cfg.variant} className="text-xs">{cfg.label}</Badge>
+          <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide mb-3">
+            Meus Agendamentos
+          </h2>
+          {(() => {
+            const now = new Date();
+            const upcoming = appointments.filter(
+              (a) => (a.status === 'scheduled' || a.status === 'in_progress') && isFuture(parseISO(a.scheduled_at))
+            );
+            const past = appointments.filter(
+              (a) => !((a.status === 'scheduled' || a.status === 'in_progress') && isFuture(parseISO(a.scheduled_at)))
+            );
+            return (
+              <Tabs defaultValue="upcoming">
+                <TabsList className="w-full mb-4">
+                  <TabsTrigger value="upcoming" className="flex-1">
+                    Próximos {upcoming.length > 0 && <span className="ml-1.5 bg-primary text-primary-foreground text-xs rounded-full px-1.5 py-0.5 leading-none">{upcoming.length}</span>}
+                  </TabsTrigger>
+                  <TabsTrigger value="history" className="flex-1">
+                    Histórico {past.length > 0 && <span className="ml-1.5 bg-muted-foreground/20 text-foreground text-xs rounded-full px-1.5 py-0.5 leading-none">{past.length}</span>}
+                  </TabsTrigger>
+                </TabsList>
+
+                {/* Upcoming */}
+                <TabsContent value="upcoming">
+                  {upcoming.length > 0 ? (
+                    <div className="space-y-3">
+                      {upcoming.map((appt) => {
+                        const cfg = statusConfig[appt.status] ?? { label: appt.status, variant: 'outline' as const };
+                        const apptDate = parseISO(appt.scheduled_at);
+                        return (
+                          <Card key={appt.id} className="border-primary/20 bg-primary/5">
+                            <CardContent className="py-4 px-4">
+                              <div className="flex items-start justify-between gap-2">
+                                <div className="flex items-start gap-3">
+                                  <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
+                                    <Calendar className="h-4 w-4 text-primary" />
+                                  </div>
+                                  <div>
+                                    <p className="font-semibold text-sm">{appt.service_name}</p>
+                                    <p className="text-xs text-muted-foreground mt-0.5">
+                                      {format(apptDate, "EEE',' dd 'de' MMM 'às' HH:mm", { locale: ptBR })}
+                                    </p>
+                                    {appt.barber_name && (
+                                      <p className="text-xs text-muted-foreground">
+                                        com {appt.barber_name}
+                                      </p>
+                                    )}
+                                    <p className="text-xs text-primary font-medium mt-1">
+                                      {formatDistanceToNow(apptDate, { addSuffix: true, locale: ptBR })}
+                                    </p>
+                                  </div>
+                                </div>
+                                <Badge variant={cfg.variant} className="text-xs shrink-0">{cfg.label}</Badge>
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
                     </div>
-                  );
-                })}
-              </CardContent>
-            </Card>
-          ) : (
-            <Card className="border-dashed">
-              <CardContent className="py-6 text-center text-muted-foreground text-sm">
-                Nenhum agendamento encontrado.
-              </CardContent>
-            </Card>
-          )}
+                  ) : (
+                    <Card className="border-dashed">
+                      <CardContent className="py-8 text-center">
+                        <Calendar className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
+                        <p className="font-medium text-sm">Nenhum agendamento futuro</p>
+                        <p className="text-xs text-muted-foreground mt-1">Agende um horário pela barbearia.</p>
+                        <Button asChild className="mt-4" size="sm">
+                          <Link to={`/${slug}`}>Agendar agora</Link>
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  )}
+                </TabsContent>
+
+                {/* History */}
+                <TabsContent value="history">
+                  {past.length > 0 ? (
+                    <Card>
+                      <CardContent className="p-0 divide-y divide-border">
+                        {past.map((appt) => {
+                          const cfg = statusConfig[appt.status] ?? { label: appt.status, variant: 'outline' as const };
+                          return (
+                            <div key={appt.id} className="flex items-center justify-between px-4 py-3">
+                              <div className="flex items-center gap-3">
+                                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0">
+                                  <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                                </div>
+                                <div>
+                                  <p className="text-sm font-medium">{appt.service_name}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {format(parseISO(appt.scheduled_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                                    {appt.barber_name ? ` · ${appt.barber_name}` : ''}
+                                  </p>
+                                </div>
+                              </div>
+                              <Badge variant={cfg.variant} className="text-xs">{cfg.label}</Badge>
+                            </div>
+                          );
+                        })}
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <Card className="border-dashed">
+                      <CardContent className="py-6 text-center text-muted-foreground text-sm">
+                        Nenhum agendamento no histórico.
+                      </CardContent>
+                    </Card>
+                  )}
+                </TabsContent>
+              </Tabs>
+            );
+          })()}
         </section>
 
         {/* Security Section */}

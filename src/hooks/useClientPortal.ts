@@ -136,8 +136,8 @@ export const useClientPortal = (slug: string | undefined) => {
         setPendingPayments(paymentsData ?? []);
       }
 
-      // Fetch recent appointments
-      const { data: apptData } = await supabase
+      // Fetch recent appointments (upcoming first, then past)
+      const { data: apptUpcoming } = await supabase
         .from('appointments')
         .select(`
           id,
@@ -148,20 +148,38 @@ export const useClientPortal = (slug: string | undefined) => {
         `)
         .eq('client_id', user.id)
         .eq('barbershop_id', bsData.id)
-        .order('scheduled_at', { ascending: false })
-        .limit(5);
+        .in('status', ['scheduled', 'in_progress'])
+        .gte('scheduled_at', new Date().toISOString())
+        .order('scheduled_at', { ascending: true })
+        .limit(10);
 
-      if (apptData) {
-        setAppointments(
-          apptData.map((a: any) => ({
-            id: a.id,
-            scheduled_at: a.scheduled_at,
-            status: a.status,
-            service_name: a.services?.name ?? 'Serviço',
-            barber_name: a.barbers?.name ?? null,
-          }))
-        );
-      }
+      const { data: apptPast } = await supabase
+        .from('appointments')
+        .select(`
+          id,
+          scheduled_at,
+          status,
+          services:service_id (name),
+          barbers:barber_id (name)
+        `)
+        .eq('client_id', user.id)
+        .eq('barbershop_id', bsData.id)
+        .or('status.in.(completed,cancelled,no_show),scheduled_at.lt.' + new Date().toISOString())
+        .order('scheduled_at', { ascending: false })
+        .limit(20);
+
+      const mapAppt = (a: any): RecentAppointment => ({
+        id: a.id,
+        scheduled_at: a.scheduled_at,
+        status: a.status,
+        service_name: a.services?.name ?? 'Serviço',
+        barber_name: a.barbers?.name ?? null,
+      });
+
+      setAppointments([
+        ...(apptUpcoming ?? []).map(mapAppt),
+        ...(apptPast ?? []).map(mapAppt),
+      ]);
     } catch (err) {
       console.error('Error fetching portal data:', err);
     } finally {

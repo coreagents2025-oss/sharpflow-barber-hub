@@ -1,64 +1,23 @@
 
-## Diagnóstico
 
-O painel do cliente (`ClientDashboard.tsx`) já exibe uma seção "Últimos Agendamentos", mas com duas limitações:
+## Problema identificado
 
-1. **Hook limita a 5 registros** — `.limit(5)` no `useClientPortal.ts` restringe a apenas 5 agendamentos recentes
-2. **Só mostra passados/todos misturados** — não separa agendamentos futuros (próximos horários) dos já realizados
-3. **Título é "Últimos Agendamentos"** — não deixa claro para o cliente quais são os agendamentos futuros (ainda por vir)
+O PWA está configurado com `navigateFallback: "/offline.html"`, o que significa que **qualquer navegação offline mostra a página estática de "Sem conexão"** em vez de carregar o app cacheado. Além disso, o `main.tsx` registra manualmente o service worker (`/sw.js`), conflitando com o registro automático do `vite-plugin-pwa`.
 
-## O que será feito
+## Correções
 
-### 1. Separar agendamentos em "Próximos" e "Histórico"
+### 1. Alterar `navigateFallback` para `/index.html` (vite.config.ts)
+- Trocar `"/offline.html"` por `"/index.html"` para que o service worker sirva o shell do app (SPA) quando offline
+- Adicionar `"/index.html"` e `"/offline.html"` ao `globPatterns` para garantir que sejam pré-cacheados
 
-Dividir a seção de agendamentos em duas abas/grupos:
-- **Próximos agendamentos**: status `scheduled` ou `in_progress` com `scheduled_at >= agora` — exibidos primeiro, com destaque visual
-- **Histórico**: agendamentos passados (concluídos, cancelados, faltou)
+### 2. Remover registro manual do SW (main.tsx)
+- O `vite-plugin-pwa` com `registerType: "autoUpdate"` já gera e registra o service worker automaticamente
+- O registro manual de `/sw.js` conflita e pode impedir o cache correto
 
-### 2. Aumentar o limite de busca no hook
+### 3. Adicionar `globPatterns` para pré-cachear os assets do app (vite.config.ts)
+- Incluir `*.html`, `*.js`, `*.css`, e ícones no precache do workbox para que o app funcione offline de verdade
 
-Alterar `.limit(5)` para `.limit(20)` no `useClientPortal.ts` para garantir que o histórico completo recente seja exibido.
+### Resultado esperado
+- App carrega normalmente mesmo sem internet (usando cache do SPA)
+- A página `offline.html` só apareceria se o cache do index.html falhasse (cenário extremo)
 
-### 3. Melhorar o layout dos agendamentos futuros
-
-Para os próximos agendamentos, mostrar um card mais destacado com:
-- Data e hora com destaque (ex: "Amanhã às 10:00" ou "Seg, 15 Mar")
-- Nome do serviço e barbeiro
-- Badge de status
-- Texto de contagem regressiva (ex: "em 2 dias")
-
-### 4. Tabs ou seções separadas com contadores
-
-```
-[ Próximos (2) ]  [ Histórico (8) ]
-```
-
-Usar tabs para separar os dois grupos, com contador em cada aba.
-
-## Arquivos a modificar
-
-| Arquivo | Mudança |
-|---|---|
-| `src/hooks/useClientPortal.ts` | Aumentar limit de 5 para 20; separar em `upcomingAppointments` e `pastAppointments` |
-| `src/pages/ClientDashboard.tsx` | Substituir a seção "Últimos Agendamentos" por dois grupos: próximos (destacados) e histórico em tabs |
-
-## Layout proposto
-
-```
-┌─────────────────────────────────────────────────────┐
-│ MEUS AGENDAMENTOS                                   │
-│  [Próximos (2)]  [Histórico (8)]                    │
-│                                                     │
-│ PRÓXIMOS:                                           │
-│ ┌─────────────────────────────────────────────────┐ │
-│ │ 📅 Corte de Cabelo       Seg, 15 Mar às 10:00  │ │
-│ │    João · em 2 dias      [Agendado]             │ │
-│ └─────────────────────────────────────────────────┘ │
-│                                                     │
-│ HISTÓRICO:                                          │
-│  Corte + Barba   12/03  · João  [Concluído]         │
-│  Corte           05/03  · João  [Concluído]         │
-└─────────────────────────────────────────────────────┘
-```
-
-Sem mudanças de banco necessárias.
