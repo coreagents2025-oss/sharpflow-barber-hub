@@ -28,9 +28,10 @@ import {
   Shield,
   Eye,
   EyeOff,
+  XCircle,
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { format, parseISO, isAfter, formatDistanceToNow, isFuture } from 'date-fns';
+import { format, parseISO, isAfter, formatDistanceToNow, isFuture, addHours } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -56,10 +57,15 @@ const ClientDashboard = () => {
   const { slug } = useParams<{ slug: string }>();
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const { barbershop, subscription, pendingPayments, appointments, loading, hasAccess } = useClientPortal(slug);
+  const { barbershop, subscription, pendingPayments, appointments, loading, hasAccess, refetch } = useClientPortal(slug);
 
   // Password change state
   const [pwDialogOpen, setPwDialogOpen] = useState(false);
+
+  // Cancel appointment state
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [cancelling, setCancelling] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -91,6 +97,26 @@ const ClientDashboard = () => {
       toast.error(err.message || 'Erro ao alterar senha');
     } finally {
       setChangingPw(false);
+    }
+  };
+
+  const handleCancelAppointment = async () => {
+    if (!cancellingId) return;
+    setCancelling(true);
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .update({ status: 'cancelled', notes: 'Cancelado pelo cliente' })
+        .eq('id', cancellingId);
+      if (error) throw error;
+      toast.success('Agendamento cancelado com sucesso.');
+      setCancelDialogOpen(false);
+      setCancellingId(null);
+      refetch();
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao cancelar agendamento');
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -290,6 +316,7 @@ const ClientDashboard = () => {
                       {upcoming.map((appt) => {
                         const cfg = statusConfig[appt.status] ?? { label: appt.status, variant: 'outline' as const };
                         const apptDate = parseISO(appt.scheduled_at);
+                        const canCancel = appt.status === 'scheduled' && isAfter(apptDate, addHours(new Date(), 1));
                         return (
                           <Card key={appt.id} className="border-primary/20 bg-primary/5">
                             <CardContent className="py-4 px-4">
@@ -315,6 +342,19 @@ const ClientDashboard = () => {
                                 </div>
                                 <Badge variant={cfg.variant} className="text-xs shrink-0">{cfg.label}</Badge>
                               </div>
+                              {canCancel && (
+                                <div className="mt-3 pt-3 border-t border-primary/10 flex justify-end">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive text-xs gap-1.5"
+                                    onClick={() => { setCancellingId(appt.id); setCancelDialogOpen(true); }}
+                                  >
+                                    <XCircle className="h-3.5 w-3.5" />
+                                    Cancelar agendamento
+                                  </Button>
+                                </div>
+                              )}
                             </CardContent>
                           </Card>
                         );
@@ -472,6 +512,29 @@ const ClientDashboard = () => {
               disabled={!newPassword || !confirmPassword || changingPw}
             >
               {changingPw ? 'Salvando...' : 'Salvar senha'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cancel Appointment Dialog */}
+      <Dialog open={cancelDialogOpen} onOpenChange={(o) => { if (!cancelling) { setCancelDialogOpen(o); if (!o) setCancellingId(null); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <XCircle className="h-5 w-5" />
+              Cancelar agendamento
+            </DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja cancelar este agendamento? Esta ação não pode ser desfeita.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => { setCancelDialogOpen(false); setCancellingId(null); }} disabled={cancelling}>
+              Voltar
+            </Button>
+            <Button variant="destructive" onClick={handleCancelAppointment} disabled={cancelling}>
+              {cancelling ? 'Cancelando...' : 'Confirmar cancelamento'}
             </Button>
           </DialogFooter>
         </DialogContent>

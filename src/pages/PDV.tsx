@@ -7,9 +7,18 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Clock, User, Scissors, CheckCircle2, AlertCircle, Bell, TrendingUp, Users as UsersIcon, Calendar as CalendarIcon, Percent, DollarSign, UserCheck, UserX, CreditCard, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Clock, User, Scissors, CheckCircle2, AlertCircle, Bell, TrendingUp, Users as UsersIcon, Calendar as CalendarIcon, Percent, DollarSign, UserCheck, UserX, CreditCard, RefreshCw, ChevronLeft, ChevronRight, XCircle, CalendarClock } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { PaymentModal } from '@/components/PaymentModal';
 import { SubscriptionBadgeInline } from '@/components/subscriptions/SubscriptionBadgeInline';
@@ -25,6 +34,7 @@ interface Appointment {
   client_name: string;
   client_phone: string;
   barbershop_id: string;
+  barber_id?: string;
   services: {
     name: string;
     duration_minutes: number;
@@ -66,6 +76,19 @@ const PDV = () => {
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
+
+  // Cancel/Reschedule state
+  const [cancelConfirmId, setCancelConfirmId] = useState<string | null>(null);
+  const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
+  const [cancellingPdv, setCancellingPdv] = useState(false);
+  const [rescheduleOpen, setRescheduleOpen] = useState(false);
+  const [rescheduleAppt, setRescheduleAppt] = useState<Appointment | null>(null);
+  const [rescheduleDate, setRescheduleDate] = useState<Date>(new Date());
+  const [rescheduleDatePickerOpen, setRescheduleDatePickerOpen] = useState(false);
+  const [rescheduleTime, setRescheduleTime] = useState<string>('');
+  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [rescheduling, setRescheduling] = useState(false);
 
   const getDateLabel = (date: Date) => {
     if (isToday(date)) return `Hoje, ${format(date, "d MMM", { locale: ptBR })}`;
@@ -150,6 +173,7 @@ const PDV = () => {
           client_phone,
           client_type,
           barbershop_id,
+          barber_id,
           services (name, duration_minutes, price),
           barbers (name)
         `)
@@ -503,6 +527,111 @@ const PDV = () => {
       service: appointment.services,
     });
     setPaymentModalOpen(true);
+  };
+
+  const handleCancelAppointmentPdv = async () => {
+    if (!cancelConfirmId) return;
+    setCancellingPdv(true);
+    try {
+      const { error } = await supabase
+        .from('appointments')
+        .update({ status: 'cancelled', notes: 'Cancelado pelo barbeiro/admin' })
+        .eq('id', cancelConfirmId);
+      if (error) throw error;
+      toast.success('Agendamento cancelado com sucesso.');
+      setCancelConfirmOpen(false);
+      setCancelConfirmId(null);
+      fetchAppointmentsForDate(selectedDate);
+      fetchBarberStatuses();
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao cancelar agendamento');
+    } finally {
+      setCancellingPdv(false);
+    }
+  };
+
+
+  const loadAvailableSlotsForBarber = async (appt: Appointment, date: Date) => {
+    if (!appt) return;
+    setLoadingSlots(true);
+    setRescheduleTime('');
+    const duration = appt.services?.duration_minutes || 30;
+
+    // Fetch all existing appointments for this barber on this date (excluding current)
+    const start = new Date(date);
+    start.setHours(0, 0, 0, 0);
+    const end = new Date(date);
+    end.setHours(23, 59, 59, 999);
+
+    const { data: existing } = await supabase
+      .from('appointments')
+      .select('scheduled_at, services(duration_minutes)')
+      .eq('barber_id', appt.barber_id || '')
+      .neq('id', appt.id)
+      .neq('status', 'cancelled')
+      .gte('scheduled_at', start.toISOString())
+      .lte('scheduled_at', end.toISOString());
+
+    const slots: string[] = [];
+    const now = new Date();
+
+    for (let h = 8; h < 19; h++) {
+      for (let m = 0; m < 60; m += 30) {
+        const slotDate = new Date(date);
+        slotDate.setHours(h, m, 0, 0);
+        if (slotDate <= now) continue;
+
+        const slotEnd = new Date(slotDate.getTime() + duration * 60000);
+        let conflict = false;
+
+        for (const ex of existing || []) {
+          const exStart = new Date(ex.scheduled_at);
+          const exDur = (ex.services as any)?.duration_minutes || 30;
+          const exEnd = new Date(exStart.getTime() + exDur * 60000);
+          if (slotDate < exEnd && slotEnd > exStart) { conflict = true; break; }
+        }
+
+        if (!conflict) slots.push(`${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`);
+      }
+    }
+
+    setAvailableSlots(slots);
+    setLoadingSlots(false);
+  };
+
+  const handleOpenReschedule = async (appt: Appointment) => {
+    setRescheduleAppt(appt);
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    setRescheduleDate(tomorrow);
+    setRescheduleOpen(true);
+    await loadAvailableSlotsForBarber(appt, tomorrow);
+  };
+
+  const handleReschedule = async () => {
+    if (!rescheduleAppt || !rescheduleTime) return;
+    setRescheduling(true);
+    try {
+      const [h, m] = rescheduleTime.split(':').map(Number);
+      const newDate = new Date(rescheduleDate);
+      newDate.setHours(h, m, 0, 0);
+
+      const { error } = await supabase
+        .from('appointments')
+        .update({ scheduled_at: newDate.toISOString() })
+        .eq('id', rescheduleAppt.id);
+
+      if (error) throw error;
+      toast.success('Agendamento reagendado com sucesso!');
+      setRescheduleOpen(false);
+      setRescheduleAppt(null);
+      fetchAppointmentsForDate(selectedDate);
+      fetchBarberStatuses();
+    } catch (err: any) {
+      toast.error(err.message || 'Erro ao reagendar');
+    } finally {
+      setRescheduling(false);
+    }
   };
 
   const getStatusLabel = (status: string) => {
@@ -972,10 +1101,10 @@ const PDV = () => {
                             </div>
                           </div>
                           
-                          {/* Botões de Ação — apenas para hoje ou datas futuras */}
-                          {(apt.status === 'scheduled' || apt.status === 'in_progress') && isToday(selectedDate) && (
+                          {/* Botões de Ação — para hoje e datas futuras */}
+                          {(apt.status === 'scheduled' || apt.status === 'in_progress') && (
                             <div className="flex gap-2 flex-wrap pt-2 border-t">
-                              {apt.status === 'scheduled' && (
+                              {apt.status === 'scheduled' && isToday(selectedDate) && (
                                 <>
                                    <Button 
                                      size="sm" 
@@ -1007,7 +1136,7 @@ const PDV = () => {
                                   </Button>
                                 </>
                               )}
-                              {apt.status === 'in_progress' && (
+                              {apt.status === 'in_progress' && isToday(selectedDate) && (
                                 <Button 
                                   size="sm"
                                   variant="default"
@@ -1026,6 +1155,28 @@ const PDV = () => {
                                 >
                                   <CreditCard className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                                   Finalizar
+                                </Button>
+                              )}
+                              {apt.status === 'scheduled' && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleOpenReschedule(apt)}
+                                  className="touch-target flex-1 sm:flex-none whitespace-nowrap text-xs text-muted-foreground"
+                                >
+                                  <CalendarClock className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                                  Reagendar
+                                </Button>
+                              )}
+                              {(apt.status === 'scheduled' || apt.status === 'in_progress') && (
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => { setCancelConfirmId(apt.id); setCancelConfirmOpen(true); }}
+                                  className="touch-target flex-1 sm:flex-none whitespace-nowrap text-xs text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive"
+                                >
+                                  <XCircle className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                                  Cancelar
                                 </Button>
                               )}
                             </div>
@@ -1130,6 +1281,104 @@ const PDV = () => {
           }}
         />
       )}
+
+      {/* Cancel Appointment Dialog */}
+      <Dialog open={cancelConfirmOpen} onOpenChange={(o) => { if (!cancellingPdv) { setCancelConfirmOpen(o); if (!o) setCancelConfirmId(null); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <XCircle className="h-5 w-5" />
+              Cancelar agendamento
+            </DialogTitle>
+            <DialogDescription>
+              Tem certeza que deseja cancelar este agendamento? O cliente será removido da agenda.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => { setCancelConfirmOpen(false); setCancelConfirmId(null); }} disabled={cancellingPdv}>
+              Voltar
+            </Button>
+            <Button variant="destructive" onClick={handleCancelAppointmentPdv} disabled={cancellingPdv}>
+              {cancellingPdv ? 'Cancelando...' : 'Confirmar cancelamento'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Reschedule Dialog */}
+      <Dialog open={rescheduleOpen} onOpenChange={(o) => { if (!rescheduling) { setRescheduleOpen(o); if (!o) setRescheduleAppt(null); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CalendarClock className="h-5 w-5 text-primary" />
+              Reagendar agendamento
+            </DialogTitle>
+            <DialogDescription>
+              {rescheduleAppt && (
+                <span>
+                  <strong>{rescheduleAppt.client_name}</strong> — {rescheduleAppt.services?.name}
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Nova data</label>
+              <Popover open={rescheduleDatePickerOpen} onOpenChange={setRescheduleDatePickerOpen}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-start gap-2 font-normal">
+                    <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                    {format(rescheduleDate, "dd/MM/yyyy", { locale: ptBR })}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={rescheduleDate}
+                    onSelect={async (date) => {
+                      if (date && rescheduleAppt) {
+                        setRescheduleDate(date);
+                        setRescheduleDatePickerOpen(false);
+                        await loadAvailableSlotsForBarber(rescheduleAppt, date);
+                      }
+                    }}
+                    disabled={(date) => date < new Date()}
+                    initialFocus
+                    className="pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Novo horário</label>
+              {loadingSlots ? (
+                <p className="text-sm text-muted-foreground">Carregando horários disponíveis...</p>
+              ) : availableSlots.length === 0 ? (
+                <p className="text-sm text-destructive">Nenhum horário disponível nesta data.</p>
+              ) : (
+                <Select value={rescheduleTime} onValueChange={setRescheduleTime}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o horário" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableSlots.map((slot) => (
+                      <SelectItem key={slot} value={slot}>{slot}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => { setRescheduleOpen(false); setRescheduleAppt(null); }} disabled={rescheduling}>
+              Cancelar
+            </Button>
+            <Button onClick={handleReschedule} disabled={!rescheduleTime || rescheduling || loadingSlots}>
+              {rescheduling ? 'Salvando...' : 'Confirmar reagendamento'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
