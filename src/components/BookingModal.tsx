@@ -51,7 +51,7 @@ interface BookingModalProps {
 
 const ANY_BARBER = '__any__';
 
-export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServices = [], loggedInUser }: BookingModalProps) => {
+export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServices = [], loggedInUser, clientSubscription, onSubscriptionCreditUsed }: BookingModalProps) => {
   const [step, setStep] = useState(1);
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [loadingBarbers, setLoadingBarbers] = useState(false);
@@ -64,6 +64,7 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServic
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
   const [occupiedTimes, setOccupiedTimes] = useState<string[]>([]);
   const [additionalServiceIds, setAdditionalServiceIds] = useState<string[]>([]);
+  const [useSubscriptionCredit, setUseSubscriptionCredit] = useState(false);
 
   const { createBooking, isSubmitting } = useBooking(barbershopId);
 
