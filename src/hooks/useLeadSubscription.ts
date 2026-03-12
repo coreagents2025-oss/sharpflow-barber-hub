@@ -283,6 +283,71 @@ export function useLeadSubscription(leadId: string | undefined, barbershopId: st
     }
   };
 
+  /**
+   * Registra um pagamento para a assinatura ativa.
+   * - Busca a cobrança pendente mais recente e a marca como paga, OU
+   * - Cria um novo registro de pagamento já como 'paid' se não houver pendente.
+   */
+  const registerPayment = async (paymentMethod: string = 'pix') => {
+    if (!subscription || !barbershopId) {
+      toast.error('Assinatura não encontrada');
+      return false;
+    }
+
+    const plan = subscription.plan;
+
+    try {
+      // Buscar cobrança pendente mais recente desta assinatura
+      const { data: pendingPayment } = await supabase
+        .from('subscription_payments')
+        .select('id, amount')
+        .eq('subscription_id', subscription.id)
+        .eq('status', 'pending')
+        .order('due_date', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (pendingPayment) {
+        // Marcar cobrança existente como paga
+        const { error } = await supabase
+          .from('subscription_payments')
+          .update({
+            status: 'paid',
+            paid_at: new Date().toISOString(),
+            payment_method: paymentMethod,
+          })
+          .eq('id', pendingPayment.id);
+
+        if (error) throw error;
+      } else {
+        // Criar novo registro de pagamento já como pago (entrada manual)
+        const amount = plan?.price ?? 0;
+        const today = new Date().toISOString().split('T')[0];
+
+        const { error } = await supabase
+          .from('subscription_payments')
+          .insert({
+            subscription_id: subscription.id,
+            barbershop_id: barbershopId,
+            amount,
+            due_date: today,
+            payment_method: paymentMethod,
+            status: 'paid',
+            paid_at: new Date().toISOString(),
+          });
+
+        if (error) throw error;
+      }
+
+      toast.success('Pagamento registrado com sucesso!');
+      return true;
+    } catch (error: any) {
+      console.error('Error registering payment:', error);
+      toast.error('Erro ao registrar pagamento');
+      return false;
+    }
+  };
+
   return {
     subscription,
     loading,
@@ -293,6 +358,7 @@ export function useLeadSubscription(leadId: string | undefined, barbershopId: st
     useCredit,
     renewSubscription,
     cancelSubscription,
+    registerPayment,
     refetch: fetchSubscription,
   };
 }

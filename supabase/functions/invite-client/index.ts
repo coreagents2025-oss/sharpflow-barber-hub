@@ -45,13 +45,25 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Use service role to send invite
+    // Use service role for all admin operations
     const adminClient = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
-    const redirectTo = `${req.headers.get('origin') || 'https://sharpflow-barber-hub.lovable.app'}/${slug}/cliente/dashboard`;
+    // Fetch barbershop's custom_domain to build the correct redirectTo URL
+    const { data: barbershop } = await adminClient
+      .from('barbershops')
+      .select('custom_domain, slug')
+      .eq('id', barbershop_id)
+      .single();
+
+    // Use custom domain if set, otherwise fall back to the published platform domain
+    const baseUrl = barbershop?.custom_domain
+      ? `https://${barbershop.custom_domain}`
+      : 'https://barberplus.shop';
+
+    const redirectTo = `${baseUrl}/${slug}/cliente/dashboard`;
 
     const { data, error } = await adminClient.auth.admin.inviteUserByEmail(email, {
       redirectTo,
@@ -63,10 +75,8 @@ Deno.serve(async (req) => {
     });
 
     if (error) {
-      // If user already exists, resend invitation is not directly supported,
-      // but we can generate a magic link for them instead
+      // If user already exists, generate a magic link (recovery) instead
       if (error.message?.includes('already been registered') || error.message?.includes('already registered')) {
-        // Generate a password reset link instead so they can set/reset their password
         const { data: linkData, error: linkError } = await adminClient.auth.admin.generateLink({
           type: 'recovery',
           email,

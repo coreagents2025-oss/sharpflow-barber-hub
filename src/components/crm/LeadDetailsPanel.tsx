@@ -53,6 +53,7 @@ export function LeadDetailsPanel({ lead }: LeadDetailsPanelProps) {
     createSubscription,
     renewSubscription,
     cancelSubscription,
+    registerPayment,
   } = useLeadSubscription(lead?.id, lead?.barbershop_id);
 
   const handleStatusChange = () => {
@@ -295,6 +296,7 @@ export function LeadDetailsPanel({ lead }: LeadDetailsPanelProps) {
           onRenew={renewSubscription}
           onCancel={cancelSubscription}
           onSell={() => setIsSellSubscriptionOpen(true)}
+          onRegisterPayment={registerPayment}
         />
 
         {/* Ações Rápidas */}
