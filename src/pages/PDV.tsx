@@ -24,6 +24,14 @@ import { PaymentModal } from '@/components/PaymentModal';
 import { SubscriptionBadgeInline } from '@/components/subscriptions/SubscriptionBadgeInline';
 import { cn } from '@/lib/utils';
 
+interface AppointmentService {
+  service_id: string;
+  position: number;
+  duration_minutes: number;
+  price: number;
+  services: { name: string };
+}
+
 interface Appointment {
   id: string;
   scheduled_at: string;
@@ -35,6 +43,7 @@ interface Appointment {
   client_phone: string;
   barbershop_id: string;
   barber_id?: string;
+  total_duration_minutes?: number;
   services: {
     name: string;
     duration_minutes: number;
@@ -43,6 +52,7 @@ interface Appointment {
   barbers: {
     name: string;
   };
+  appointment_services?: AppointmentService[];
 }
 
 interface BarberStatus {
@@ -175,7 +185,8 @@ const PDV = () => {
           barbershop_id,
           barber_id,
           services (name, duration_minutes, price),
-          barbers (name)
+          barbers (name),
+          appointment_services (service_id, position, duration_minutes, price, services(name))
         `)
         .eq('barbershop_id', authBarbershopId)
         .gte('scheduled_at', start.toISOString())
@@ -518,13 +529,14 @@ const PDV = () => {
   };
 
   const handleOpenPaymentModal = (appointment: any) => {
-    // Passar dados unificados para o modal
     setSelectedAppointment({
       ...appointment,
       client: {
         full_name: appointment.client_name || 'Cliente',
       },
-      service: appointment.services,
+      // Support both new multi-service format and legacy single service
+      services: appointment.services || [{ name: 'Serviço', price: 0 }],
+      totalServicePrice: appointment.totalServicePrice ?? (Array.isArray(appointment.services) ? appointment.services.reduce((s: number, sv: any) => s + sv.price, 0) : (appointment.services?.price || 0)),
     });
     setPaymentModalOpen(true);
   };
@@ -1126,12 +1138,26 @@ const PDV = () => {
                           <div className="grid grid-cols-1 gap-1 text-[10px] sm:text-xs text-muted-foreground">
                             <div className="flex items-center gap-1">
                               <Scissors className="h-3 w-3 flex-shrink-0" />
-                              <span className="truncate">{apt.services?.name || 'Serviço'}</span>
-                              {apt.services?.price && (
-                                <span className="font-medium text-accent ml-1">
-                                  R$ {apt.services.price.toFixed(2)}
-                                </span>
-                              )}
+                              {(() => {
+                                const apptServices = (apt as any).appointment_services;
+                                const hasMultiple = apptServices && apptServices.length > 0;
+                                const serviceNames = hasMultiple
+                                  ? [...apptServices].sort((a: any, b: any) => a.position - b.position).map((s: any) => s.services?.name).filter(Boolean).join(' + ')
+                                  : apt.services?.name || 'Serviço';
+                                const totalPrice = hasMultiple
+                                  ? apptServices.reduce((sum: number, s: any) => sum + Number(s.price), 0)
+                                  : apt.services?.price || 0;
+                                return (
+                                  <>
+                                    <span className="truncate">{serviceNames}</span>
+                                    {totalPrice > 0 && (
+                                      <span className="font-medium text-accent ml-1 flex-shrink-0">
+                                        R$ {totalPrice.toFixed(2)}
+                                      </span>
+                                    )}
+                                  </>
+                                );
+                              })()}
                             </div>
                             <div className="flex items-center gap-1">
                               <User className="h-3 w-3 flex-shrink-0" />
@@ -1175,22 +1201,28 @@ const PDV = () => {
                                 </>
                               )}
                               {apt.status === 'in_progress' && isToday(selectedDate) && (
-                                <Button 
-                                  size="sm"
-                                  variant="default"
-                                  onClick={() => handleOpenPaymentModal({
-                                    id: apt.id,
-                                    unified_client_id: apt.unified_client_id,
-                                    client_type: apt.client_type,
-                                    barbershop_id: apt.barbershop_id,
-                                    services: {
-                                      name: apt.services?.name || 'Serviço',
-                                      price: apt.services?.price || 50,
-                                    },
-                                    client_name: apt.client_name,
-                                  })}
-                                  className="touch-target w-full whitespace-nowrap text-xs"
-                                >
+                                 <Button 
+                                   size="sm"
+                                   variant="default"
+                                   onClick={() => {
+                                     const apptServices = (apt as any).appointment_services;
+                                     const hasMultiple = apptServices && apptServices.length > 0;
+                                     const servicesList = hasMultiple
+                                       ? [...apptServices].sort((a: any, b: any) => a.position - b.position).map((s: any) => ({ name: s.services?.name || 'Serviço', price: Number(s.price) }))
+                                       : [{ name: apt.services?.name || 'Serviço', price: apt.services?.price || 0 }];
+                                     const totalServicePrice = servicesList.reduce((sum, s) => sum + s.price, 0);
+                                     handleOpenPaymentModal({
+                                       id: apt.id,
+                                       unified_client_id: apt.unified_client_id,
+                                       client_type: apt.client_type,
+                                       barbershop_id: apt.barbershop_id,
+                                       services: servicesList,
+                                       totalServicePrice,
+                                       client_name: apt.client_name,
+                                     });
+                                   }}
+                                   className="touch-target w-full whitespace-nowrap text-xs"
+                                 >
                                   <CreditCard className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                                   Finalizar
                                 </Button>

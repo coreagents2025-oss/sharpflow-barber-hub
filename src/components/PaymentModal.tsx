@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { CreditCard, Banknote, Smartphone, DollarSign, Sparkles, AlertTriangle } from 'lucide-react';
+import { CreditCard, Banknote, Smartphone, DollarSign, Sparkles } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
 interface PaymentModalProps {
@@ -18,10 +18,13 @@ interface PaymentModalProps {
     unified_client_id: string;
     client_type: 'lead' | 'client';
     barbershop_id: string;
-    service: {
+    // Multi-service: list of services with individual prices
+    services: Array<{
       name: string;
       price: number;
-    };
+    }>;
+    // Pre-computed total (sum of all services)
+    totalServicePrice: number;
     client: {
       full_name: string;
     };
@@ -46,7 +49,7 @@ export const PaymentModal = ({ isOpen, onClose, appointment, onSuccess }: Paymen
   const [subscription, setSubscription] = useState<SubscriptionInfo | null>(null);
   const [loadingSubscription, setLoadingSubscription] = useState(false);
 
-  const totalAmount = appointment.service.price + Number(tip);
+  const totalAmount = appointment.totalServicePrice + Number(tip);
 
   // Buscar assinatura ativa do cliente
   useEffect(() => {
@@ -100,10 +103,8 @@ export const PaymentModal = ({ isOpen, onClose, appointment, onSuccess }: Paymen
     
     try {
       if (paymentType === 'subscription' && subscription) {
-        // Usar crédito da assinatura
         await handleSubscriptionPayment();
       } else {
-        // Pagamento normal
         await handleNormalPayment();
       }
       
@@ -120,13 +121,15 @@ export const PaymentModal = ({ isOpen, onClose, appointment, onSuccess }: Paymen
   const handleSubscriptionPayment = async () => {
     if (!subscription) throw new Error('Assinatura não encontrada');
 
+    const serviceNames = appointment.services.map(s => s.name).join(', ');
+
     // 1. Registrar uso do crédito
     const { error: usageError } = await supabase
       .from('subscription_credit_usage')
       .insert({
         subscription_id: subscription.id,
         appointment_id: appointment.id,
-        notes: `Crédito usado para: ${appointment.service.name}`,
+        notes: `Crédito usado para: ${serviceNames}`,
       });
 
     if (usageError) throw usageError;
@@ -151,7 +154,6 @@ export const PaymentModal = ({ isOpen, onClose, appointment, onSuccess }: Paymen
   };
 
   const handleNormalPayment = async () => {
-    // Determinar se é client_id ou lead_id
     const paymentData: any = {
       appointment_id: appointment.id,
       barbershop_id: appointment.barbershop_id,
@@ -160,7 +162,6 @@ export const PaymentModal = ({ isOpen, onClose, appointment, onSuccess }: Paymen
       status: 'completed',
     };
 
-    // Adicionar client_id OU lead_id baseado no tipo
     if (appointment.client_type === 'client') {
       paymentData.client_id = appointment.unified_client_id;
       paymentData.lead_id = null;
@@ -201,6 +202,8 @@ export const PaymentModal = ({ isOpen, onClose, appointment, onSuccess }: Paymen
     }
   };
 
+  const isMultiService = appointment.services.length > 1;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-md">
@@ -212,20 +215,39 @@ export const PaymentModal = ({ isOpen, onClose, appointment, onSuccess }: Paymen
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {/* Cliente e Serviço */}
+          {/* Cliente e Serviço(s) */}
           <div className="bg-muted/50 p-4 rounded-lg space-y-2">
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">Cliente:</span>
               <span className="font-medium">{appointment.client.full_name}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Serviço:</span>
-              <span className="font-medium">{appointment.service.name}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-sm text-muted-foreground">Valor:</span>
-              <span className="font-medium">R$ {appointment.service.price.toFixed(2)}</span>
-            </div>
+
+            {isMultiService ? (
+              <>
+                <div className="text-sm text-muted-foreground font-medium pt-1">Serviços:</div>
+                {appointment.services.map((svc, i) => (
+                  <div key={i} className="flex justify-between pl-2">
+                    <span className="text-sm">{svc.name}</span>
+                    <span className="text-sm font-medium">R$ {svc.price.toFixed(2)}</span>
+                  </div>
+                ))}
+                <div className="flex justify-between pt-1 border-t">
+                  <span className="text-sm text-muted-foreground">Subtotal:</span>
+                  <span className="font-semibold">R$ {appointment.totalServicePrice.toFixed(2)}</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Serviço:</span>
+                  <span className="font-medium">{appointment.services[0]?.name}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">Valor:</span>
+                  <span className="font-medium">R$ {appointment.totalServicePrice.toFixed(2)}</span>
+                </div>
+              </>
+            )}
           </div>
 
           {/* Aviso de Assinatura */}

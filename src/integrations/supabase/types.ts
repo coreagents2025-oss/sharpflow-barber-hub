@@ -14,6 +14,65 @@ export type Database = {
   }
   public: {
     Tables: {
+      appointment_services: {
+        Row: {
+          appointment_id: string
+          created_at: string | null
+          duration_minutes: number
+          id: string
+          position: number
+          price: number
+          service_id: string
+        }
+        Insert: {
+          appointment_id: string
+          created_at?: string | null
+          duration_minutes: number
+          id?: string
+          position?: number
+          price?: number
+          service_id: string
+        }
+        Update: {
+          appointment_id?: string
+          created_at?: string | null
+          duration_minutes?: number
+          id?: string
+          position?: number
+          price?: number
+          service_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointment_services_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointment_services_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments_with_client"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointment_services_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "public_appointment_slots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointment_services_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appointments: {
         Row: {
           barber_id: string
@@ -26,6 +85,7 @@ export type Database = {
           scheduled_at: string
           service_id: string
           status: string
+          total_duration_minutes: number | null
           updated_at: string
         }
         Insert: {
@@ -39,6 +99,7 @@ export type Database = {
           scheduled_at: string
           service_id: string
           status?: string
+          total_duration_minutes?: number | null
           updated_at?: string
         }
         Update: {
@@ -52,6 +113,7 @@ export type Database = {
           scheduled_at?: string
           service_id?: string
           status?: string
+          total_duration_minutes?: number | null
           updated_at?: string
         }
         Relationships: [
