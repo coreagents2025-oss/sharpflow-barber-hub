@@ -1,23 +1,80 @@
 
+## Diagnóstico
 
-## Problema identificado
+O `BookingModal` nunca verifica se há um usuário logado. No passo "Seus dados" (último passo), os campos Nome, Telefone e E-mail estão sempre vazios — mesmo que o cliente já tenha feito login no portal do assinante com todos esses dados disponíveis nas tabelas `profiles` (full_name, phone) e `auth.user` (email).
 
-O PWA está configurado com `navigateFallback: "/offline.html"`, o que significa que **qualquer navegação offline mostra a página estática de "Sem conexão"** em vez de carregar o app cacheado. Além disso, o `main.tsx` registra manualmente o service worker (`/sw.js`), conflitando com o registro automático do `vite-plugin-pwa`.
+O fluxo de `PublicCatalog.tsx` também não passa nenhuma informação do usuário logado para o modal.
 
-## Correções
+---
 
-### 1. Alterar `navigateFallback` para `/index.html` (vite.config.ts)
-- Trocar `"/offline.html"` por `"/index.html"` para que o service worker sirva o shell do app (SPA) quando offline
-- Adicionar `"/index.html"` e `"/offline.html"` ao `globPatterns` para garantir que sejam pré-cacheados
+## Solução — Simples e direta
 
-### 2. Remover registro manual do SW (main.tsx)
-- O `vite-plugin-pwa` com `registerType: "autoUpdate"` já gera e registra o service worker automaticamente
-- O registro manual de `/sw.js` conflita e pode impedir o cache correto
+### 1. `PublicCatalog.tsx` — detectar usuário logado
 
-### 3. Adicionar `globPatterns` para pré-cachear os assets do app (vite.config.ts)
-- Incluir `*.html`, `*.js`, `*.css`, e ícones no precache do workbox para que o app funcione offline de verdade
+Importar `useAuth` e passar o usuário atual como prop para o `BookingModal`:
 
-### Resultado esperado
-- App carrega normalmente mesmo sem internet (usando cache do SPA)
-- A página `offline.html` só apareceria se o cache do index.html falhasse (cenário extremo)
+```tsx
+const { user } = useAuth();
+// ...
+<BookingModal
+  ...
+  loggedInUser={user}
+/>
+```
 
+### 2. `BookingModal.tsx` — aceitar prop `loggedInUser` e pré-carregar os dados
+
+**Nova prop:**
+```typescript
+loggedInUser?: User | null;
+```
+
+**Novo `useEffect`** que roda quando o modal abre e há um usuário logado:
+```typescript
+useEffect(() => {
+  if (isOpen && loggedInUser) {
+    // Pre-fill email from auth
+    setClientEmail(loggedInUser.email || '');
+    
+    // Pre-fill name and phone from profiles table
+    supabase
+      .from('profiles')
+      .select('full_name, phone')
+      .eq('id', loggedInUser.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.full_name) setClientName(data.full_name);
+        if (data?.phone) setClientPhone(data.phone);
+      });
+  }
+}, [isOpen, loggedInUser]);
+```
+
+**UI no passo "Seus dados":** quando o usuário estiver logado, mostrar um pequeno aviso verde "✓ Dados preenchidos da sua conta" em vez de campos em branco. Os campos continuam editáveis caso o cliente queira usar outro nome/telefone.
+
+**Layout proposto no passo final (usuário logado):**
+```
+┌─────────────────────────────────────────┐
+│ ✓ Dados preenchidos da sua conta        │  ← badge verde
+│                                          │
+│ Seu nome                                 │
+│ [João Silva                           ]  │  ← pré-preenchido
+│                                          │
+│ Telefone / WhatsApp                      │
+│ [(11) 99999-9999                      ]  │  ← pré-preenchido
+│                                          │
+│ E-mail                                   │
+│ [joao@email.com                       ]  │  ← pré-preenchido
+└─────────────────────────────────────────┘
+```
+
+---
+
+## Arquivos a modificar
+
+| Arquivo | Mudança |
+|---|---|
+| `src/pages/PublicCatalog.tsx` | Importar `useAuth`, passar `loggedInUser={user}` para `<BookingModal>` |
+| `src/components/BookingModal.tsx` | Adicionar prop `loggedInUser`, `useEffect` para buscar dados do perfil e pré-preencher os campos, e badge visual indicando que os dados foram carregados |
+
+Nenhuma mudança de banco necessária — os dados já existem em `profiles` e `auth.user`.
