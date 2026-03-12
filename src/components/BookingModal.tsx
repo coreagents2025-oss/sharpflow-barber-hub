@@ -44,11 +44,12 @@ interface BookingModalProps {
   } | null;
   barbershopId: string | null;
   allServices?: ServiceOption[];
+  loggedInUser?: SupabaseUser | null;
 }
 
 const ANY_BARBER = '__any__';
 
-export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServices = [] }: BookingModalProps) => {
+export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServices = [], loggedInUser }: BookingModalProps) => {
   const [step, setStep] = useState(1);
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [loadingBarbers, setLoadingBarbers] = useState(false);
