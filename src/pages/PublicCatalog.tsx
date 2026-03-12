@@ -354,6 +354,8 @@ const PublicCatalog = () => {
         barbershopId={barbershopId}
         allServices={services}
         loggedInUser={user}
+        clientSubscription={clientSubscription}
+        onSubscriptionCreditUsed={() => fetchClientSubscription(user!.id, barbershopId!)}
       />
 
       {/* WhatsApp Floating Button */}
