@@ -53,6 +53,7 @@ export function LeadDetailsPanel({ lead }: LeadDetailsPanelProps) {
     createSubscription,
     renewSubscription,
     cancelSubscription,
+    registerPayment,
   } = useLeadSubscription(lead?.id, lead?.barbershop_id);
 
   const handleStatusChange = () => {
