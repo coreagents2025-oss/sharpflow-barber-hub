@@ -11,6 +11,7 @@ interface BookingData {
   clientName: string;
   clientPhone: string;
   clientEmail: string;
+  subscriptionId?: string;
 }
 
 interface ServiceInfo {
