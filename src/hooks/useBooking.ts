@@ -11,6 +11,7 @@ interface BookingData {
   clientName: string;
   clientPhone: string;
   clientEmail: string;
+  subscriptionId?: string;
 }
 
 interface ServiceInfo {
@@ -258,6 +259,35 @@ export const useBooking = (barbershopId: string | null, isStaffBooking?: boolean
       }
 
       console.log('[BOOKING] Appointment consolidado criado com sucesso!');
+
+      // ── DEBITAR CRÉDITO DE ASSINATURA (se solicitado) ──
+      if (data.subscriptionId) {
+        try {
+          const { data: sub } = await supabase
+            .from('client_subscriptions')
+            .select('credits_remaining')
+            .eq('id', data.subscriptionId)
+            .single();
+
+          if (sub && sub.credits_remaining > 0) {
+            await supabase
+              .from('client_subscriptions')
+              .update({ credits_remaining: sub.credits_remaining - 1 })
+              .eq('id', data.subscriptionId);
+
+            await supabase
+              .from('subscription_credit_usage' as any)
+              .insert({
+                subscription_id: data.subscriptionId,
+                appointment_id: appt.id,
+              });
+
+            console.log('[BOOKING] Crédito debitado da assinatura:', data.subscriptionId);
+          }
+        } catch (creditErr) {
+          console.error('[BOOKING] Erro ao debitar crédito (não crítico):', creditErr);
+        }
+      }
 
       // Buscar nome do barbeiro para notificações
       const { data: barber } = await supabase

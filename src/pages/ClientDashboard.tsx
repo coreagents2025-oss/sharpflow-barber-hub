@@ -164,7 +164,14 @@ const ClientDashboard = () => {
             )}
             <div>
               <p className="font-semibold text-sm leading-tight">{barbershop?.name}</p>
-              <p className="text-xs text-muted-foreground">Área do Assinante</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-xs text-muted-foreground">Área do Assinante</p>
+                {subscription && !isExpired && (
+                  <Badge className="h-4 text-[10px] px-1.5 bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/30 hover:bg-green-500/20">
+                    ✓ Ativo
+                  </Badge>
+                )}
+              </div>
             </div>
           </div>
           <Button variant="ghost" size="sm" onClick={handleSignOut} className="gap-1.5 text-muted-foreground">
@@ -176,9 +183,19 @@ const ClientDashboard = () => {
 
       <div className="container mx-auto px-4 py-6 max-w-2xl space-y-6">
         {/* Welcome */}
-        <div>
-          <h1 className="text-2xl font-bold">Olá! 👋</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">{user?.email}</p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold">
+              {subscription && !isExpired ? 'Olá, assinante! 👋' : 'Olá! 👋'}
+            </h1>
+            <p className="text-muted-foreground text-sm mt-0.5">{user?.email}</p>
+          </div>
+          {subscription && !isExpired && (
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-500/15 border border-green-500/30 shrink-0">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+              <span className="text-xs font-semibold text-green-600 dark:text-green-400">Assinante Ativo</span>
+            </div>
+          )}
         </div>
 
         {/* Active Subscription Card */}

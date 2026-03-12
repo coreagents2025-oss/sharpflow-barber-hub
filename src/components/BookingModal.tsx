@@ -45,11 +45,13 @@ interface BookingModalProps {
   barbershopId: string | null;
   allServices?: ServiceOption[];
   loggedInUser?: SupabaseUser | null;
+  clientSubscription?: { id: string; credits_remaining: number; plan_name: string } | null;
+  onSubscriptionCreditUsed?: () => void;
 }
 
 const ANY_BARBER = '__any__';
 
-export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServices = [], loggedInUser }: BookingModalProps) => {
+export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServices = [], loggedInUser, clientSubscription, onSubscriptionCreditUsed }: BookingModalProps) => {
   const [step, setStep] = useState(1);
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [loadingBarbers, setLoadingBarbers] = useState(false);
@@ -62,6 +64,7 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServic
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
   const [occupiedTimes, setOccupiedTimes] = useState<string[]>([]);
   const [additionalServiceIds, setAdditionalServiceIds] = useState<string[]>([]);
+  const [useSubscriptionCredit, setUseSubscriptionCredit] = useState(false);
 
   const { createBooking, isSubmitting } = useBooking(barbershopId);
 
@@ -120,6 +123,15 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServic
       resetForm();
     }
   }, [isOpen]);
+
+  // Default useSubscriptionCredit to true when subscription with credits is available
+  useEffect(() => {
+    if (isOpen && clientSubscription && clientSubscription.credits_remaining > 0) {
+      setUseSubscriptionCredit(true);
+    } else {
+      setUseSubscriptionCredit(false);
+    }
+  }, [isOpen, clientSubscription]);
 
   // Pre-fill client data from logged-in user profile
   useEffect(() => {
@@ -370,9 +382,13 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServic
       clientName,
       clientPhone,
       clientEmail,
+      subscriptionId: useSubscriptionCredit && clientSubscription ? clientSubscription.id : undefined,
     });
 
     if (success) {
+      if (useSubscriptionCredit && clientSubscription) {
+        onSubscriptionCreditUsed?.();
+      }
       resetForm();
       onClose();
     }
@@ -389,6 +405,7 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServic
     setAdditionalServiceIds([]);
     setOccupiedTimes([]);
     setAvailableTimes([]);
+    setUseSubscriptionCredit(false);
   };
 
   const canAdvance = () => {
@@ -679,6 +696,38 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServic
                     <Check className="h-3.5 w-3.5 text-accent shrink-0" />
                     <p className="text-xs text-accent font-medium">Dados preenchidos da sua conta</p>
                   </div>
+                )}
+
+                {/* Subscription credit toggle */}
+                {clientSubscription && clientSubscription.credits_remaining > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setUseSubscriptionCredit(v => !v)}
+                    className={cn(
+                      'w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all text-left',
+                      useSubscriptionCredit
+                        ? 'border-accent bg-accent/10'
+                        : 'border-border hover:border-accent/50'
+                    )}
+                  >
+                    <div className={cn(
+                      'w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-base',
+                      useSubscriptionCredit ? 'bg-accent text-accent-foreground' : 'bg-muted'
+                    )}>
+                      ⭐
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold">Usar crédito da assinatura</p>
+                      <p className="text-xs text-muted-foreground">
+                        {clientSubscription.plan_name} · {clientSubscription.credits_remaining} crédito{clientSubscription.credits_remaining !== 1 ? 's' : ''} restante{clientSubscription.credits_remaining !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                    {useSubscriptionCredit && (
+                      <div className="w-5 h-5 rounded-full bg-accent flex items-center justify-center shrink-0">
+                        <Check className="h-3 w-3 text-accent-foreground" />
+                      </div>
+                    )}
+                  </button>
                 )}
 
                 {/* Client fields */}
