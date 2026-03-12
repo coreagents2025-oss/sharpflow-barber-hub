@@ -173,13 +173,15 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServic
       .eq('date', dateStr)
       .maybeSingle();
 
-    const times: string[] = [];
-    let startHour = 9;
-    let endHour = 18;
+    const toMinutes = (h: number, m: number) => h * 60 + m;
+    let startMinutes = toMinutes(9, 0);
+    let endMinutes = toMinutes(18, 0);
 
     if (schedule?.working_hours_start && schedule?.working_hours_end) {
-      startHour = parseInt(schedule.working_hours_start.split(':')[0]);
-      endHour = parseInt(schedule.working_hours_end.split(':')[0]);
+      const [sh, sm] = schedule.working_hours_start.split(':').map(Number);
+      const [eh, em] = schedule.working_hours_end.split(':').map(Number);
+      startMinutes = toMinutes(sh, sm);
+      endMinutes = toMinutes(eh, em);
     } else {
       const { data: barbershop } = await supabase
         .from('public_barbershops')
@@ -192,8 +194,10 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServic
         const dayName = DAY_MAP[selectedDate.getDay()];
         const dayHours = (barbershop.operating_hours as any)?.[dayName];
         if (dayHours?.open && dayHours?.close) {
-          startHour = parseInt(dayHours.open.split(':')[0]);
-          endHour = parseInt(dayHours.close.split(':')[0]);
+          const [sh, sm] = dayHours.open.split(':').map(Number);
+          const [eh, em] = dayHours.close.split(':').map(Number);
+          startMinutes = toMinutes(sh, sm);
+          endMinutes = toMinutes(eh, em);
         } else {
           setAvailableTimes([]);
           return;
@@ -201,13 +205,33 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServic
       }
     }
 
-    for (let hour = startHour; hour < endHour; hour++) {
-      const t1 = `${hour.toString().padStart(2, '0')}:00`;
-      const t2 = `${hour.toString().padStart(2, '0')}:30`;
-      if (!schedule?.blocked_slots?.includes(t1)) times.push(t1);
-      if (!schedule?.blocked_slots?.includes(t2)) times.push(t2);
+    const allTimes: string[] = [];
+    for (let mins = startMinutes; mins < endMinutes; mins += 30) {
+      const h = Math.floor(mins / 60);
+      const m = mins % 60;
+      const t = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+      if (!schedule?.blocked_slots?.includes(t)) allTimes.push(t);
     }
-    setAvailableTimes(times);
+
+    // Bug fix 1: filter slots where service end time would exceed closing time
+    const duration = totalDuration || (service?.duration_minutes ?? 30);
+    let filtered = allTimes.filter(t => {
+      const [h, m] = t.split(':').map(Number);
+      return toMinutes(h, m) + duration <= endMinutes;
+    });
+
+    // Bug fix 2: filter past time slots when the selected date is today
+    const now = new Date();
+    const isToday = selectedDate.toDateString() === now.toDateString();
+    if (isToday) {
+      const nowMinutes = toMinutes(now.getHours(), now.getMinutes());
+      filtered = filtered.filter(t => {
+        const [h, m] = t.split(':').map(Number);
+        return toMinutes(h, m) > nowMinutes;
+      });
+    }
+
+    setAvailableTimes(filtered);
   };
 
   const fetchOccupiedTimes = async () => {
