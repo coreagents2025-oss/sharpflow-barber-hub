@@ -17,6 +17,7 @@ interface ServiceInfo {
   id: string;
   duration_minutes: number;
   name: string;
+  price: number;
 }
 
 export const useBooking = (barbershopId: string | null) => {
@@ -128,12 +129,12 @@ export const useBooking = (barbershopId: string | null) => {
 
       console.log('[BOOKING] Lead ID:', leadId);
 
-      // Buscar todos os serviços (principal + adicionais) para obter durações e nomes
+      // Buscar todos os serviços (principal + adicionais) para obter durações, nomes e preços
       const allServiceIds = [data.serviceId, ...(data.additionalServiceIds || [])];
       
       const { data: servicesData } = await supabase
         .from('services')
-        .select('id, duration_minutes, name')
+        .select('id, duration_minutes, name, price')
         .in('id', allServiceIds);
 
       const servicesMap = new Map<string, ServiceInfo>();
@@ -149,7 +150,7 @@ export const useBooking = (barbershopId: string | null) => {
         if (svc) servicesToBook.push(svc);
       }
 
-      // Calcular duração total para validação de expediente
+      // Calcular duração total
       const totalDurationMinutes = servicesToBook.reduce((acc, s) => acc + s.duration_minutes, 0);
       const totalEndTime = new Date(scheduledAt);
       totalEndTime.setMinutes(totalEndTime.getMinutes() + totalDurationMinutes);
@@ -167,7 +168,7 @@ export const useBooking = (barbershopId: string | null) => {
       // Verificar conflito para o bloco total
       const { data: existingAppointments } = await supabase
         .from('appointments')
-        .select('scheduled_at, status, services(duration_minutes)')
+        .select('scheduled_at, status, total_duration_minutes, services(duration_minutes)')
         .eq('barber_id', data.barberId)
         .gte('scheduled_at', scheduledAt.toISOString())
         .lt('scheduled_at', totalEndTime.toISOString())
@@ -177,7 +178,7 @@ export const useBooking = (barbershopId: string | null) => {
       const lookbackStart = new Date(scheduledAt.getTime() - 8 * 60 * 60 * 1000);
       const { data: overlappingBefore } = await supabase
         .from('appointments')
-        .select('scheduled_at, status, services(duration_minutes)')
+        .select('scheduled_at, status, total_duration_minutes, services(duration_minutes)')
         .eq('barber_id', data.barberId)
         .gte('scheduled_at', lookbackStart.toISOString())
         .lt('scheduled_at', scheduledAt.toISOString())
@@ -188,7 +189,7 @@ export const useBooking = (barbershopId: string | null) => {
       if (!hasOverlap && overlappingBefore) {
         overlappingBefore.forEach(apt => {
           const aptStart = new Date(apt.scheduled_at);
-          const aptDuration = (apt.services as any)?.duration_minutes || 30;
+          const aptDuration = (apt as any).total_duration_minutes || (apt.services as any)?.duration_minutes || 30;
           const aptEnd = new Date(aptStart);
           aptEnd.setMinutes(aptStart.getMinutes() + aptDuration);
           
@@ -203,36 +204,52 @@ export const useBooking = (barbershopId: string | null) => {
         return false;
       }
 
-      // Criar appointments sequencialmente para cada serviço
-      console.log(`[BOOKING] Criando ${servicesToBook.length} appointment(s) sequencialmente`);
+      // ── CRIAR 1 ÚNICO APPOINTMENT com total_duration_minutes ──
+      console.log(`[BOOKING] Criando 1 appointment consolidado com ${servicesToBook.length} serviço(s)`);
       
-      let currentStartTime = new Date(scheduledAt);
       const firstServiceName = servicesToBook[0]?.name || 'Serviço';
 
-      for (const svc of servicesToBook) {
-        const { error: appointmentError } = await supabase
-          .from('appointments')
-          .insert({
-            barbershop_id: barbershopId,
-            service_id: svc.id,
-            barber_id: data.barberId,
-            lead_id: leadId,
-            client_id: null,
-            scheduled_at: currentStartTime.toISOString(),
-            status: 'scheduled',
-          });
+      const { data: appt, error: appointmentError } = await supabase
+        .from('appointments')
+        .insert({
+          barbershop_id: barbershopId,
+          service_id: data.serviceId,          // serviço principal (retrocompatibilidade)
+          barber_id: data.barberId,
+          lead_id: leadId,
+          client_id: null,
+          scheduled_at: scheduledAt.toISOString(),
+          status: 'scheduled',
+          total_duration_minutes: totalDurationMinutes,
+        })
+        .select('id')
+        .single();
 
-        if (appointmentError) {
-          console.error('[BOOKING] Erro ao criar appointment:', appointmentError);
-          throw appointmentError;
-        }
-
-        // Avançar para o próximo horário
-        currentStartTime = new Date(currentStartTime);
-        currentStartTime.setMinutes(currentStartTime.getMinutes() + svc.duration_minutes);
+      if (appointmentError) {
+        console.error('[BOOKING] Erro ao criar appointment:', appointmentError);
+        throw appointmentError;
       }
-      
-      console.log('[BOOKING] Todos os appointments criados com sucesso!');
+
+      console.log('[BOOKING] Appointment criado:', appt.id);
+
+      // ── INSERIR TODOS OS SERVIÇOS em appointment_services (batch) ──
+      const { error: servicesError } = await supabase
+        .from('appointment_services' as any)
+        .insert(
+          servicesToBook.map((svc, i) => ({
+            appointment_id: appt.id,
+            service_id: svc.id,
+            position: i + 1,
+            duration_minutes: svc.duration_minutes,
+            price: svc.price,
+          }))
+        );
+
+      if (servicesError) {
+        console.error('[BOOKING] Erro ao inserir appointment_services:', servicesError);
+        throw servicesError;
+      }
+
+      console.log('[BOOKING] Appointment consolidado criado com sucesso!');
 
       // Buscar nome do barbeiro para notificações
       const { data: barber } = await supabase
