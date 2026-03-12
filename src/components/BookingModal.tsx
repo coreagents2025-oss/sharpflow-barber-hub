@@ -698,6 +698,38 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServic
                   </div>
                 )}
 
+                {/* Subscription credit toggle */}
+                {clientSubscription && clientSubscription.credits_remaining > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setUseSubscriptionCredit(v => !v)}
+                    className={cn(
+                      'w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all text-left',
+                      useSubscriptionCredit
+                        ? 'border-accent bg-accent/10'
+                        : 'border-border hover:border-accent/50'
+                    )}
+                  >
+                    <div className={cn(
+                      'w-9 h-9 rounded-full flex items-center justify-center shrink-0 text-base',
+                      useSubscriptionCredit ? 'bg-accent text-accent-foreground' : 'bg-muted'
+                    )}>
+                      ⭐
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold">Usar crédito da assinatura</p>
+                      <p className="text-xs text-muted-foreground">
+                        {clientSubscription.plan_name} · {clientSubscription.credits_remaining} crédito{clientSubscription.credits_remaining !== 1 ? 's' : ''} restante{clientSubscription.credits_remaining !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                    {useSubscriptionCredit && (
+                      <div className="w-5 h-5 rounded-full bg-accent flex items-center justify-center shrink-0">
+                        <Check className="h-3 w-3 text-accent-foreground" />
+                      </div>
+                    )}
+                  </button>
+                )}
+
                 {/* Client fields */}
                 <div className="space-y-3">
                   <div>
