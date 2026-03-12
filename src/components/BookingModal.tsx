@@ -16,6 +16,7 @@ import { startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { User, X, Plus, ChevronLeft, ChevronRight, Check, Calendar as CalendarIcon, Clock, Scissors } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface Barber {
   id: string;
