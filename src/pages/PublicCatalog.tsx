@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { ServiceCard } from '@/components/ServiceCard';
 import { BookingModal } from '@/components/BookingModal';
+import { SubscriptionPlanCard } from '@/components/SubscriptionPlanCard';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { MapPin, Phone, Clock, MessageCircle, Facebook, Instagram, Crown } from 'lucide-react';
@@ -16,6 +17,17 @@ interface Service {
   duration_minutes: number;
   image_url: string | null;
   is_popular: boolean;
+}
+
+interface SubscriptionPlan {
+  id: string;
+  name: string;
+  description: string | null;
+  price: number;
+  credits_per_month: number;
+  billing_interval: string;
+  auto_renew: boolean;
+  discount_percentage: number | null;
 }
 
 interface Barbershop {
@@ -44,6 +56,7 @@ const isLovableDomain = (hostname: string) => {
 const PublicCatalog = () => {
   const { slug } = useParams();
   const [services, setServices] = useState<Service[]>([]);
+  const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([]);
   const [barbershop, setBarbershop] = useState<Barbershop | null>(null);
   const [catalogSettings, setCatalogSettings] = useState<CatalogSettings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,7 +73,6 @@ const PublicCatalog = () => {
     try {
       let barbershopData = null;
       
-      // 1️⃣ Se tiver slug na URL, buscar por slug
       if (slug) {
         const { data } = await supabase
           .from('barbershops')
@@ -68,26 +80,18 @@ const PublicCatalog = () => {
           .eq('slug', slug)
           .maybeSingle();
         barbershopData = data;
-      } 
-      // 2️⃣ Se não tiver slug, tentar por domínio customizado
-      else {
+      } else {
         const hostname = window.location.hostname;
-        
-        // Ignorar domínios Lovable
         if (!isLovableDomain(hostname)) {
           const { data: byDomain } = await supabase
             .from('barbershops')
             .select('*')
             .eq('custom_domain', hostname)
             .maybeSingle();
-          
-          if (byDomain) {
-            barbershopData = byDomain;
-          }
+          if (byDomain) barbershopData = byDomain;
         }
       }
 
-      // ✅ Se não encontrou barbearia, mostrar erro
       if (!barbershopData) {
         toast.error('Barbearia não encontrada');
         setLoading(false);
@@ -106,44 +110,41 @@ const PublicCatalog = () => {
   };
 
   const fetchServicesAndSettings = async (barbershopId: string) => {
-    // Fetch services for this barbershop
-    const { data: servicesData } = await supabase
-      .from('services')
-      .select('*')
-      .eq('barbershop_id', barbershopId)
-      .eq('is_active', true)
-      .eq('is_subscription_plan', false)
-      .order('is_popular', { ascending: false })
-      .order('name');
+    const [servicesResult, plansResult, settingsResult, credentialsResult] = await Promise.all([
+      supabase
+        .from('services')
+        .select('*')
+        .eq('barbershop_id', barbershopId)
+        .eq('is_active', true)
+        .eq('is_subscription_plan', false)
+        .order('is_popular', { ascending: false })
+        .order('name'),
+      supabase
+        .from('subscription_plans')
+        .select('id, name, description, price, credits_per_month, billing_interval, auto_renew, discount_percentage')
+        .eq('barbershop_id', barbershopId)
+        .eq('is_active', true)
+        .order('price', { ascending: true }),
+      supabase
+        .from('catalog_settings')
+        .select('*')
+        .eq('barbershop_id', barbershopId)
+        .maybeSingle(),
+      supabase
+        .from('barbershop_credentials')
+        .select('whatsapp_credentials')
+        .eq('barbershop_id', barbershopId)
+        .maybeSingle(),
+    ]);
 
-    if (servicesData) {
-      setServices(servicesData);
-    }
+    if (servicesResult.data) setServices(servicesResult.data);
+    if (plansResult.data) setSubscriptionPlans(plansResult.data);
+    if (settingsResult.data) setCatalogSettings(settingsResult.data);
 
-    // Fetch catalog settings
-    const { data: settingsData } = await supabase
-      .from('catalog_settings')
-      .select('*')
-      .eq('barbershop_id', barbershopId)
-      .maybeSingle();
-
-    if (settingsData) {
-      setCatalogSettings(settingsData);
-    }
-
-    // Fetch WhatsApp number
-    const { data: credentialsData } = await supabase
-      .from('barbershop_credentials')
-      .select('whatsapp_credentials')
-      .eq('barbershop_id', barbershopId)
-      .maybeSingle();
-
-    if (credentialsData?.whatsapp_credentials) {
-      const whatsappCreds = credentialsData.whatsapp_credentials as any;
+    if (credentialsResult.data?.whatsapp_credentials) {
+      const whatsappCreds = credentialsResult.data.whatsapp_credentials as any;
       if (whatsappCreds.enabled && whatsappCreds.phone_number) {
-        // Clean number (remove special characters)
-        const cleanNumber = whatsappCreds.phone_number.replace(/\D/g, '');
-        setWhatsappNumber(cleanNumber);
+        setWhatsappNumber(whatsappCreds.phone_number.replace(/\D/g, ''));
       }
     }
   };
@@ -152,8 +153,6 @@ const PublicCatalog = () => {
     setSelectedService(service);
     setIsBookingOpen(true);
   };
-
-  const themeColor = catalogSettings?.theme_color || '#8B4513';
 
   return (
     <div className="min-h-screen bg-background">
@@ -233,32 +232,62 @@ const PublicCatalog = () => {
         </div>
       )}
 
-      {/* Services Section */}
-      <div className="container mx-auto px-4 py-8">
-        <h2 className="text-2xl md:text-3xl font-bold mb-6">Nossos Serviços</h2>
-        
+      <div className="container mx-auto px-4 py-8 space-y-12">
+
+        {/* Subscription Plans Section */}
         {loading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array(6).fill(0).map((_, i) => (
-              <Skeleton key={i} className="h-80" />
-            ))}
+          <div>
+            <Skeleton className="h-8 w-56 mb-6" />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array(3).fill(0).map((_, i) => <Skeleton key={i} className="h-64" />)}
+            </div>
           </div>
-        ) : services.length === 0 ? (
-          <div className="text-center py-16 text-muted-foreground">
-            <p className="text-lg">Nenhum serviço disponível no momento</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {services.map((service) => (
-              <ServiceCard
-                key={service.id}
-                service={service}
-                showPopularBadge={catalogSettings?.show_popular_badge ?? true}
-                onBookNow={() => handleBookNow(service)}
-              />
-            ))}
-          </div>
+        ) : subscriptionPlans.length > 0 && (
+          <section>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <Crown className="h-4 w-4 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-2xl md:text-3xl font-bold">Planos de Assinatura</h2>
+                <p className="text-sm text-muted-foreground">Economize com créditos recorrentes</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {subscriptionPlans.map((plan) => (
+                <SubscriptionPlanCard key={plan.id} plan={plan} slug={slug} />
+              ))}
+            </div>
+          </section>
         )}
+
+        {/* Services Section */}
+        <section>
+          <h2 className="text-2xl md:text-3xl font-bold mb-6">Nossos Serviços</h2>
+          
+          {loading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {Array(6).fill(0).map((_, i) => (
+                <Skeleton key={i} className="h-80" />
+              ))}
+            </div>
+          ) : services.length === 0 ? (
+            <div className="text-center py-16 text-muted-foreground">
+              <p className="text-lg">Nenhum serviço disponível no momento</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {services.map((service) => (
+                <ServiceCard
+                  key={service.id}
+                  service={service}
+                  showPopularBadge={catalogSettings?.show_popular_badge ?? true}
+                  onBookNow={() => handleBookNow(service)}
+                />
+              ))}
+            </div>
+          )}
+        </section>
       </div>
 
       {/* Booking Modal */}
@@ -294,14 +323,13 @@ const PublicCatalog = () => {
       )}
 
       {/* Footer */}
-      <footer className="bg-muted mt-16 border-t">
+      <footer className="bg-muted mt-8 border-t">
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col md:flex-row justify-between items-center gap-4">
             <div className="text-sm text-muted-foreground">
               © {new Date().getFullYear()} {barbershop?.name}. Todos os direitos reservados.
             </div>
             
-            {/* Redes Sociais */}
             {(barbershop?.facebook_url || barbershop?.instagram_url) && (
               <div className="flex gap-3">
                 {barbershop.facebook_url && (
@@ -359,3 +387,4 @@ const PublicCatalog = () => {
 };
 
 export default PublicCatalog;
+

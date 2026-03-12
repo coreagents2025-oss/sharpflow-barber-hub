@@ -1,81 +1,23 @@
 
-## Diagnóstico
 
-No `PublicCatalog.tsx`, a query de serviços filtra explicitamente `is_subscription_plan = false` (linha 115), o que remove todos os planos de assinatura da galeria. A intenção original era evitar confusão, mas o resultado é que os clientes nunca veem os planos disponíveis.
+## Problema identificado
 
-A solução é buscar os planos da tabela `subscription_plans` separadamente e exibi-los na galeria com um destaque visual diferenciado — similar ao badge "Popular" mas com identidade "Assinatura".
+O PWA está configurado com `navigateFallback: "/offline.html"`, o que significa que **qualquer navegação offline mostra a página estática de "Sem conexão"** em vez de carregar o app cacheado. Além disso, o `main.tsx` registra manualmente o service worker (`/sw.js`), conflitando com o registro automático do `vite-plugin-pwa`.
 
----
+## Correções
 
-## O que será feito
+### 1. Alterar `navigateFallback` para `/index.html` (vite.config.ts)
+- Trocar `"/offline.html"` por `"/index.html"` para que o service worker sirva o shell do app (SPA) quando offline
+- Adicionar `"/index.html"` e `"/offline.html"` ao `globPatterns` para garantir que sejam pré-cacheados
 
-### 1. `PublicCatalog.tsx` — Buscar planos de assinatura
+### 2. Remover registro manual do SW (main.tsx)
+- O `vite-plugin-pwa` com `registerType: "autoUpdate"` já gera e registra o service worker automaticamente
+- O registro manual de `/sw.js` conflita e pode impedir o cache correto
 
-Adicionar um segundo fetch em `fetchServicesAndSettings`:
-```typescript
-const { data: plansData } = await supabase
-  .from('subscription_plans')
-  .select('*')
-  .eq('barbershop_id', barbershopId)
-  .eq('is_active', true)
-  .order('price', { ascending: true });
+### 3. Adicionar `globPatterns` para pré-cachear os assets do app (vite.config.ts)
+- Incluir `*.html`, `*.js`, `*.css`, e ícones no precache do workbox para que o app funcione offline de verdade
 
-if (plansData) setSubscriptionPlans(plansData);
-```
+### Resultado esperado
+- App carrega normalmente mesmo sem internet (usando cache do SPA)
+- A página `offline.html` só apareceria se o cache do index.html falhasse (cenário extremo)
 
-Estado novo: `subscriptionPlans` (array de `SubscriptionPlan`).
-
-### 2. `PublicCatalog.tsx` — Seção dedicada na galeria
-
-Adicionar uma **seção separada** acima (ou abaixo, com destaque) dos serviços avulsos para os planos. A seção terá fundo/borda diferenciada (degradê primário) e título como "Planos de Assinatura".
-
-Cada plano renderizado com um `SubscriptionPlanCard` — novo componente com:
-- Badge roxo/dourado com ícone ⭐ ou 👑 "Assinatura"
-- Nome do plano, preço/mês, créditos por ciclo
-- Botão "Conhecer Plano" → redireciona para `/{slug}/cliente` (área do assinante)
-
-### 3. `SubscriptionPlanCard.tsx` — Novo componente
-
-```
-┌─────────────────────────────────────────┐
-│  [gradient top border]                   │
-│  👑 Assinatura          R$ 89,90/mês    │
-│  ─────────────────────────────────────  │
-│  Plano Mensal Premium                    │
-│  4 créditos/mês · Corte + Barba         │
-│  Renovação automática                    │
-│                                          │
-│  [Conhecer Plano →]                      │
-└─────────────────────────────────────────┘
-```
-
-Card com visual distinto dos serviços avulsos:
-- Borda superior colorida (primary/accent)
-- Badge "Assinatura" com ícone Crown (mesmo padrão do badge Popular)
-- Exibe: `billing_interval`, `credits_per_month`, `price`
-- Botão direciona para a área do cliente (`/{slug}/cliente`)
-
-### 4. Layout da galeria
-
-A galeria ficará com duas seções ordenadas:
-
-```
-[ Planos de Assinatura ]      ← nova seção em destaque
-  [card 1]  [card 2]  [card 3]
-
-[ Nossos Serviços ]           ← seção existente (sem mudança)
-  [card]  [card]  [card]  ...
-```
-
-Se não houver planos ativos, a seção é omitida (condicional).
-
----
-
-## Arquivos a modificar/criar
-
-| Arquivo | Mudança |
-|---|---|
-| `src/pages/PublicCatalog.tsx` | Adicionar fetch de `subscription_plans`, novo state, nova seção de planos antes dos serviços |
-| `src/components/SubscriptionPlanCard.tsx` | Novo componente de card para plano com badge "Assinatura" e botão de CTA |
-
-Nenhuma mudança de banco, hooks ou RLS necessária — `subscription_plans` é acessível publicamente via a política existente.
