@@ -45,6 +45,8 @@ interface BookingModalProps {
   barbershopId: string | null;
   allServices?: ServiceOption[];
   loggedInUser?: SupabaseUser | null;
+  clientSubscription?: { id: string; credits_remaining: number; plan_name: string } | null;
+  onSubscriptionCreditUsed?: () => void;
 }
 
 const ANY_BARBER = '__any__';
