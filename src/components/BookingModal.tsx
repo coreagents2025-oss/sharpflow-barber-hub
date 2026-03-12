@@ -97,18 +97,20 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServic
   }, [selectedDate]);
 
   // Fetch available times when date or total duration changes
+  // Only reset selectedTime when on step 2 (date/time selection) to avoid clearing
+  // a valid selection when user adds extra services on step 3
   useEffect(() => {
     if (selectedDate) {
       generateAvailableTimes();
-      setSelectedTime('');
+      if (step === 2) setSelectedTime('');
     }
-  }, [selectedDate, barbershopId, totalDuration]);
+  }, [selectedDate, barbershopId, totalDuration, step]);
 
   // Fetch occupied times when barber or date changes
   useEffect(() => {
     if (selectedDate && selectedBarber) {
       fetchOccupiedTimes();
-      setSelectedTime('');
+      if (step === 2) setSelectedTime('');
     }
   }, [selectedDate, selectedBarber, totalDuration]);
 
