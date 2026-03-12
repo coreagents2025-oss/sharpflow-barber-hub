@@ -173,10 +173,13 @@ export const useBooking = (barbershopId: string | null) => {
         .lt('scheduled_at', totalEndTime.toISOString())
         .not('status', 'in', '(cancelled,no_show,completed)');
 
+      // Fix: limitar busca às últimas 8h para evitar que agendamentos históricos bloqueiem novos
+      const lookbackStart = new Date(scheduledAt.getTime() - 8 * 60 * 60 * 1000);
       const { data: overlappingBefore } = await supabase
         .from('appointments')
         .select('scheduled_at, status, services(duration_minutes)')
         .eq('barber_id', data.barberId)
+        .gte('scheduled_at', lookbackStart.toISOString())
         .lt('scheduled_at', scheduledAt.toISOString())
         .not('status', 'in', '(cancelled,no_show,completed)');
 

@@ -285,7 +285,8 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServic
     const dayEnd = new Date(selectedDate);
     dayEnd.setHours(23, 59, 59, 999);
 
-    // Bug fix 3: For ANY_BARBER, a slot is only occupied if ALL barbers are busy at that time
+    // Fix: usar public_appointment_slots (view segura sem PII) para verificar disponibilidade
+    // Para ANY_BARBER, slot só fica bloqueado se TODOS os barbeiros estiverem ocupados
     if (selectedBarber === ANY_BARBER) {
       if (barbers.length === 0) {
         setOccupiedTimes([]);
@@ -293,24 +294,32 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServic
       }
       const allBarberIds = barbers.map(b => b.id);
       const { data: allAppointments } = await supabase
-        .from('appointments')
-        .select('scheduled_at, barber_id, services(duration_minutes)')
+        .from('public_appointment_slots')
+        .select('scheduled_at, barber_id, service_id')
         .in('barber_id', allBarberIds)
         .gte('scheduled_at', dayStart.toISOString())
-        .lt('scheduled_at', dayEnd.toISOString())
-        .not('status', 'in', '(cancelled,no_show,completed)');
+        .lt('scheduled_at', dayEnd.toISOString());
 
-      // Group appointments per barber
+      // Buscar duração dos serviços em lote para calcular slots
+      const serviceIds = [...new Set((allAppointments || []).map(a => a.service_id))];
+      const { data: servicesData } = serviceIds.length > 0
+        ? await supabase.from('services').select('id, duration_minutes').in('id', serviceIds)
+        : { data: [] };
+      const servicesDurationMap = new Map((servicesData || []).map(s => [s.id, s.duration_minutes]));
+
+      const enriched = (allAppointments || []).map(apt => ({
+        ...apt,
+        services: { duration_minutes: servicesDurationMap.get(apt.service_id) || 30 }
+      }));
+
+      // Agrupar por barbeiro
       const byBarber: Record<string, any[]> = {};
       allBarberIds.forEach(id => { byBarber[id] = []; });
-      allAppointments?.forEach(apt => {
+      enriched.forEach(apt => {
         if (byBarber[apt.barber_id]) byBarber[apt.barber_id].push(apt);
       });
 
-      // Get occupied slots per barber
       const slotsPerBarber = allBarberIds.map(id => new Set(getOccupiedSlotsForBarber(byBarber[id], totalDuration)));
-
-      // A slot is "fully occupied" only if ALL barbers are busy at it
       const allSlots = new Set(availableTimes);
       const fullyOccupied = [...allSlots].filter(slot =>
         slotsPerBarber.every(barberSlots => barberSlots.has(slot))
@@ -320,14 +329,25 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServic
     }
 
     const { data: appointments } = await supabase
-      .from('appointments')
-      .select('scheduled_at, status, services(duration_minutes)')
+      .from('public_appointment_slots')
+      .select('scheduled_at, service_id')
       .eq('barber_id', selectedBarber)
       .gte('scheduled_at', dayStart.toISOString())
-      .lt('scheduled_at', dayEnd.toISOString())
-      .not('status', 'in', '(cancelled,no_show,completed)');
+      .lt('scheduled_at', dayEnd.toISOString());
 
-    setOccupiedTimes(getOccupiedSlotsForBarber(appointments || [], totalDuration));
+    // Buscar duração dos serviços para calcular bloqueio de slots
+    const svcIds = [...new Set((appointments || []).map(a => a.service_id))];
+    const { data: svcsData } = svcIds.length > 0
+      ? await supabase.from('services').select('id, duration_minutes').in('id', svcIds)
+      : { data: [] };
+    const svcsMap = new Map((svcsData || []).map(s => [s.id, s.duration_minutes]));
+
+    const enrichedAppointments = (appointments || []).map(apt => ({
+      ...apt,
+      services: { duration_minutes: svcsMap.get(apt.service_id) || 30 }
+    }));
+
+    setOccupiedTimes(getOccupiedSlotsForBarber(enrichedAppointments, totalDuration));
   };
 
   // Resolve final barber for "any" option

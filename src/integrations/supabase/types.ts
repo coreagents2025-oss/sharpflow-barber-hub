@@ -1310,6 +1310,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "payments_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "public_appointment_slots"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "payments_barbershop_id_fkey"
             columns: ["barbershop_id"]
             isOneToOne: false
@@ -1546,6 +1553,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "reviews_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: true
+            referencedRelation: "public_appointment_slots"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "reviews_barber_id_fkey"
             columns: ["barber_id"]
             isOneToOne: false
@@ -1699,6 +1713,13 @@ export type Database = {
             columns: ["appointment_id"]
             isOneToOne: false
             referencedRelation: "appointments_with_client"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_credit_usage_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "public_appointment_slots"
             referencedColumns: ["id"]
           },
           {
@@ -2283,6 +2304,76 @@ export type Database = {
             columns: ["appointment_id"]
             isOneToOne: false
             referencedRelation: "appointments_with_client"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "payments_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "public_appointment_slots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      public_appointment_slots: {
+        Row: {
+          barber_id: string | null
+          barbershop_id: string | null
+          id: string | null
+          scheduled_at: string | null
+          service_id: string | null
+          status: string | null
+        }
+        Insert: {
+          barber_id?: string | null
+          barbershop_id?: string | null
+          id?: string | null
+          scheduled_at?: string | null
+          service_id?: string | null
+          status?: string | null
+        }
+        Update: {
+          barber_id?: string | null
+          barbershop_id?: string | null
+          id?: string | null
+          scheduled_at?: string | null
+          service_id?: string | null
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "barbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "public_barbers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_barbershop_id_fkey"
+            columns: ["barbershop_id"]
+            isOneToOne: false
+            referencedRelation: "barbershops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_barbershop_id_fkey"
+            columns: ["barbershop_id"]
+            isOneToOne: false
+            referencedRelation: "public_barbershops"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
             referencedColumns: ["id"]
           },
         ]
