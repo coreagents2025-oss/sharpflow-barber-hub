@@ -1137,12 +1137,26 @@ const PDV = () => {
                           <div className="grid grid-cols-1 gap-1 text-[10px] sm:text-xs text-muted-foreground">
                             <div className="flex items-center gap-1">
                               <Scissors className="h-3 w-3 flex-shrink-0" />
-                              <span className="truncate">{apt.services?.name || 'Serviço'}</span>
-                              {apt.services?.price && (
-                                <span className="font-medium text-accent ml-1">
-                                  R$ {apt.services.price.toFixed(2)}
-                                </span>
-                              )}
+                              {(() => {
+                                const apptServices = (apt as any).appointment_services;
+                                const hasMultiple = apptServices && apptServices.length > 0;
+                                const serviceNames = hasMultiple
+                                  ? [...apptServices].sort((a: any, b: any) => a.position - b.position).map((s: any) => s.services?.name).filter(Boolean).join(' + ')
+                                  : apt.services?.name || 'Serviço';
+                                const totalPrice = hasMultiple
+                                  ? apptServices.reduce((sum: number, s: any) => sum + Number(s.price), 0)
+                                  : apt.services?.price || 0;
+                                return (
+                                  <>
+                                    <span className="truncate">{serviceNames}</span>
+                                    {totalPrice > 0 && (
+                                      <span className="font-medium text-accent ml-1 flex-shrink-0">
+                                        R$ {totalPrice.toFixed(2)}
+                                      </span>
+                                    )}
+                                  </>
+                                );
+                              })()}
                             </div>
                             <div className="flex items-center gap-1">
                               <User className="h-3 w-3 flex-shrink-0" />
