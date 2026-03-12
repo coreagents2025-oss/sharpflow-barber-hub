@@ -94,13 +94,13 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServic
     }
   }, [selectedDate]);
 
-  // Fetch available times when date changes
+  // Fetch available times when date or total duration changes
   useEffect(() => {
     if (selectedDate) {
       generateAvailableTimes();
       setSelectedTime('');
     }
-  }, [selectedDate, barbershopId]);
+  }, [selectedDate, barbershopId, totalDuration]);
 
   // Fetch occupied times when barber or date changes
   useEffect(() => {
