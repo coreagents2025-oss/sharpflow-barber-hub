@@ -184,7 +184,6 @@ const PDV = () => {
           client_type,
           barbershop_id,
           barber_id,
-          total_duration_minutes,
           services (name, duration_minutes, price),
           barbers (name),
           appointment_services (service_id, position, duration_minutes, price, services(name))
