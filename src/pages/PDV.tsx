@@ -529,13 +529,14 @@ const PDV = () => {
   };
 
   const handleOpenPaymentModal = (appointment: any) => {
-    // Passar dados unificados para o modal
     setSelectedAppointment({
       ...appointment,
       client: {
         full_name: appointment.client_name || 'Cliente',
       },
-      service: appointment.services,
+      // Support both new multi-service format and legacy single service
+      services: appointment.services || [{ name: 'Serviço', price: 0 }],
+      totalServicePrice: appointment.totalServicePrice ?? (Array.isArray(appointment.services) ? appointment.services.reduce((s: number, sv: any) => s + sv.price, 0) : (appointment.services?.price || 0)),
     });
     setPaymentModalOpen(true);
   };
