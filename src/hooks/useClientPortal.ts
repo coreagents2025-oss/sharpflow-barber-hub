@@ -74,10 +74,10 @@ export const useClientPortal = (slug: string | undefined) => {
 
       setBarbershop(bsData);
 
-      // Verify client has access to this barbershop
+      // Verify client has access to this barbershop (also fetch lead_id for subscription lookup)
       const { data: linkData } = await supabase
         .from('client_barbershop_links')
-        .select('id')
+        .select('id, lead_id')
         .eq('user_id', user.id)
         .eq('barbershop_id', bsData.id)
         .maybeSingle();
