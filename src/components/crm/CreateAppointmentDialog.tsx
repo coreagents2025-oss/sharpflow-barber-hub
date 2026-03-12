@@ -57,7 +57,7 @@ export function CreateAppointmentDialog({
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
   const [occupiedTimes, setOccupiedTimes] = useState<string[]>([]);
 
-  const { createBooking, isSubmitting } = useBooking(barbershopId);
+  const { createBooking, isSubmitting } = useBooking(barbershopId, true);
 
   // Derived: main service object + additional services objects
   const mainService = services.find(s => s.id === selectedService);
@@ -217,7 +217,7 @@ export function CreateAppointmentDialog({
 
     appointments?.forEach(apt => {
       const startTime = new Date(apt.scheduled_at);
-      const duration = (apt.services as any)?.duration_minutes || 30;
+      const duration = (apt as any).total_duration_minutes || (apt.services as any)?.duration_minutes || 30;
       const slots = Math.ceil(duration / 30);
       for (let i = 0; i < slots; i++) {
         const slotTime = new Date(startTime);
@@ -403,7 +403,7 @@ export function CreateAppointmentDialog({
               mode="single"
               selected={selectedDate}
               onSelect={setSelectedDate}
-              disabled={date => date < new Date()}
+              disabled={date => { const d = new Date(); d.setHours(0,0,0,0); return date < d; }}
               locale={ptBR}
               className="rounded-md border w-full pointer-events-auto"
             />

@@ -20,7 +20,7 @@ interface ServiceInfo {
   price: number;
 }
 
-export const useBooking = (barbershopId: string | null) => {
+export const useBooking = (barbershopId: string | null, isStaffBooking?: boolean) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const createBooking = async (data: BookingData) => {
@@ -99,11 +99,19 @@ export const useBooking = (barbershopId: string | null) => {
         }
       }
 
-      // Validar se não é data/hora passada
+      // Validar se não é data/hora passada (apenas para clientes públicos)
       const now = new Date();
-      if (scheduledAt <= now) {
+      if (!isStaffBooking && scheduledAt <= now) {
         toast.error('Não é possível agendar para datas passadas.');
         return false;
+      }
+      if (isStaffBooking) {
+        const todayMidnight = new Date();
+        todayMidnight.setHours(0, 0, 0, 0);
+        if (scheduledAt < todayMidnight) {
+          toast.error('Não é possível agendar para dias anteriores.');
+          return false;
+        }
       }
 
       // Normalizar telefone
