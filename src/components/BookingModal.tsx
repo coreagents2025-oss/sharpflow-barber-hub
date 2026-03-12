@@ -298,21 +298,14 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServic
       const allBarberIds = barbers.map(b => b.id);
       const { data: allAppointments } = await supabase
         .from('public_appointment_slots')
-        .select('scheduled_at, barber_id, service_id')
+        .select('scheduled_at, barber_id, service_id, duration_minutes')
         .in('barber_id', allBarberIds)
         .gte('scheduled_at', dayStart.toISOString())
         .lt('scheduled_at', dayEnd.toISOString());
 
-      // Buscar duração dos serviços em lote para calcular slots
-      const serviceIds = [...new Set((allAppointments || []).map(a => a.service_id))];
-      const { data: servicesData } = serviceIds.length > 0
-        ? await supabase.from('services').select('id, duration_minutes').in('id', serviceIds)
-        : { data: [] };
-      const servicesDurationMap = new Map((servicesData || []).map(s => [s.id, s.duration_minutes]));
-
       const enriched = (allAppointments || []).map(apt => ({
         ...apt,
-        services: { duration_minutes: servicesDurationMap.get(apt.service_id) || 30 }
+        services: { duration_minutes: (apt as any).duration_minutes || 30 }
       }));
 
       // Agrupar por barbeiro
@@ -333,21 +326,14 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServic
 
     const { data: appointments } = await supabase
       .from('public_appointment_slots')
-      .select('scheduled_at, service_id')
+      .select('scheduled_at, service_id, duration_minutes')
       .eq('barber_id', selectedBarber)
       .gte('scheduled_at', dayStart.toISOString())
       .lt('scheduled_at', dayEnd.toISOString());
 
-    // Buscar duração dos serviços para calcular bloqueio de slots
-    const svcIds = [...new Set((appointments || []).map(a => a.service_id))];
-    const { data: svcsData } = svcIds.length > 0
-      ? await supabase.from('services').select('id, duration_minutes').in('id', svcIds)
-      : { data: [] };
-    const svcsMap = new Map((svcsData || []).map(s => [s.id, s.duration_minutes]));
-
     const enrichedAppointments = (appointments || []).map(apt => ({
       ...apt,
-      services: { duration_minutes: svcsMap.get(apt.service_id) || 30 }
+      services: { duration_minutes: (apt as any).duration_minutes || 30 }
     }));
 
     setOccupiedTimes(getOccupiedSlotsForBarber(enrichedAppointments, totalDuration));

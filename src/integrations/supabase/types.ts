@@ -2319,26 +2319,11 @@ export type Database = {
         Row: {
           barber_id: string | null
           barbershop_id: string | null
+          duration_minutes: number | null
           id: string | null
           scheduled_at: string | null
           service_id: string | null
           status: string | null
-        }
-        Insert: {
-          barber_id?: string | null
-          barbershop_id?: string | null
-          id?: string | null
-          scheduled_at?: string | null
-          service_id?: string | null
-          status?: string | null
-        }
-        Update: {
-          barber_id?: string | null
-          barbershop_id?: string | null
-          id?: string | null
-          scheduled_at?: string | null
-          service_id?: string | null
-          status?: string | null
         }
         Relationships: [
           {
