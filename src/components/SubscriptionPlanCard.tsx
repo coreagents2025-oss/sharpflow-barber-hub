@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Crown, ArrowRight, RefreshCw, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/hooks/useAuth';
 
 interface SubscriptionPlan {
   id: string;
@@ -32,8 +33,13 @@ const billingIntervalCreditsLabel: Record<string, string> = {
 };
 
 export const SubscriptionPlanCard = ({ plan, slug }: SubscriptionPlanCardProps) => {
+  const { user, userRole } = useAuth();
   const intervalLabel = billingIntervalLabel[plan.billing_interval] || 'mês';
   const creditsLabel = billingIntervalCreditsLabel[plan.billing_interval] || 'mês';
+
+  const destination = (user && userRole === 'client')
+    ? `/${slug}/cliente/dashboard`
+    : slug ? `/${slug}/cliente` : '/cliente';
 
   return (
     <div className="relative flex flex-col rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
@@ -102,7 +108,7 @@ export const SubscriptionPlanCard = ({ plan, slug }: SubscriptionPlanCardProps) 
           asChild
           className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
         >
-          <Link to={slug ? `/${slug}/cliente` : '/cliente'}>
+          <Link to={destination}>
             Assinar agora
             <ArrowRight className="h-4 w-4" />
           </Link>

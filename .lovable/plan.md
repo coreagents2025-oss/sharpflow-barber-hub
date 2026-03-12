@@ -1,66 +1,23 @@
 
-## Diagnóstico do Loop
 
-**Fluxo que causa o loop:**
-1. Cliente está logado no dashboard (`/:slug/cliente/dashboard`)
-2. Vai para o catálogo público (`/:slug`) e clica em "Assinar agora" em um plano
-3. O botão do `SubscriptionPlanCard` navega para `/:slug/cliente`
-4. A rota `/:slug/cliente` renderiza `ClientAuth`, que tem um `useEffect` na linha 50-56:
-   ```typescript
-   if (!authLoading && user && userRole === 'client') {
-     navigate(`/${slug}/cliente/dashboard`, { replace: true });
-   }
-   ```
-5. Isso redireciona de volta para o dashboard → **o cliente nunca consegue ver o formulário de assinatura**
+## Problema identificado
 
-**Raiz do problema:** O `SubscriptionPlanCard` direciona todos os clientes (logados ou não) para `/:slug/cliente`, que é a **tela de login** — mas clientes já logados são imediatamente bounced de volta para o dashboard por esse guard redirect.
+O PWA está configurado com `navigateFallback: "/offline.html"`, o que significa que **qualquer navegação offline mostra a página estática de "Sem conexão"** em vez de carregar o app cacheado. Além disso, o `main.tsx` registra manualmente o service worker (`/sw.js`), conflitando com o registro automático do `vite-plugin-pwa`.
 
----
+## Correções
 
-## Solução
+### 1. Alterar `navigateFallback` para `/index.html` (vite.config.ts)
+- Trocar `"/offline.html"` por `"/index.html"` para que o service worker sirva o shell do app (SPA) quando offline
+- Adicionar `"/index.html"` e `"/offline.html"` ao `globPatterns` para garantir que sejam pré-cacheados
 
-### 1. `SubscriptionPlanCard.tsx` — detectar se usuário está logado
+### 2. Remover registro manual do SW (main.tsx)
+- O `vite-plugin-pwa` com `registerType: "autoUpdate"` já gera e registra o service worker automaticamente
+- O registro manual de `/sw.js` conflita e pode impedir o cache correto
 
-Transformar de um simples `<Link>` estático para um componente inteligente:
-- Se o usuário **não está logado**: continua indo para `/:slug/cliente` (login/cadastro) — comportamento atual correto
-- Se o usuário **está logado como client**: vai direto para `/:slug/cliente/dashboard` — pula a tela de login redundante
+### 3. Adicionar `globPatterns` para pré-cachear os assets do app (vite.config.ts)
+- Incluir `*.html`, `*.js`, `*.css`, e ícones no precache do workbox para que o app funcione offline de verdade
 
-```typescript
-// Importar useAuth e ajustar destino dinamicamente
-const { user, userRole } = useAuth();
-const destination = (user && userRole === 'client')
-  ? `/${slug}/cliente/dashboard`
-  : `/${slug}/cliente`;
-```
+### Resultado esperado
+- App carrega normalmente mesmo sem internet (usando cache do SPA)
+- A página `offline.html` só apareceria se o cache do index.html falhasse (cenário extremo)
 
-### 2. `ClientAuth.tsx` — preservar contexto de "vem do catálogo"
-
-Atualmente o redirect do `ClientAuth` ao fazer login vai sempre para `/:slug/cliente/dashboard` sem nenhuma mensagem contextual. Melhoria pequena opcional: nada muda aqui se o `SubscriptionPlanCard` já redirecionar corretamente.
-
----
-
-## Arquivos a modificar
-
-| Arquivo | Mudança |
-|---|---|
-| `src/components/SubscriptionPlanCard.tsx` | Importar `useAuth`, calcular destino dinamicamente: logado → dashboard, deslogado → login |
-
-Apenas **1 arquivo** muda. Nenhuma lógica de rota ou guarda precisa ser alterada.
-
----
-
-## Diagrama do fluxo corrigido
-
-```text
-Cliente logado clica "Assinar agora"
-         ↓
-  useAuth() detecta user+role='client'
-         ↓
-  Link → /:slug/cliente/dashboard   ✓ (vai direto, sem loop)
-
-Cliente deslogado clica "Assinar agora"
-         ↓
-  useAuth() → user=null
-         ↓
-  Link → /:slug/cliente             ✓ (tela de login, comportamento correto)
-```
