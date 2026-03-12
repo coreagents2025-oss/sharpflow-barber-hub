@@ -405,6 +405,7 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServic
     setAdditionalServiceIds([]);
     setOccupiedTimes([]);
     setAvailableTimes([]);
+    setUseSubscriptionCredit(false);
   };
 
   const canAdvance = () => {
