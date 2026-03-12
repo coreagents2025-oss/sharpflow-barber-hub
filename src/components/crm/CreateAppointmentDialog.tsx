@@ -217,7 +217,7 @@ export function CreateAppointmentDialog({
 
     appointments?.forEach(apt => {
       const startTime = new Date(apt.scheduled_at);
-      const duration = (apt.services as any)?.duration_minutes || 30;
+      const duration = (apt as any).total_duration_minutes || (apt.services as any)?.duration_minutes || 30;
       const slots = Math.ceil(duration / 30);
       for (let i = 0; i < slots; i++) {
         const slotTime = new Date(startTime);
