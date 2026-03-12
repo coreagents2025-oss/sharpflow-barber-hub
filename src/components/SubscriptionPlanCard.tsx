@@ -21,96 +21,67 @@ interface SubscriptionPlanCardProps {
 }
 
 const billingIntervalLabel: Record<string, string> = {
-  weekly: 'semana',
-  biweekly: 'quinzena',
-  monthly: 'mês',
-};
-
-const billingIntervalCreditsLabel: Record<string, string> = {
-  weekly: 'semana',
-  biweekly: 'quinzena',
+  weekly: 'sem',
+  biweekly: 'qzn',
   monthly: 'mês',
 };
 
 export const SubscriptionPlanCard = ({ plan, slug }: SubscriptionPlanCardProps) => {
   const { user, userRole } = useAuth();
   const intervalLabel = billingIntervalLabel[plan.billing_interval] || 'mês';
-  const creditsLabel = billingIntervalCreditsLabel[plan.billing_interval] || 'mês';
 
   const destination = (user && userRole === 'client')
     ? `/${slug}/cliente/dashboard`
     : slug ? `/${slug}/cliente` : '/cliente';
 
   return (
-    <div className="relative flex flex-col rounded-xl border bg-card text-card-foreground shadow-sm overflow-hidden transition-all duration-300 hover:-translate-y-1 hover:shadow-lg">
+    <div className="relative flex flex-col rounded-lg border bg-card text-card-foreground shadow-sm overflow-hidden transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
       {/* Gradient top border */}
-      <div className="h-1 w-full bg-gradient-to-r from-primary via-primary/80 to-accent" />
+      <div className="h-0.5 w-full bg-gradient-to-r from-primary via-primary/80 to-accent" />
 
-      {/* Discount badge */}
-      {plan.discount_percentage && plan.discount_percentage > 0 && (
-        <div className="absolute top-4 right-4">
-          <Badge className="bg-accent text-accent-foreground font-bold gap-1">
-            <Star className="h-3 w-3 fill-current" />
-            -{plan.discount_percentage}%
-          </Badge>
+      <div className="flex items-center gap-3 p-3">
+        {/* Left: icon + info */}
+        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+          <Crown className="h-4 w-4 text-primary" />
         </div>
-      )}
 
-      <div className="flex flex-col gap-4 p-5 flex-1">
-        {/* Header */}
-        <div className="flex items-start gap-3">
-          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-            <Crown className="h-5 w-5 text-primary" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap">
-              <Badge variant="outline" className="border-primary/40 text-primary bg-primary/5 text-[11px] font-semibold px-2 py-0 gap-1">
-                <Crown className="h-2.5 w-2.5" />
-                Assinatura
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <span className="font-semibold text-sm text-foreground truncate">{plan.name}</span>
+            {plan.discount_percentage && plan.discount_percentage > 0 && (
+              <Badge className="bg-accent text-accent-foreground font-bold gap-0.5 text-[10px] px-1.5 py-0 h-4">
+                <Star className="h-2.5 w-2.5 fill-current" />
+                -{plan.discount_percentage}%
               </Badge>
-            </div>
-            <h3 className="font-bold text-foreground text-base mt-1 leading-tight">{plan.name}</h3>
+            )}
           </div>
-        </div>
-
-        {/* Price */}
-        <div className="flex items-end gap-1">
-          <span className="text-3xl font-extrabold text-foreground">
-            {plan.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-          </span>
-          <span className="text-sm text-muted-foreground mb-1">/{intervalLabel}</span>
-        </div>
-
-        {/* Description */}
-        {plan.description && (
-          <p className="text-sm text-muted-foreground leading-relaxed">{plan.description}</p>
-        )}
-
-        {/* Credits info */}
-        <div className="flex flex-wrap gap-2 text-sm">
-          <span className="inline-flex items-center gap-1.5 bg-primary/8 text-primary rounded-md px-2.5 py-1 font-medium">
-            <Crown className="h-3.5 w-3.5" />
-            {plan.credits_per_month} crédito{plan.credits_per_month !== 1 ? 's' : ''}
-            /{creditsLabel}
-          </span>
-          {plan.auto_renew && (
-            <span className="inline-flex items-center gap-1.5 bg-muted text-muted-foreground rounded-md px-2.5 py-1 text-xs">
-              <RefreshCw className="h-3 w-3" />
-              Renovação automática
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className="text-base font-extrabold text-foreground">
+              {plan.price.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
             </span>
+            <span className="text-xs text-muted-foreground">/{intervalLabel}</span>
+            <span className="text-xs text-muted-foreground">·</span>
+            <span className="text-xs text-primary font-medium">
+              {plan.credits_per_month} crédito{plan.credits_per_month !== 1 ? 's' : ''}
+            </span>
+            {plan.auto_renew && (
+              <RefreshCw className="h-3 w-3 text-muted-foreground" />
+            )}
+          </div>
+          {plan.description && (
+            <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{plan.description}</p>
           )}
         </div>
-      </div>
 
-      {/* CTA */}
-      <div className="px-5 pb-5">
+        {/* Right: CTA */}
         <Button
           asChild
-          className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
+          size="sm"
+          className="shrink-0 gap-1 bg-primary hover:bg-primary/90 text-primary-foreground h-8 px-3 text-xs"
         >
           <Link to={destination}>
-            Assinar agora
-            <ArrowRight className="h-4 w-4" />
+            Assinar
+            <ArrowRight className="h-3 w-3" />
           </Link>
         </Button>
       </div>
