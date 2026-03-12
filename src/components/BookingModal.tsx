@@ -119,6 +119,22 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServic
     }
   }, [isOpen]);
 
+  // Pre-fill client data from logged-in user profile
+  useEffect(() => {
+    if (isOpen && loggedInUser) {
+      setClientEmail(loggedInUser.email || '');
+      supabase
+        .from('profiles')
+        .select('full_name, phone')
+        .eq('id', loggedInUser.id)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data?.full_name) setClientName(data.full_name);
+          if (data?.phone) setClientPhone(data.phone);
+        });
+    }
+  }, [isOpen, loggedInUser]);
+
   useEffect(() => {
     setAdditionalServiceIds([]);
   }, [service?.id]);
