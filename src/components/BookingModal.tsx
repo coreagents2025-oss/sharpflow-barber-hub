@@ -94,13 +94,13 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServic
     }
   }, [selectedDate]);
 
-  // Fetch available times when date changes
+  // Fetch available times when date or total duration changes
   useEffect(() => {
     if (selectedDate) {
       generateAvailableTimes();
       setSelectedTime('');
     }
-  }, [selectedDate, barbershopId]);
+  }, [selectedDate, barbershopId, totalDuration]);
 
   // Fetch occupied times when barber or date changes
   useEffect(() => {
@@ -173,13 +173,15 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServic
       .eq('date', dateStr)
       .maybeSingle();
 
-    const times: string[] = [];
-    let startHour = 9;
-    let endHour = 18;
+    const toMinutes = (h: number, m: number) => h * 60 + m;
+    let startMinutes = toMinutes(9, 0);
+    let endMinutes = toMinutes(18, 0);
 
     if (schedule?.working_hours_start && schedule?.working_hours_end) {
-      startHour = parseInt(schedule.working_hours_start.split(':')[0]);
-      endHour = parseInt(schedule.working_hours_end.split(':')[0]);
+      const [sh, sm] = schedule.working_hours_start.split(':').map(Number);
+      const [eh, em] = schedule.working_hours_end.split(':').map(Number);
+      startMinutes = toMinutes(sh, sm);
+      endMinutes = toMinutes(eh, em);
     } else {
       const { data: barbershop } = await supabase
         .from('public_barbershops')
@@ -192,8 +194,10 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServic
         const dayName = DAY_MAP[selectedDate.getDay()];
         const dayHours = (barbershop.operating_hours as any)?.[dayName];
         if (dayHours?.open && dayHours?.close) {
-          startHour = parseInt(dayHours.open.split(':')[0]);
-          endHour = parseInt(dayHours.close.split(':')[0]);
+          const [sh, sm] = dayHours.open.split(':').map(Number);
+          const [eh, em] = dayHours.close.split(':').map(Number);
+          startMinutes = toMinutes(sh, sm);
+          endMinutes = toMinutes(eh, em);
         } else {
           setAvailableTimes([]);
           return;
@@ -201,68 +205,111 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServic
       }
     }
 
-    for (let hour = startHour; hour < endHour; hour++) {
-      const t1 = `${hour.toString().padStart(2, '0')}:00`;
-      const t2 = `${hour.toString().padStart(2, '0')}:30`;
-      if (!schedule?.blocked_slots?.includes(t1)) times.push(t1);
-      if (!schedule?.blocked_slots?.includes(t2)) times.push(t2);
+    const allTimes: string[] = [];
+    for (let mins = startMinutes; mins < endMinutes; mins += 30) {
+      const h = Math.floor(mins / 60);
+      const m = mins % 60;
+      const t = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+      if (!schedule?.blocked_slots?.includes(t)) allTimes.push(t);
     }
-    setAvailableTimes(times);
+
+    // Bug fix 1: filter slots where service end time would exceed closing time
+    const duration = totalDuration || (service?.duration_minutes ?? 30);
+    let filtered = allTimes.filter(t => {
+      const [h, m] = t.split(':').map(Number);
+      return toMinutes(h, m) + duration <= endMinutes;
+    });
+
+    // Bug fix 2: filter past time slots when the selected date is today
+    const now = new Date();
+    const isToday = selectedDate.toDateString() === now.toDateString();
+    if (isToday) {
+      const nowMinutes = toMinutes(now.getHours(), now.getMinutes());
+      filtered = filtered.filter(t => {
+        const [h, m] = t.split(':').map(Number);
+        return toMinutes(h, m) > nowMinutes;
+      });
+    }
+
+    setAvailableTimes(filtered);
+  };
+
+  const getOccupiedSlotsForBarber = (appointments: any[], duration: number): string[] => {
+    const slots: string[] = [];
+    appointments?.forEach(apt => {
+      const startTime = new Date(apt.scheduled_at);
+      const aptDuration = (apt.services as any)?.duration_minutes || 30;
+      // Mark all slots occupied by the existing appointment
+      const aptSlots = Math.ceil(aptDuration / 30);
+      for (let i = 0; i < aptSlots; i++) {
+        const t = new Date(startTime);
+        t.setMinutes(startTime.getMinutes() + i * 30);
+        slots.push(`${t.getHours().toString().padStart(2, '0')}:${t.getMinutes().toString().padStart(2, '0')}`);
+      }
+      // Also block slots before the appointment that would make the new service overflow into it
+      if (duration > 30) {
+        const newSlots = Math.ceil(duration / 30);
+        for (let i = 1; i < newSlots; i++) {
+          const t = new Date(startTime);
+          t.setMinutes(startTime.getMinutes() - i * 30);
+          slots.push(`${t.getHours().toString().padStart(2, '0')}:${t.getMinutes().toString().padStart(2, '0')}`);
+        }
+      }
+    });
+    return [...new Set(slots)];
   };
 
   const fetchOccupiedTimes = async () => {
     if (!selectedBarber || !selectedDate || !barbershopId) return;
-
-    if (selectedBarber === ANY_BARBER) {
-      // For "any", occupied = times occupied by ALL barbers simultaneously
-      // We show all times that have at least one barber free, so no need to block here
-      setOccupiedTimes([]);
-      return;
-    }
 
     const dayStart = new Date(selectedDate);
     dayStart.setHours(0, 0, 0, 0);
     const dayEnd = new Date(selectedDate);
     dayEnd.setHours(23, 59, 59, 999);
 
+    // Bug fix 3: For ANY_BARBER, a slot is only occupied if ALL barbers are busy at that time
+    if (selectedBarber === ANY_BARBER) {
+      if (barbers.length === 0) {
+        setOccupiedTimes([]);
+        return;
+      }
+      const allBarberIds = barbers.map(b => b.id);
+      const { data: allAppointments } = await supabase
+        .from('appointments')
+        .select('scheduled_at, barber_id, services(duration_minutes)')
+        .in('barber_id', allBarberIds)
+        .gte('scheduled_at', dayStart.toISOString())
+        .lt('scheduled_at', dayEnd.toISOString())
+        .not('status', 'in', '(cancelled,no_show,completed)');
+
+      // Group appointments per barber
+      const byBarber: Record<string, any[]> = {};
+      allBarberIds.forEach(id => { byBarber[id] = []; });
+      allAppointments?.forEach(apt => {
+        if (byBarber[apt.barber_id]) byBarber[apt.barber_id].push(apt);
+      });
+
+      // Get occupied slots per barber
+      const slotsPerBarber = allBarberIds.map(id => new Set(getOccupiedSlotsForBarber(byBarber[id], totalDuration)));
+
+      // A slot is "fully occupied" only if ALL barbers are busy at it
+      const allSlots = new Set(availableTimes);
+      const fullyOccupied = [...allSlots].filter(slot =>
+        slotsPerBarber.every(barberSlots => barberSlots.has(slot))
+      );
+      setOccupiedTimes(fullyOccupied);
+      return;
+    }
+
     const { data: appointments } = await supabase
       .from('appointments')
-      .select(`scheduled_at, status, services(duration_minutes)`)
+      .select('scheduled_at, status, services(duration_minutes)')
       .eq('barber_id', selectedBarber)
       .gte('scheduled_at', dayStart.toISOString())
       .lt('scheduled_at', dayEnd.toISOString())
       .not('status', 'in', '(cancelled,no_show,completed)');
 
-    const occupiedSlots: string[] = [];
-
-    appointments?.forEach(apt => {
-      const startTime = new Date(apt.scheduled_at);
-      const duration = (apt.services as any)?.duration_minutes || 30;
-      const slots = Math.ceil(duration / 30);
-      for (let i = 0; i < slots; i++) {
-        const slotTime = new Date(startTime);
-        slotTime.setMinutes(startTime.getMinutes() + (i * 30));
-        occupiedSlots.push(
-          `${slotTime.getHours().toString().padStart(2, '0')}:${slotTime.getMinutes().toString().padStart(2, '0')}`
-        );
-      }
-    });
-
-    if (totalDuration > 30) {
-      const newServiceSlots = Math.ceil(totalDuration / 30);
-      appointments?.forEach(apt => {
-        const startTime = new Date(apt.scheduled_at);
-        for (let i = 1; i < newServiceSlots; i++) {
-          const slotTime = new Date(startTime);
-          slotTime.setMinutes(startTime.getMinutes() - (i * 30));
-          occupiedSlots.push(
-            `${slotTime.getHours().toString().padStart(2, '0')}:${slotTime.getMinutes().toString().padStart(2, '0')}`
-          );
-        }
-      });
-    }
-
-    setOccupiedTimes([...new Set(occupiedSlots)]);
+    setOccupiedTimes(getOccupiedSlotsForBarber(appointments || [], totalDuration));
   };
 
   // Resolve final barber for "any" option

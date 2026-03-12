@@ -1,82 +1,23 @@
 
-## Diagnóstico dos problemas reais
 
-Há **3 bugs** na lógica de horários que fazem slots inválidos aparecerem como selecionáveis:
+## Problema identificado
 
-### Bug 1 — `generateAvailableTimes` usa apenas a hora inteira (`parseInt(split(':')[0])`)
+O PWA está configurado com `navigateFallback: "/offline.html"`, o que significa que **qualquer navegação offline mostra a página estática de "Sem conexão"** em vez de carregar o app cacheado. Além disso, o `main.tsx` registra manualmente o service worker (`/sw.js`), conflitando com o registro automático do `vite-plugin-pwa`.
 
-```typescript
-startHour = parseInt(schedule.working_hours_start.split(':')[0]);
-endHour = parseInt(schedule.working_hours_end.split(':')[0]);
-```
+## Correções
 
-Se o fechamento é `20:00`, o loop vai até `hour < 20`, gerando `19:00` e `19:30` — correto.  
-Mas se o serviço dura 60 min e começa às 19:30, termina às 20:30 = **fora do expediente**. Slots que, somada a duração total do serviço, ultrapassam o horário de fechamento não são filtrados.
+### 1. Alterar `navigateFallback` para `/index.html` (vite.config.ts)
+- Trocar `"/offline.html"` por `"/index.html"` para que o service worker sirva o shell do app (SPA) quando offline
+- Adicionar `"/index.html"` e `"/offline.html"` ao `globPatterns` para garantir que sejam pré-cacheados
 
-### Bug 2 — Slots passados do dia atual não são bloqueados
+### 2. Remover registro manual do SW (main.tsx)
+- O `vite-plugin-pwa` com `registerType: "autoUpdate"` já gera e registra o service worker automaticamente
+- O registro manual de `/sw.js` conflita e pode impedir o cache correto
 
-O calendário bloqueia datas anteriores a hoje, mas se o cliente seleciona **hoje**, horários que já passaram continuam aparecendo como disponíveis (ex: são 14h e aparece 09:00, 09:30...).
+### 3. Adicionar `globPatterns` para pré-cachear os assets do app (vite.config.ts)
+- Incluir `*.html`, `*.js`, `*.css`, e ícones no precache do workbox para que o app funcione offline de verdade
 
-### Bug 3 — "Qualquer disponível" não verifica ocupação real
+### Resultado esperado
+- App carrega normalmente mesmo sem internet (usando cache do SPA)
+- A página `offline.html` só apareceria se o cache do index.html falhasse (cenário extremo)
 
-Quando `selectedBarber === ANY_BARBER`, `fetchOccupiedTimes` retorna array vazio (`setOccupiedTimes([])`), mostrando todos os horários como livres — mesmo que **todos os barbeiros** estejam ocupados naquele slot.
-
----
-
-## Solução para os 3 bugs
-
-### Correção 1 — Filtrar slots que ultrapassam o horário de fechamento
-
-Em `generateAvailableTimes`, após gerar os slots, filtrar qualquer slot onde `slotTime + totalDuration > endTime`:
-
-```typescript
-// Ao invés de só checar horário de início, checar se o término cabe dentro do expediente
-const toMinutes = (h: number, m: number) => h * 60 + m;
-const [endHourFull, endMinFull] = workingHoursEnd.split(':').map(Number);
-const endInMinutes = toMinutes(endHourFull, endMinFull);
-
-times = times.filter(t => {
-  const [h, m] = t.split(':').map(Number);
-  return toMinutes(h, m) + totalDuration <= endInMinutes;
-});
-```
-
-Isso se aplica tanto ao `BookingModal` quanto ao `CreateAppointmentDialog`. Como `totalDuration` é estado reativo, o filtro se reatualiza quando o cliente adiciona ou remove serviços.
-
-### Correção 2 — Filtrar horários passados quando a data é hoje
-
-```typescript
-const now = new Date();
-const isToday = selectedDate.toDateString() === now.toDateString();
-if (isToday) {
-  const nowMinutes = now.getHours() * 60 + now.getMinutes();
-  times = times.filter(t => {
-    const [h, m] = t.split(':').map(Number);
-    return h * 60 + m > nowMinutes;
-  });
-}
-```
-
-### Correção 3 — "Qualquer disponível" calcular ocupação real
-
-Para o `BookingModal`, quando `ANY_BARBER` é selecionado, buscar os agendamentos de **todos os barbeiros** e só bloquear um slot se **nenhum** barbeiro estiver livre:
-
-```typescript
-// Buscar appointments de todos os barbers do dia
-// Para cada slot em availableTimes, verificar se todos os barbers têm conflito
-// Marcar como ocupado apenas os slots onde count(barbers ocupados) === total barbers
-```
-
----
-
-## Arquivos a modificar
-
-| Arquivo | Mudanças |
-|---|---|
-| `src/components/BookingModal.tsx` | Corrigir `generateAvailableTimes`: filtrar slots pelo término do serviço, filtrar horários passados. Corrigir `fetchOccupiedTimes` para "qualquer disponível" verificar todos os barbeiros. Adicionar `totalDuration` como dependência do `useEffect` que chama `generateAvailableTimes`. |
-| `src/components/crm/CreateAppointmentDialog.tsx` | Mesmas correções em `generateAvailableTimes`: filtrar slots pelo término do serviço, filtrar horários passados. |
-
-As correções garantem que **nenhum slot apareça como clicável** se:
-- Já passou no horário atual (data de hoje)
-- O serviço terminaria após o fechamento da barbearia
-- Todos os barbeiros estão ocupados (no modo "qualquer disponível")
