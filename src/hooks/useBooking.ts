@@ -20,7 +20,7 @@ interface ServiceInfo {
   price: number;
 }
 
-export const useBooking = (barbershopId: string | null) => {
+export const useBooking = (barbershopId: string | null, isStaffBooking?: boolean) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const createBooking = async (data: BookingData) => {

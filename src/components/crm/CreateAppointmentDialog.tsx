@@ -57,7 +57,7 @@ export function CreateAppointmentDialog({
   const [availableTimes, setAvailableTimes] = useState<string[]>([]);
   const [occupiedTimes, setOccupiedTimes] = useState<string[]>([]);
 
-  const { createBooking, isSubmitting } = useBooking(barbershopId);
+  const { createBooking, isSubmitting } = useBooking(barbershopId, true);
 
   // Derived: main service object + additional services objects
   const mainService = services.find(s => s.id === selectedService);
