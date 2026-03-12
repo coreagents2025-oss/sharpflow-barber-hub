@@ -403,7 +403,7 @@ export function CreateAppointmentDialog({
               mode="single"
               selected={selectedDate}
               onSelect={setSelectedDate}
-              disabled={date => date < new Date()}
+              disabled={date => { const d = new Date(); d.setHours(0,0,0,0); return date < d; }}
               locale={ptBR}
               className="rounded-md border w-full pointer-events-auto"
             />
