@@ -1200,22 +1200,28 @@ const PDV = () => {
                                 </>
                               )}
                               {apt.status === 'in_progress' && isToday(selectedDate) && (
-                                <Button 
-                                  size="sm"
-                                  variant="default"
-                                  onClick={() => handleOpenPaymentModal({
-                                    id: apt.id,
-                                    unified_client_id: apt.unified_client_id,
-                                    client_type: apt.client_type,
-                                    barbershop_id: apt.barbershop_id,
-                                    services: {
-                                      name: apt.services?.name || 'Serviço',
-                                      price: apt.services?.price || 50,
-                                    },
-                                    client_name: apt.client_name,
-                                  })}
-                                  className="touch-target w-full whitespace-nowrap text-xs"
-                                >
+                                 <Button 
+                                   size="sm"
+                                   variant="default"
+                                   onClick={() => {
+                                     const apptServices = (apt as any).appointment_services;
+                                     const hasMultiple = apptServices && apptServices.length > 0;
+                                     const servicesList = hasMultiple
+                                       ? [...apptServices].sort((a: any, b: any) => a.position - b.position).map((s: any) => ({ name: s.services?.name || 'Serviço', price: Number(s.price) }))
+                                       : [{ name: apt.services?.name || 'Serviço', price: apt.services?.price || 0 }];
+                                     const totalServicePrice = servicesList.reduce((sum, s) => sum + s.price, 0);
+                                     handleOpenPaymentModal({
+                                       id: apt.id,
+                                       unified_client_id: apt.unified_client_id,
+                                       client_type: apt.client_type,
+                                       barbershop_id: apt.barbershop_id,
+                                       services: servicesList,
+                                       totalServicePrice,
+                                       client_name: apt.client_name,
+                                     });
+                                   }}
+                                   className="touch-target w-full whitespace-nowrap text-xs"
+                                 >
                                   <CreditCard className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
                                   Finalizar
                                 </Button>
