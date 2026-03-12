@@ -382,9 +382,13 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServic
       clientName,
       clientPhone,
       clientEmail,
+      subscriptionId: useSubscriptionCredit && clientSubscription ? clientSubscription.id : undefined,
     });
 
     if (success) {
+      if (useSubscriptionCredit && clientSubscription) {
+        onSubscriptionCreditUsed?.();
+      }
       resetForm();
       onClose();
     }
