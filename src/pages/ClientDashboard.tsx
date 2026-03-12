@@ -164,7 +164,14 @@ const ClientDashboard = () => {
             )}
             <div>
               <p className="font-semibold text-sm leading-tight">{barbershop?.name}</p>
-              <p className="text-xs text-muted-foreground">Área do Assinante</p>
+              <div className="flex items-center gap-1.5">
+                <p className="text-xs text-muted-foreground">Área do Assinante</p>
+                {subscription && !isExpired && (
+                  <Badge className="h-4 text-[10px] px-1.5 bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/30 hover:bg-green-500/20">
+                    ✓ Ativo
+                  </Badge>
+                )}
+              </div>
             </div>
           </div>
           <Button variant="ghost" size="sm" onClick={handleSignOut} className="gap-1.5 text-muted-foreground">
