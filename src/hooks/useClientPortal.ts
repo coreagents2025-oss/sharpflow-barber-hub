@@ -74,10 +74,10 @@ export const useClientPortal = (slug: string | undefined) => {
 
       setBarbershop(bsData);
 
-      // Verify client has access to this barbershop
+      // Verify client has access to this barbershop (also fetch lead_id for subscription lookup)
       const { data: linkData } = await supabase
         .from('client_barbershop_links')
-        .select('id')
+        .select('id, lead_id')
         .eq('user_id', user.id)
         .eq('barbershop_id', bsData.id)
         .maybeSingle();
@@ -90,8 +90,13 @@ export const useClientPortal = (slug: string | undefined) => {
 
       setHasAccess(true);
 
-      // Fetch active subscription
-      const { data: subData } = await supabase
+      // Fetch active subscription — look up both by client_id and by lead_id
+      // (manually created subscriptions use lead_id; client-portal signups use client_id)
+      const linkLead = linkData as any;
+      const leadId: string | null = linkLead?.lead_id ?? null;
+
+      // Build OR filter: client_id = user OR lead_id = linked lead
+      let subQuery = supabase
         .from('client_subscriptions')
         .select(`
           id,
@@ -105,12 +110,18 @@ export const useClientPortal = (slug: string | undefined) => {
             price
           )
         `)
-        .eq('client_id', user.id)
         .eq('barbershop_id', bsData.id)
         .eq('status', 'active')
         .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+        .limit(1);
+
+      if (leadId) {
+        subQuery = subQuery.or(`client_id.eq.${user.id},lead_id.eq.${leadId}`);
+      } else {
+        subQuery = subQuery.eq('client_id', user.id);
+      }
+
+      const { data: subData } = await subQuery.maybeSingle();
 
       if (subData) {
         const plan = subData.subscription_plans as any;
