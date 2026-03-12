@@ -296,6 +296,7 @@ export function LeadDetailsPanel({ lead }: LeadDetailsPanelProps) {
           onRenew={renewSubscription}
           onCancel={cancelSubscription}
           onSell={() => setIsSellSubscriptionOpen(true)}
+          onRegisterPayment={registerPayment}
         />
 
         {/* Ações Rápidas */}
