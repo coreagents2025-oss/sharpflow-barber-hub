@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { MapPin, Phone, Clock, MessageCircle, Facebook, Instagram, Crown } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
 
 interface Service {
   id: string;
@@ -55,6 +56,7 @@ const isLovableDomain = (hostname: string) => {
 
 const PublicCatalog = () => {
   const { slug } = useParams();
+  const { user } = useAuth();
   const [services, setServices] = useState<Service[]>([]);
   const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([]);
   const [barbershop, setBarbershop] = useState<Barbershop | null>(null);
@@ -300,6 +302,7 @@ const PublicCatalog = () => {
         service={selectedService}
         barbershopId={barbershopId}
         allServices={services}
+        loggedInUser={user}
       />
 
       {/* WhatsApp Floating Button */}

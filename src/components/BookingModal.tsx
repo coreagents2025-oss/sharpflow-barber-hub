@@ -16,6 +16,7 @@ import { startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { User, X, Plus, ChevronLeft, ChevronRight, Check, Calendar as CalendarIcon, Clock, Scissors } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 interface Barber {
   id: string;
@@ -43,11 +44,12 @@ interface BookingModalProps {
   } | null;
   barbershopId: string | null;
   allServices?: ServiceOption[];
+  loggedInUser?: SupabaseUser | null;
 }
 
 const ANY_BARBER = '__any__';
 
-export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServices = [] }: BookingModalProps) => {
+export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServices = [], loggedInUser }: BookingModalProps) => {
   const [step, setStep] = useState(1);
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [loadingBarbers, setLoadingBarbers] = useState(false);
@@ -116,6 +118,22 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServic
       resetForm();
     }
   }, [isOpen]);
+
+  // Pre-fill client data from logged-in user profile
+  useEffect(() => {
+    if (isOpen && loggedInUser) {
+      setClientEmail(loggedInUser.email || '');
+      supabase
+        .from('profiles')
+        .select('full_name, phone')
+        .eq('id', loggedInUser.id)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data?.full_name) setClientName(data.full_name);
+          if (data?.phone) setClientPhone(data.phone);
+        });
+    }
+  }, [isOpen, loggedInUser]);
 
   useEffect(() => {
     setAdditionalServiceIds([]);
@@ -645,6 +663,14 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServic
                     </div>
                   </div>
                 </div>
+
+                {/* Pre-filled badge for logged-in users */}
+                {loggedInUser && clientName && (
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/10 border border-accent/20">
+                    <Check className="h-3.5 w-3.5 text-accent shrink-0" />
+                    <p className="text-xs text-accent font-medium">Dados preenchidos da sua conta</p>
+                  </div>
+                )}
 
                 {/* Client fields */}
                 <div className="space-y-3">
