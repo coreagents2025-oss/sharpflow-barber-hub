@@ -24,6 +24,14 @@ import { PaymentModal } from '@/components/PaymentModal';
 import { SubscriptionBadgeInline } from '@/components/subscriptions/SubscriptionBadgeInline';
 import { cn } from '@/lib/utils';
 
+interface AppointmentService {
+  service_id: string;
+  position: number;
+  duration_minutes: number;
+  price: number;
+  services: { name: string };
+}
+
 interface Appointment {
   id: string;
   scheduled_at: string;
@@ -35,6 +43,7 @@ interface Appointment {
   client_phone: string;
   barbershop_id: string;
   barber_id?: string;
+  total_duration_minutes?: number;
   services: {
     name: string;
     duration_minutes: number;
@@ -43,6 +52,7 @@ interface Appointment {
   barbers: {
     name: string;
   };
+  appointment_services?: AppointmentService[];
 }
 
 interface BarberStatus {
