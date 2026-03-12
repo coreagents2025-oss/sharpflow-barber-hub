@@ -56,6 +56,7 @@ const isLovableDomain = (hostname: string) => {
 
 const PublicCatalog = () => {
   const { slug } = useParams();
+  const { user } = useAuth();
   const [services, setServices] = useState<Service[]>([]);
   const [subscriptionPlans, setSubscriptionPlans] = useState<SubscriptionPlan[]>([]);
   const [barbershop, setBarbershop] = useState<Barbershop | null>(null);

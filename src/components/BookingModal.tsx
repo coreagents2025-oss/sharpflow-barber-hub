@@ -664,6 +664,14 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServic
                   </div>
                 </div>
 
+                {/* Pre-filled badge for logged-in users */}
+                {loggedInUser && clientName && (
+                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-accent/10 border border-accent/20">
+                    <Check className="h-3.5 w-3.5 text-accent shrink-0" />
+                    <p className="text-xs text-accent font-medium">Dados preenchidos da sua conta</p>
+                  </div>
+                )}
+
                 {/* Client fields */}
                 <div className="space-y-3">
                   <div>
