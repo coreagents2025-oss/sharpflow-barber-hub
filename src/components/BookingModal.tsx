@@ -124,6 +124,15 @@ export const BookingModal = ({ isOpen, onClose, service, barbershopId, allServic
     }
   }, [isOpen]);
 
+  // Default useSubscriptionCredit to true when subscription with credits is available
+  useEffect(() => {
+    if (isOpen && clientSubscription && clientSubscription.credits_remaining > 0) {
+      setUseSubscriptionCredit(true);
+    } else {
+      setUseSubscriptionCredit(false);
+    }
+  }, [isOpen, clientSubscription]);
+
   // Pre-fill client data from logged-in user profile
   useEffect(() => {
     if (isOpen && loggedInUser) {
