@@ -2280,6 +2280,7 @@ export type Database = {
           scheduled_at: string | null
           service_id: string | null
           status: string | null
+          total_duration_minutes: number | null
           unified_client_id: string | null
           updated_at: string | null
         }
