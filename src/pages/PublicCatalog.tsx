@@ -54,6 +54,12 @@ const isLovableDomain = (hostname: string) => {
          hostname.includes('.lovable.dev');
 };
 
+interface ClientSubscription {
+  id: string;
+  credits_remaining: number;
+  plan_name: string;
+}
+
 const PublicCatalog = () => {
   const { slug } = useParams();
   const { user } = useAuth();
@@ -66,10 +72,59 @@ const PublicCatalog = () => {
   const [isBookingOpen, setIsBookingOpen] = useState(false);
   const [barbershopId, setBarbershopId] = useState<string | null>(null);
   const [whatsappNumber, setWhatsappNumber] = useState<string | null>(null);
+  const [clientSubscription, setClientSubscription] = useState<ClientSubscription | null>(null);
 
   useEffect(() => {
     fetchData();
   }, [slug]);
+
+  // Fetch active subscription for logged-in client
+  useEffect(() => {
+    if (!user || !barbershopId) { setClientSubscription(null); return; }
+    fetchClientSubscription(user.id, barbershopId);
+  }, [user, barbershopId]);
+
+  const fetchClientSubscription = async (userId: string, bsId: string) => {
+    try {
+      // Get lead_id linked to this user+barbershop
+      const { data: link } = await supabase
+        .from('client_barbershop_links')
+        .select('lead_id')
+        .eq('user_id', userId)
+        .eq('barbershop_id', bsId)
+        .maybeSingle();
+
+      const leadId: string | null = (link as any)?.lead_id ?? null;
+
+      let query = supabase
+        .from('client_subscriptions')
+        .select('id, credits_remaining, subscription_plans:plan_id(name)')
+        .eq('barbershop_id', bsId)
+        .eq('status', 'active')
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (leadId) {
+        query = query.or(`client_id.eq.${userId},lead_id.eq.${leadId}`);
+      } else {
+        query = query.eq('client_id', userId);
+      }
+
+      const { data } = await query.maybeSingle();
+      if (data && data.credits_remaining > 0) {
+        const plan = (data as any).subscription_plans;
+        setClientSubscription({
+          id: data.id,
+          credits_remaining: data.credits_remaining,
+          plan_name: plan?.name ?? 'Plano',
+        });
+      } else {
+        setClientSubscription(null);
+      }
+    } catch {
+      setClientSubscription(null);
+    }
+  };
 
   const fetchData = async () => {
     try {
