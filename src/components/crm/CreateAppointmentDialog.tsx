@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
+import { Checkbox } from '@/components/ui/checkbox';
 import { supabase } from '@/integrations/supabase/client';
 import { useBooking } from '@/hooks/useBooking';
 import { toast } from 'sonner';
-import { Calendar as CalendarIcon, Clock, AlertCircle, X } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, AlertCircle, X, Plus } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
@@ -47,6 +48,7 @@ export function CreateAppointmentDialog({
   const [services, setServices] = useState<Service[]>([]);
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [selectedService, setSelectedService] = useState('');
+  const [additionalServiceIds, setAdditionalServiceIds] = useState<string[]>([]);
   const [selectedBarber, setSelectedBarber] = useState('');
   const [selectedDate, setSelectedDate] = useState<Date>();
   const [selectedTime, setSelectedTime] = useState('');
@@ -57,12 +59,24 @@ export function CreateAppointmentDialog({
 
   const { createBooking, isSubmitting } = useBooking(barbershopId);
 
+  // Derived: main service object + additional services objects
+  const mainService = services.find(s => s.id === selectedService);
+  const additionalServices = services.filter(s => additionalServiceIds.includes(s.id) && s.id !== selectedService);
+  const totalDuration = (mainService?.duration_minutes || 0) + additionalServices.reduce((acc, s) => acc + s.duration_minutes, 0);
+  const totalPrice = (mainService?.price || 0) + additionalServices.reduce((acc, s) => acc + s.price, 0);
+  const additionalServiceOptions = services.filter(s => s.id !== selectedService);
+
   useEffect(() => {
     if (open && barbershopId) {
       fetchServices();
       fetchBarbers();
     }
   }, [open, barbershopId]);
+
+  // Reset additional services when main service changes
+  useEffect(() => {
+    setAdditionalServiceIds([]);
+  }, [selectedService]);
 
   // Gerar horários disponíveis quando data for selecionada; resetar horário escolhido
   useEffect(() => {
@@ -72,22 +86,17 @@ export function CreateAppointmentDialog({
     }
   }, [selectedDate, barbershopId]);
 
-  // Buscar horários ocupados quando barbeiro for selecionado; resetar horário escolhido
+  // Buscar horários ocupados quando barbeiro/data/duração total mudar
   useEffect(() => {
     if (selectedDate && selectedBarber) {
       fetchOccupiedTimes();
       setSelectedTime('');
     }
-  }, [selectedDate, selectedBarber, selectedService]);
+  }, [selectedDate, selectedBarber, totalDuration]);
 
   const fetchServices = async () => {
-    if (!barbershopId) {
-      console.warn('barbershopId não fornecido');
-      return;
-    }
-
+    if (!barbershopId) return;
     setIsLoadingServices(true);
-
     const { data, error } = await supabase
       .from('services')
       .select('id, name, price, duration_minutes')
@@ -95,49 +104,33 @@ export function CreateAppointmentDialog({
       .eq('is_active', true)
       .eq('is_subscription_plan', false)
       .order('name');
-
     setIsLoadingServices(false);
-
     if (error) {
-      console.error('Erro ao buscar serviços:', error);
       toast.error('Erro ao carregar serviços');
       return;
     }
-
     setServices(data || []);
   };
 
   const fetchBarbers = async () => {
-    if (!barbershopId) {
-      console.warn('barbershopId não fornecido');
-      return;
-    }
-
+    if (!barbershopId) return;
     setIsLoadingBarbers(true);
-
     const { data, error } = await supabase
       .from('public_barbers')
       .select('id, name')
       .eq('barbershop_id', barbershopId)
       .order('name');
-
     setIsLoadingBarbers(false);
-
     if (error) {
-      console.error('Erro ao buscar barbeiros:', error);
       toast.error('Erro ao carregar barbeiros');
       return;
     }
-
     setBarbers(data || []);
   };
 
   const generateAvailableTimes = async () => {
     if (!selectedDate || !barbershopId) return;
-
     const dateStr = selectedDate.toISOString().split('T')[0];
-    
-    // Buscar configuração do dia específico
     const { data: schedule } = await supabase
       .from('daily_schedules')
       .select('working_hours_start, working_hours_end, blocked_slots')
@@ -146,114 +139,94 @@ export function CreateAppointmentDialog({
       .maybeSingle();
 
     const times: string[] = [];
-    let startHour = 9;  // fallback conservador
-    let endHour = 18;   // fallback conservador
+    let startHour = 9;
+    let endHour = 18;
 
     if (schedule?.working_hours_start && schedule?.working_hours_end) {
-      // Usar horários do daily_schedule
       startHour = parseInt(schedule.working_hours_start.split(':')[0]);
       endHour = parseInt(schedule.working_hours_end.split(':')[0]);
     } else {
-      // Fallback: usar operating_hours da barbearia pelo dia da semana
       const { data: barbershop } = await supabase
         .from('public_barbershops')
         .select('operating_hours')
         .eq('id', barbershopId)
         .maybeSingle();
-
       if (barbershop?.operating_hours) {
         const DAY_MAP = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
         const dayName = DAY_MAP[selectedDate.getDay()];
         const dayHours = (barbershop.operating_hours as any)?.[dayName];
-
         if (dayHours?.open && dayHours?.close) {
           startHour = parseInt(dayHours.open.split(':')[0]);
           endHour = parseInt(dayHours.close.split(':')[0]);
         } else {
-          // Dia fechado → sem horários disponíveis
           setAvailableTimes([]);
           return;
         }
       }
     }
 
-    // Gerar horários (a cada 30 minutos), excluindo bloqueados
     for (let hour = startHour; hour < endHour; hour++) {
       const time1 = `${hour.toString().padStart(2, '0')}:00`;
       const time2 = `${hour.toString().padStart(2, '0')}:30`;
-      
       if (!schedule?.blocked_slots?.includes(time1)) times.push(time1);
       if (!schedule?.blocked_slots?.includes(time2)) times.push(time2);
     }
-
     setAvailableTimes(times);
   };
 
   const fetchOccupiedTimes = async () => {
     if (!selectedBarber || !selectedDate || !barbershopId) return;
 
-    // Use local-time boundaries to avoid timezone mismatch (UTC-3 Brazil)
     const dayStart = new Date(selectedDate);
     dayStart.setHours(0, 0, 0, 0);
     const dayEnd = new Date(selectedDate);
     dayEnd.setHours(23, 59, 59, 999);
-    
-    // Buscar appointments COM informações do serviço para calcular duração
-    // Excluir status que liberam o horário: cancelled, no_show, completed
+
     const { data: appointments } = await supabase
       .from('appointments')
-      .select(`
-        scheduled_at,
-        status,
-        services (
-          duration_minutes
-        )
-      `)
+      .select(`scheduled_at, status, services (duration_minutes)`)
       .eq('barber_id', selectedBarber)
       .gte('scheduled_at', dayStart.toISOString())
       .lt('scheduled_at', dayEnd.toISOString())
       .not('status', 'in', '(cancelled,no_show,completed)');
 
-    // Calcular TODOS os slots ocupados baseado na duração COMPLETA do serviço
     const occupiedSlots: string[] = [];
-    
+
     appointments?.forEach(apt => {
       const startTime = new Date(apt.scheduled_at);
       const duration = (apt.services as any)?.duration_minutes || 30;
-      const slots = Math.ceil(duration / 30); // Quantos slots de 30min
-      
+      const slots = Math.ceil(duration / 30);
       for (let i = 0; i < slots; i++) {
         const slotTime = new Date(startTime);
-        slotTime.setMinutes(startTime.getMinutes() + (i * 30));
-        
-        const timeStr = `${slotTime.getHours().toString().padStart(2, '0')}:${slotTime.getMinutes().toString().padStart(2, '0')}`;
-        occupiedSlots.push(timeStr);
+        slotTime.setMinutes(startTime.getMinutes() + i * 30);
+        occupiedSlots.push(
+          `${slotTime.getHours().toString().padStart(2, '0')}:${slotTime.getMinutes().toString().padStart(2, '0')}`
+        );
       }
     });
-    
-    // Também bloquear slots que seriam afetados pelo NOVO serviço selecionado
-    const selectedServiceData = services.find(s => s.id === selectedService);
-    if (selectedServiceData && selectedServiceData.duration_minutes > 30) {
-      const newServiceSlots = Math.ceil(selectedServiceData.duration_minutes / 30);
-      const additionalBlockedSlots: string[] = [];
-      
+
+    // Block slots before existing appointments that would conflict with totalDuration
+    if (totalDuration > 30) {
+      const newServiceSlots = Math.ceil(totalDuration / 30);
       appointments?.forEach(apt => {
         const startTime = new Date(apt.scheduled_at);
-        
-        // Bloquear slots ANTES do agendamento existente que conflitariam
         for (let i = 1; i < newServiceSlots; i++) {
           const slotTime = new Date(startTime);
-          slotTime.setMinutes(startTime.getMinutes() - (i * 30));
-          
-          const timeStr = `${slotTime.getHours().toString().padStart(2, '0')}:${slotTime.getMinutes().toString().padStart(2, '0')}`;
-          additionalBlockedSlots.push(timeStr);
+          slotTime.setMinutes(startTime.getMinutes() - i * 30);
+          occupiedSlots.push(
+            `${slotTime.getHours().toString().padStart(2, '0')}:${slotTime.getMinutes().toString().padStart(2, '0')}`
+          );
         }
       });
-      
-      occupiedSlots.push(...additionalBlockedSlots);
     }
-    
-    setOccupiedTimes([...new Set(occupiedSlots)]); // Remove duplicatas
+
+    setOccupiedTimes([...new Set(occupiedSlots)]);
+  };
+
+  const toggleAdditionalService = (serviceId: string) => {
+    setAdditionalServiceIds(prev =>
+      prev.includes(serviceId) ? prev.filter(id => id !== serviceId) : [...prev, serviceId]
+    );
   };
 
   const handleSubmit = async () => {
@@ -264,6 +237,7 @@ export function CreateAppointmentDialog({
 
     const success = await createBooking({
       serviceId: selectedService,
+      additionalServiceIds,
       barberId: selectedBarber,
       date: selectedDate,
       time: selectedTime,
@@ -274,6 +248,7 @@ export function CreateAppointmentDialog({
 
     if (success) {
       setSelectedService('');
+      setAdditionalServiceIds([]);
       setSelectedBarber('');
       setSelectedDate(undefined);
       setSelectedTime('');
@@ -296,68 +271,100 @@ export function CreateAppointmentDialog({
           {!barbershopId && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Erro: Barbearia não identificada. Não é possível criar agendamento.
-              </AlertDescription>
+              <AlertDescription>Erro: Barbearia não identificada. Não é possível criar agendamento.</AlertDescription>
             </Alert>
           )}
-
           {barbershopId && services.length === 0 && !isLoadingServices && (
             <Alert>
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Nenhum serviço cadastrado. Cadastre serviços primeiro.
-              </AlertDescription>
+              <AlertDescription>Nenhum serviço cadastrado. Cadastre serviços primeiro.</AlertDescription>
             </Alert>
           )}
-
           {barbershopId && barbers.length === 0 && !isLoadingBarbers && (
             <Alert>
               <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                Nenhum barbeiro cadastrado. Cadastre barbeiros primeiro.
-              </AlertDescription>
+              <AlertDescription>Nenhum barbeiro cadastrado. Cadastre barbeiros primeiro.</AlertDescription>
             </Alert>
           )}
 
-          {/* Serviço */}
+          {/* Serviço principal */}
           <div className="space-y-2">
-            <Label htmlFor="service">Serviço *</Label>
-            <Select 
-              value={selectedService} 
+            <Label htmlFor="service">Serviço principal *</Label>
+            <Select
+              value={selectedService}
               onValueChange={setSelectedService}
               disabled={isLoadingServices || services.length === 0}
             >
               <SelectTrigger>
-                <SelectValue placeholder={
-                  isLoadingServices ? "Carregando serviços..." : "Selecione um serviço"
-                } />
+                <SelectValue placeholder={isLoadingServices ? 'Carregando serviços...' : 'Selecione um serviço'} />
               </SelectTrigger>
               <SelectContent>
-                {services.map((service) => (
+                {services.map(service => (
                   <SelectItem key={service.id} value={service.id}>
-                    {service.name} - R$ {service.price.toFixed(2)} ({service.duration_minutes}min)
+                    {service.name} — R$ {service.price.toFixed(2)} ({service.duration_minutes}min)
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
+          {/* Serviços adicionais */}
+          {selectedService && additionalServiceOptions.length > 0 && (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1">
+                <Plus className="h-3.5 w-3.5" />
+                Serviços adicionais
+                <span className="text-muted-foreground font-normal text-xs">(opcional)</span>
+              </Label>
+              <div className="rounded-md border divide-y">
+                {additionalServiceOptions.map(service => {
+                  const checked = additionalServiceIds.includes(service.id);
+                  return (
+                    <label
+                      key={service.id}
+                      className={cn(
+                        'flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-colors hover:bg-muted/50',
+                        checked && 'bg-primary/5'
+                      )}
+                    >
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={() => toggleAdditionalService(service.id)}
+                      />
+                      <span className="flex-1 text-sm font-medium">{service.name}</span>
+                      <span className="text-xs text-muted-foreground">{service.duration_minutes}min</span>
+                      <span className="text-xs font-medium">R$ {service.price.toFixed(2)}</span>
+                    </label>
+                  );
+                })}
+              </div>
+
+              {/* Resumo total */}
+              {(additionalServiceIds.length > 0 || mainService) && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/30 rounded-md px-3 py-2">
+                  <span>{1 + additionalServiceIds.length} serviço{additionalServiceIds.length > 0 ? 's' : ''}</span>
+                  <span>·</span>
+                  <span>{totalDuration} min</span>
+                  <span>·</span>
+                  <span className="font-semibold text-foreground">R$ {totalPrice.toFixed(2)}</span>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Barbeiro */}
           <div className="space-y-2">
             <Label htmlFor="barber">Barbeiro *</Label>
-            <Select 
-              value={selectedBarber} 
+            <Select
+              value={selectedBarber}
               onValueChange={setSelectedBarber}
               disabled={isLoadingBarbers || barbers.length === 0}
             >
               <SelectTrigger>
-                <SelectValue placeholder={
-                  isLoadingBarbers ? "Carregando barbeiros..." : "Selecione um barbeiro"
-                } />
+                <SelectValue placeholder={isLoadingBarbers ? 'Carregando barbeiros...' : 'Selecione um barbeiro'} />
               </SelectTrigger>
               <SelectContent>
-                {barbers.map((barber) => (
+                {barbers.map(barber => (
                   <SelectItem key={barber.id} value={barber.id}>
                     {barber.name}
                   </SelectItem>
@@ -373,7 +380,7 @@ export function CreateAppointmentDialog({
               mode="single"
               selected={selectedDate}
               onSelect={setSelectedDate}
-              disabled={(date) => date < new Date()}
+              disabled={date => date < new Date()}
               locale={ptBR}
               className="rounded-md border w-full pointer-events-auto"
             />
@@ -382,11 +389,15 @@ export function CreateAppointmentDialog({
           {/* Horário */}
           {selectedDate && (
             <div className="space-y-2">
-              <Label>Horário * {selectedBarber && <span className="text-muted-foreground text-xs">(baseado na agenda do barbeiro)</span>}</Label>
+              <Label>
+                Horário *{' '}
+                {selectedBarber && (
+                  <span className="text-muted-foreground text-xs">(baseado na agenda do barbeiro)</span>
+                )}
+              </Label>
               <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
-                {availableTimes.map((time) => {
+                {availableTimes.map(time => {
                   const isOccupied = selectedBarber && occupiedTimes.includes(time);
-                  
                   return (
                     <Button
                       key={time}
@@ -421,14 +432,14 @@ export function CreateAppointmentDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancelar
           </Button>
-          <Button 
+          <Button
             onClick={handleSubmit}
             disabled={
-              !barbershopId || 
-              !selectedService || 
-              !selectedBarber || 
-              !selectedDate || 
-              !selectedTime || 
+              !barbershopId ||
+              !selectedService ||
+              !selectedBarber ||
+              !selectedDate ||
+              !selectedTime ||
               isSubmitting ||
               services.length === 0 ||
               barbers.length === 0
