@@ -108,7 +108,7 @@ export const SubscriptionPlanCard = ({ plan, slug }: SubscriptionPlanCardProps) 
           asChild
           className="w-full gap-2 bg-primary hover:bg-primary/90 text-primary-foreground"
         >
-          <Link to={slug ? `/${slug}/cliente` : '/cliente'}>
+          <Link to={destination}>
             Assinar agora
             <ArrowRight className="h-4 w-4" />
           </Link>
