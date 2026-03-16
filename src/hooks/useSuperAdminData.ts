@@ -2,6 +2,58 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
 
+export const useAllClientSubscriptions = () => {
+  return useQuery({
+    queryKey: ['super-admin', 'all-subscriptions'],
+    queryFn: async () => {
+      const { data: subs, error } = await supabase
+        .from('client_subscriptions')
+        .select('id, status, credits_remaining, expires_at, billing_interval, barbershop_id, lead_id, client_id, plan_id, started_at, created_at')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      const barbershopIds = [...new Set((subs ?? []).map(s => s.barbershop_id))];
+      const planIds = [...new Set((subs ?? []).map(s => s.plan_id))];
+      const leadIds = (subs ?? []).map(s => s.lead_id).filter(Boolean) as string[];
+      const clientIds = (subs ?? []).map(s => s.client_id).filter(Boolean) as string[];
+
+      const [barbershopsRes, plansRes, leadsRes, profilesRes] = await Promise.all([
+        supabase.from('barbershops').select('id, name').in('id', barbershopIds),
+        supabase.from('subscription_plans').select('id, name, price').in('id', planIds),
+        leadIds.length > 0
+          ? supabase.from('leads').select('id, full_name, phone').in('id', leadIds)
+          : Promise.resolve({ data: [] }),
+        clientIds.length > 0
+          ? supabase.from('profiles').select('id, full_name, phone').in('id', clientIds)
+          : Promise.resolve({ data: [] }),
+      ]);
+
+      const barbershops = barbershopsRes.data ?? [];
+      const plans = plansRes.data ?? [];
+      const leads = leadsRes.data ?? [];
+      const profiles = profilesRes.data ?? [];
+
+      return (subs ?? []).map(s => {
+        const barbershop = barbershops.find(b => b.id === s.barbershop_id);
+        const plan = plans.find(p => p.id === s.plan_id);
+        const lead = leads.find(l => l.id === s.lead_id);
+        const profile = profiles.find(p => p.id === s.client_id);
+        const clientName = lead?.full_name ?? profile?.full_name ?? 'Desconhecido';
+        const clientPhone = lead?.phone ?? profile?.phone ?? '-';
+        return {
+          ...s,
+          barbershopName: barbershop?.name ?? '-',
+          planName: plan?.name ?? '-',
+          planPrice: plan?.price ?? 0,
+          clientName,
+          clientPhone,
+        };
+      });
+    },
+  });
+};
+
 export const usePlatformStats = () => {
   return useQuery({
     queryKey: ['super-admin', 'platform-stats'],
