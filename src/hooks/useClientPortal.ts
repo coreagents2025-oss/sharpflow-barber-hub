@@ -31,12 +31,20 @@ interface PendingPayment {
   subscription_id: string;
 }
 
+interface AppointmentService {
+  service_name: string;
+  duration_minutes: number;
+  price: number;
+}
+
 interface RecentAppointment {
   id: string;
   scheduled_at: string;
   status: string;
   service_name: string;
   barber_name: string | null;
+  total_duration_minutes: number | null;
+  services: AppointmentService[];
 }
 
 export const useClientPortal = (slug: string | undefined) => {
@@ -148,44 +156,83 @@ export const useClientPortal = (slug: string | undefined) => {
       }
 
       // Fetch recent appointments (upcoming first, then past)
-      const { data: apptUpcoming } = await supabase
+      // Use OR filter to also match appointments created via CRM (lead_id)
+      const apptSelect = `
+        id,
+        scheduled_at,
+        status,
+        total_duration_minutes,
+        services:service_id (name),
+        barbers:barber_id (name),
+        appointment_services (
+          service_id,
+          duration_minutes,
+          price,
+          position,
+          services:service_id (name)
+        )
+      `;
+
+      const apptFilter = leadId
+        ? `client_id.eq.${user.id},lead_id.eq.${leadId}`
+        : `client_id.eq.${user.id}`;
+
+      let upcomingQuery = supabase
         .from('appointments')
-        .select(`
-          id,
-          scheduled_at,
-          status,
-          services:service_id (name),
-          barbers:barber_id (name)
-        `)
-        .eq('client_id', user.id)
+        .select(apptSelect)
         .eq('barbershop_id', bsData.id)
         .in('status', ['scheduled', 'in_progress'])
         .gte('scheduled_at', new Date().toISOString())
         .order('scheduled_at', { ascending: true })
         .limit(10);
 
-      const { data: apptPast } = await supabase
+      if (leadId) {
+        upcomingQuery = upcomingQuery.or(apptFilter);
+      } else {
+        upcomingQuery = upcomingQuery.eq('client_id', user.id);
+      }
+
+      const { data: apptUpcoming } = await upcomingQuery;
+
+      let pastQuery = supabase
         .from('appointments')
-        .select(`
-          id,
-          scheduled_at,
-          status,
-          services:service_id (name),
-          barbers:barber_id (name)
-        `)
-        .eq('client_id', user.id)
+        .select(apptSelect)
         .eq('barbershop_id', bsData.id)
         .or('status.in.(completed,cancelled,no_show),scheduled_at.lt.' + new Date().toISOString())
         .order('scheduled_at', { ascending: false })
-        .limit(20);
+        .limit(50);
 
-      const mapAppt = (a: any): RecentAppointment => ({
-        id: a.id,
-        scheduled_at: a.scheduled_at,
-        status: a.status,
-        service_name: a.services?.name ?? 'Serviço',
-        barber_name: a.barbers?.name ?? null,
-      });
+      if (leadId) {
+        pastQuery = pastQuery.or(apptFilter);
+      } else {
+        pastQuery = pastQuery.eq('client_id', user.id);
+      }
+
+      const { data: apptPast } = await pastQuery;
+
+      const mapAppt = (a: any): RecentAppointment => {
+        const extraServices: AppointmentService[] = (a.appointment_services ?? [])
+          .sort((x: any, y: any) => (x.position ?? 0) - (y.position ?? 0))
+          .map((as: any) => ({
+            service_name: as.services?.name ?? 'Serviço',
+            duration_minutes: as.duration_minutes,
+            price: as.price ?? 0,
+          }));
+
+        return {
+          id: a.id,
+          scheduled_at: a.scheduled_at,
+          status: a.status,
+          service_name: a.services?.name ?? 'Serviço',
+          barber_name: a.barbers?.name ?? null,
+          total_duration_minutes: a.total_duration_minutes,
+          services: extraServices.length > 0 ? extraServices : [{
+            service_name: a.services?.name ?? 'Serviço',
+            duration_minutes: a.total_duration_minutes ?? 30,
+            price: 0,
+          }],
+        };
+      };
 
       setAppointments([
         ...(apptUpcoming ?? []).map(mapAppt),
