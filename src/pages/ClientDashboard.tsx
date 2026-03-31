@@ -315,6 +315,25 @@ const ClientDashboard = () => {
             const past = appointments.filter(
               (a) => !((a.status === 'scheduled' || a.status === 'in_progress') && isFuture(parseISO(a.scheduled_at)))
             );
+            const completedCount = past.filter((a) => a.status === 'completed').length;
+
+            const renderServicesList = (appt: typeof appointments[0]) => {
+              if (appt.services.length > 1) {
+                return (
+                  <div>
+                    <p className="font-semibold text-sm">{appt.services.map(s => s.service_name).join(' + ')}</p>
+                    {appt.total_duration_minutes && (
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        <Clock className="h-3 w-3 inline mr-1" />
+                        {appt.total_duration_minutes} min total
+                      </p>
+                    )}
+                  </div>
+                );
+              }
+              return <p className="font-semibold text-sm">{appt.service_name}</p>;
+            };
+
             return (
               <Tabs defaultValue="upcoming">
                 <TabsList className="w-full mb-4">
@@ -343,7 +362,7 @@ const ClientDashboard = () => {
                                     <Calendar className="h-4 w-4 text-primary" />
                                   </div>
                                   <div>
-                                    <p className="font-semibold text-sm">{appt.service_name}</p>
+                                    {renderServicesList(appt)}
                                     <p className="text-xs text-muted-foreground mt-0.5">
                                       {format(apptDate, "EEE',' dd 'de' MMM 'às' HH:mm", { locale: ptBR })}
                                     </p>
@@ -394,30 +413,52 @@ const ClientDashboard = () => {
                 {/* History */}
                 <TabsContent value="history">
                   {past.length > 0 ? (
-                    <Card>
-                      <CardContent className="p-0 divide-y divide-border">
-                        {past.map((appt) => {
-                          const cfg = statusConfig[appt.status] ?? { label: appt.status, variant: 'outline' as const };
-                          return (
-                            <div key={appt.id} className="flex items-center justify-between px-4 py-3">
-                              <div className="flex items-center gap-3">
-                                <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0">
-                                  <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                    <div className="space-y-3">
+                      {/* Summary counter */}
+                      <div className="flex items-center gap-2 px-1 mb-1">
+                        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                          <Scissors className="h-3.5 w-3.5" />
+                          <span>
+                            <strong className="text-foreground">{completedCount}</strong> atendimento{completedCount !== 1 ? 's' : ''} realizado{completedCount !== 1 ? 's' : ''}
+                          </span>
+                        </div>
+                      </div>
+                      <Card>
+                        <CardContent className="p-0 divide-y divide-border">
+                          {past.map((appt) => {
+                            const cfg = statusConfig[appt.status] ?? { label: appt.status, variant: 'outline' as const };
+                            return (
+                              <div key={appt.id} className="flex items-center justify-between px-4 py-3">
+                                <div className="flex items-center gap-3">
+                                  <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0">
+                                    <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
+                                  </div>
+                                  <div>
+                                    {appt.services.length > 1 ? (
+                                      <>
+                                        <p className="text-sm font-medium">{appt.services.map(s => s.service_name).join(' + ')}</p>
+                                        {appt.total_duration_minutes && (
+                                          <p className="text-xs text-muted-foreground">
+                                            {appt.total_duration_minutes} min total
+                                          </p>
+                                        )}
+                                      </>
+                                    ) : (
+                                      <p className="text-sm font-medium">{appt.service_name}</p>
+                                    )}
+                                    <p className="text-xs text-muted-foreground">
+                                      {format(parseISO(appt.scheduled_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                                      {appt.barber_name ? ` · ${appt.barber_name}` : ''}
+                                    </p>
+                                  </div>
                                 </div>
-                                <div>
-                                  <p className="text-sm font-medium">{appt.service_name}</p>
-                                  <p className="text-xs text-muted-foreground">
-                                    {format(parseISO(appt.scheduled_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-                                    {appt.barber_name ? ` · ${appt.barber_name}` : ''}
-                                  </p>
-                                </div>
+                                <Badge variant={cfg.variant} className="text-xs">{cfg.label}</Badge>
                               </div>
-                              <Badge variant={cfg.variant} className="text-xs">{cfg.label}</Badge>
-                            </div>
-                          );
-                        })}
-                      </CardContent>
-                    </Card>
+                            );
+                          })}
+                        </CardContent>
+                      </Card>
+                    </div>
                   ) : (
                     <Card className="border-dashed">
                       <CardContent className="py-6 text-center text-muted-foreground text-sm">
