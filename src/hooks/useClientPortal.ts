@@ -31,12 +31,20 @@ interface PendingPayment {
   subscription_id: string;
 }
 
+interface AppointmentService {
+  service_name: string;
+  duration_minutes: number;
+  price: number;
+}
+
 interface RecentAppointment {
   id: string;
   scheduled_at: string;
   status: string;
   service_name: string;
   barber_name: string | null;
+  total_duration_minutes: number | null;
+  services: AppointmentService[];
 }
 
 export const useClientPortal = (slug: string | undefined) => {
