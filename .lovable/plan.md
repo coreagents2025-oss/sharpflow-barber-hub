@@ -1,58 +1,40 @@
 
-## Duas ações necessárias
 
-### 1. Como fazer login como Super Admin
+## Ajuste no painel do assinante — histórico completo de agendamentos
 
-O Super Admin usa a **mesma tela de login** em `/auth` (não existe tela separada). O sistema detecta automaticamente o role `super_admin` no banco de dados e redireciona para `/super-admin`.
+### Problema atual
 
-**Passos:**
-1. Acesse `/auth` no projeto
-2. Use o email/senha da conta que tem o role `super_admin` na tabela `user_roles`
-3. Após login, o sistema redireciona automaticamente para `/super-admin`
+O `ClientDashboard` já tem abas "Próximos" e "Histórico", mas existem **3 limitações**:
 
-Para verificar qual usuário tem `super_admin`, posso consultar o banco agora mesmo.
+1. **Agendamentos via CRM não aparecem**: A query filtra por `client_id = user.id`, mas agendamentos criados manualmente pelo barbeiro usam `lead_id` (não `client_id`). Resultado: o cliente não vê agendamentos feitos para ele via CRM.
 
----
+2. **Limite baixo**: Apenas 20 agendamentos passados são carregados — clientes frequentes não veem o histórico completo.
 
-### 2. Reverter assinaturas de clientes da Barbearia Anjus
-
-A operação anterior definiu `expires_at = NULL` e `status = 'active'` em todas as 9 assinaturas de clientes (`client_subscriptions`) da Barbearia Anjus. Precisamos restaurá-las para ter datas de expiração calculadas com base no `billing_interval` e no `started_at` de cada uma.
-
-**SQL a executar (via ferramenta de dados — sem migration, pois é atualização de dados):**
-
-```sql
-UPDATE client_subscriptions
-SET 
-  expires_at = CASE billing_interval
-    WHEN 'weekly'    THEN started_at + INTERVAL '7 days'
-    WHEN 'biweekly'  THEN started_at + INTERVAL '14 days'
-    WHEN 'monthly'   THEN started_at + INTERVAL '30 days'
-    WHEN 'yearly'    THEN started_at + INTERVAL '365 days'
-    ELSE started_at + INTERVAL '30 days'
-  END,
-  status = CASE
-    WHEN (CASE billing_interval
-            WHEN 'weekly'   THEN started_at + INTERVAL '7 days'
-            WHEN 'biweekly' THEN started_at + INTERVAL '14 days'
-            WHEN 'monthly'  THEN started_at + INTERVAL '30 days'
-            WHEN 'yearly'   THEN started_at + INTERVAL '365 days'
-            ELSE started_at + INTERVAL '30 days'
-          END) > NOW() THEN 'active'
-    ELSE 'expired'
-  END
-WHERE barbershop_id = '27fc60e6-99ee-45eb-9bb2-60526e66e71b';
-```
-
-Isso calcula a expiração com base no `started_at` + intervalo de cobrança. Assinaturas cujo `started_at` foi há mais de 30 dias ficarão como `expired` (comportamento correto), e as recentes ficam `active`.
-
-> **Nota importante:** O plano SaaS da Barbearia Anjus (`barbershops.plan_status = 'active'`, `trial_ends_at = '2099-12-31'`) será **mantido como está** — apenas as assinaturas dos clientes da barbearia voltam ao normal.
+3. **Multi-serviço não exibido**: Com a nova estrutura `appointment_services`, um agendamento pode ter vários serviços, mas o dashboard só mostra o serviço principal (`service_id`).
 
 ---
 
-## Arquivos a modificar
+### Plano de implementação
 
-Nenhum arquivo de código precisa ser alterado — apenas a execução do SQL de dados acima.
+**Arquivo 1 — `src/hooks/useClientPortal.ts`**
 
-## Sobre o login Super Admin
+- Buscar o `lead_id` vinculado ao cliente (já disponível em `client_barbershop_links.lead_id`)
+- Usar filtro OR: `client_id.eq.{userId},lead_id.eq.{leadId}` nas queries de appointments (mesmo padrão já usado para subscriptions)
+- Aumentar limite de histórico para 50
+- Adicionar join com `appointment_services` para trazer todos os serviços de cada agendamento
 
-Vou verificar qual é o email do usuário com role `super_admin` para informar você.
+**Arquivo 2 — `src/pages/ClientDashboard.tsx`**
+
+- Exibir lista de serviços do agendamento (quando multi-serviço) em vez de apenas o serviço principal
+- Mostrar duração total do agendamento
+- Adicionar contador de "Total de atendimentos" no topo da seção de histórico como resumo
+
+---
+
+### Arquivos a modificar
+
+| Arquivo | Mudança |
+|---|---|
+| `src/hooks/useClientPortal.ts` | Query OR com lead_id; join appointment_services; limite 50 |
+| `src/pages/ClientDashboard.tsx` | Exibir multi-serviços; contador de atendimentos no histórico |
+
