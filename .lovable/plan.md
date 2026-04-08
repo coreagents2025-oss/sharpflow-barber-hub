@@ -1,33 +1,38 @@
 
 
-## Ajuste no painel do assinante — histórico completo de agendamentos
+## Correção: Agendamentos não aparecem no PDV em tempo real (stale closure)
 
-### Problema atual
+### Problema
 
-O `ClientDashboard` já tem abas "Próximos" e "Histórico", mas existem **3 limitações**:
+No `src/pages/PDV.tsx`, o `useEffect` da linha 126 cria o canal realtime com dependência apenas de `[authBarbershopId]`. O callback (linha 145-148) captura `selectedDate` do momento da montagem. Quando o usuário muda de data, o callback continua chamando `fetchAppointmentsForDate` com a data antiga — os agendamentos do dia atual não aparecem ou se "perdem" após navegação.
 
-1. **Agendamentos via CRM não aparecem**: A query filtra por `client_id = user.id`, mas agendamentos criados manualmente pelo barbeiro usam `lead_id` (não `client_id`). Resultado: o cliente não vê agendamentos feitos para ele via CRM.
+### Solução
 
-2. **Limite baixo**: Apenas 20 agendamentos passados são carregados — clientes frequentes não veem o histórico completo.
+**Arquivo: `src/pages/PDV.tsx`**
 
-3. **Multi-serviço não exibido**: Com a nova estrutura `appointment_services`, um agendamento pode ter vários serviços, mas o dashboard só mostra o serviço principal (`service_id`).
+1. Adicionar `useRef` para `selectedDate`:
+   ```typescript
+   import { useState, useEffect, useRef } from 'react';
+   // ...
+   const selectedDateRef = useRef(selectedDate);
+   ```
 
----
+2. Manter o ref sincronizado (após cada render):
+   ```typescript
+   useEffect(() => {
+     selectedDateRef.current = selectedDate;
+   }, [selectedDate]);
+   ```
 
-### Plano de implementação
+3. No callback do realtime (linha 146), usar o ref em vez da variável:
+   ```typescript
+   () => {
+     fetchAppointmentsForDate(selectedDateRef.current);
+     fetchBarberStatuses();
+   }
+   ```
 
-**Arquivo 1 — `src/hooks/useClientPortal.ts`**
-
-- Buscar o `lead_id` vinculado ao cliente (já disponível em `client_barbershop_links.lead_id`)
-- Usar filtro OR: `client_id.eq.{userId},lead_id.eq.{leadId}` nas queries de appointments (mesmo padrão já usado para subscriptions)
-- Aumentar limite de histórico para 50
-- Adicionar join com `appointment_services` para trazer todos os serviços de cada agendamento
-
-**Arquivo 2 — `src/pages/ClientDashboard.tsx`**
-
-- Exibir lista de serviços do agendamento (quando multi-serviço) em vez de apenas o serviço principal
-- Mostrar duração total do agendamento
-- Adicionar contador de "Total de atendimentos" no topo da seção de histórico como resumo
+Isso garante que o canal realtime — criado uma única vez por `authBarbershopId` — sempre busque os dados da data que o usuário está vendo, sem reconexões desnecessárias.
 
 ---
 
@@ -35,6 +40,7 @@ O `ClientDashboard` já tem abas "Próximos" e "Histórico", mas existem **3 lim
 
 | Arquivo | Mudança |
 |---|---|
-| `src/hooks/useClientPortal.ts` | Query OR com lead_id; join appointment_services; limite 50 |
-| `src/pages/ClientDashboard.tsx` | Exibir multi-serviços; contador de atendimentos no histórico |
+| `src/pages/PDV.tsx` | Importar `useRef`; criar `selectedDateRef`; usar no callback do realtime |
+
+Nenhuma migration SQL necessária.
 
