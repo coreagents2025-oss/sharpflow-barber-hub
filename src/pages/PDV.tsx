@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { format, isToday, isYesterday, isTomorrow } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Navbar } from '@/components/Navbar';
@@ -123,6 +123,11 @@ const PDV = () => {
     setLastUpdated(new Date());
   };
 
+  const selectedDateRef = useRef(selectedDate);
+  useEffect(() => {
+    selectedDateRef.current = selectedDate;
+  }, [selectedDate]);
+
   useEffect(() => {
     if (authBarbershopId) {
       fetchAppointmentsForDate(selectedDate);
@@ -143,7 +148,7 @@ const PDV = () => {
             table: 'appointments'
           },
           () => {
-            fetchAppointmentsForDate(selectedDate);
+            fetchAppointmentsForDate(selectedDateRef.current);
             fetchBarberStatuses();
           }
         )
