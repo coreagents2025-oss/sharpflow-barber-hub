@@ -58,6 +58,22 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
 
+    // Verify caller is staff of the target barbershop (prevents cross-tenant abuse)
+    const callerId = (claimsData.claims as any).sub;
+    const { data: callerStaff } = await adminClient
+      .from('barbershop_staff')
+      .select('id')
+      .eq('user_id', callerId)
+      .eq('barbershop_id', barbershop_id)
+      .maybeSingle();
+
+    if (!callerStaff) {
+      return new Response(JSON.stringify({ error: 'Forbidden: not a staff of this barbershop' }), {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Check if user already exists
     const { data: existingUsers } = await adminClient.auth.admin.listUsers();
     const existingUser = existingUsers?.users?.find(u => u.email === email.toLowerCase().trim());
@@ -65,9 +81,29 @@ Deno.serve(async (req) => {
     let userId: string;
 
     if (existingUser) {
-      // User already has an account — update password and ensure link exists
+      // SECURITY: Do NOT reset passwords for existing accounts.
+      // This previously allowed any staff to take over arbitrary user accounts.
+      // Only allow linking if the existing user is already a client of this barbershop
+      // (or has no conflicting role outside this barbershop).
       userId = existingUser.id;
-      await adminClient.auth.admin.updateUserById(userId, { password });
+
+      const { data: existingLink } = await adminClient
+        .from('client_barbershop_links')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('barbershop_id', barbershop_id)
+        .maybeSingle();
+
+      if (!existingLink) {
+        return new Response(JSON.stringify({
+          error: 'Este email já possui uma conta. Peça ao cliente para fazer login com a senha atual ou usar "Esqueci a senha".',
+          code: 'USER_EXISTS_NO_LINK',
+        }), {
+          status: 409,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      // Link exists — proceed without touching password
     } else {
       // Create new user with email_confirm: true (no email verification needed)
       const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
