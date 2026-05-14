@@ -173,12 +173,24 @@ const handler = async (req: Request): Promise<Response> => {
       message = settings.message_template || 
         "Olá {{client_name}}! Seu agendamento foi confirmado para {{date}} às {{time}}. Serviço: {{service_name}} com {{barber_name}}. Aguardamos você!";
       
+      // Sanitize user-controlled template values to prevent content injection
+      const sanitize = (v?: string) => {
+        if (!v) return '';
+        // strip control chars / line breaks, collapse whitespace, cap length
+        return v
+          .replace(/[\r\n\t\u0000-\u001F\u007F]/g, ' ')
+          .replace(/https?:\/\/\S+/gi, '[link removido]')
+          .replace(/\s+/g, ' ')
+          .trim()
+          .slice(0, 100);
+      };
+
       message = message
-        .replace(/\{\{client_name\}\}/g, client_name || '')
+        .replace(/\{\{client_name\}\}/g, sanitize(client_name))
         .replace(/\{\{date\}\}/g, formattedDate)
         .replace(/\{\{time\}\}/g, formattedTime)
-        .replace(/\{\{service_name\}\}/g, service_name || '')
-        .replace(/\{\{barber_name\}\}/g, barber_name || '');
+        .replace(/\{\{service_name\}\}/g, sanitize(service_name))
+        .replace(/\{\{barber_name\}\}/g, sanitize(barber_name));
 
       // Adicionar mensagem de oferta do dia se existir
       if (settings.daily_offer_message && settings.daily_offer_message.trim()) {
